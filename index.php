@@ -1,6 +1,5 @@
 <?php
 session_start();
-// Jika sudah login, tendang langsung ke dashboard sesuai role
 if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
     $role = $_SESSION['role'];
     if ($role === 'owner') header("Location: /sim-produksi-kue/owner/dashboard/");
@@ -34,37 +33,45 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
             }
         }
     </script>
-    <style>
-        body { font-family: 'Poppins', sans-serif; }
-    </style>
+    <style>body { font-family: 'Poppins', sans-serif; }</style>
 </head>
 <body class="bg-background h-screen flex items-center justify-center p-4">
 
-    <div class="bg-surface w-full max-w-md rounded-2xl shadow-lg border border-slate-100 p-8">
+    <div class="bg-surface w-full max-w-md rounded-3xl shadow-lg border border-slate-100 p-8">
         <div class="text-center mb-8">
             <div class="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary text-3xl">
                 <i class="fa-solid fa-cake-candles"></i>
             </div>
             <h1 class="text-2xl font-bold text-slate-800">Selamat Datang</h1>
-            <p class="text-slate-500 text-sm mt-1">Silakan masukkan username Anda</p>
+            <p class="text-slate-500 text-sm mt-1">Silakan masuk ke akun Anda</p>
         </div>
 
         <div id="alert-error" class="hidden mb-4 p-4 bg-danger/10 border-l-4 border-danger text-danger text-sm rounded-r-lg font-medium">
-            <i class="fa-solid fa-circle-exclamation mr-2"></i> <span id="error-message">Error message here</span>
+            <i class="fa-solid fa-circle-exclamation mr-2"></i> <span id="error-message">Error</span>
         </div>
 
-        <form id="loginForm" class="space-y-6">
+        <form id="loginForm" class="space-y-5">
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Username</label>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Username</label>
                 <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <i class="fa-regular fa-user text-slate-400"></i>
                     </div>
-                    <input type="text" id="username" name="username" class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-white" placeholder="contoh: owner" required>
+                    <input type="text" id="username" name="username" class="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-white" placeholder="contoh: owner" required>
                 </div>
             </div>
 
-            <button type="submit" id="btn-login" class="w-full bg-primary hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Password</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-lock text-slate-400"></i>
+                    </div>
+                    <input type="password" id="password" name="password" class="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-white" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <button type="submit" id="btn-login" class="w-full bg-primary hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 mt-4">
                 <span>Masuk Sekarang</span>
                 <i class="fa-solid fa-arrow-right"></i>
             </button>
@@ -74,58 +81,34 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
     <script>
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            const usernameInput = document.getElementById('username').value;
+            const formData = new FormData(this);
             const btnLogin = document.getElementById('btn-login');
             const alertError = document.getElementById('alert-error');
             const errorMessage = document.getElementById('error-message');
 
-            // Reset UI
             alertError.classList.add('hidden');
             btnLogin.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...';
             btnLogin.disabled = true;
-            btnLogin.classList.add('opacity-70', 'cursor-not-allowed');
-
-            // Siapkan data untuk dikirim
-            const formData = new FormData();
-            formData.append('username', usernameInput);
 
             try {
-                // Fetch AJAX ke PHP Logic
-                const response = await fetch('login_logic.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
+                const response = await fetch('login_logic.php', { method: 'POST', body: formData });
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    // Jika sukses, ubah tombol jadi hijau dan redirect
-                    btnLogin.classList.remove('bg-primary', 'hover:bg-blue-700');
-                    btnLogin.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
-                    btnLogin.innerHTML = '<i class="fa-solid fa-check"></i> Berhasil! Mengalihkan...';
-                    
-                    setTimeout(() => {
-                        window.location.href = result.redirect;
-                    }, 800);
+                    btnLogin.classList.replace('bg-primary', 'bg-emerald-500');
+                    btnLogin.innerHTML = '<i class="fa-solid fa-check"></i> Berhasil!';
+                    setTimeout(() => { window.location.href = result.redirect; }, 800);
                 } else {
-                    // Tampilkan pesan error
                     errorMessage.textContent = result.message;
                     alertError.classList.remove('hidden');
-                    
-                    // Kembalikan tombol ke keadaan semula
                     btnLogin.innerHTML = '<span>Masuk Sekarang</span> <i class="fa-solid fa-arrow-right"></i>';
                     btnLogin.disabled = false;
-                    btnLogin.classList.remove('opacity-70', 'cursor-not-allowed');
                 }
             } catch (error) {
-                console.error('Error:', error);
                 errorMessage.textContent = 'Terjadi kesalahan koneksi server.';
                 alertError.classList.remove('hidden');
-                
                 btnLogin.innerHTML = '<span>Masuk Sekarang</span> <i class="fa-solid fa-arrow-right"></i>';
                 btnLogin.disabled = false;
-                btnLogin.classList.remove('opacity-70', 'cursor-not-allowed');
             }
         });
     </script>

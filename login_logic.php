@@ -7,45 +7,49 @@ header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
 
-    // Validasi input kosong
-    if (empty(trim($username))) {
-        echo json_encode(['status' => 'error', 'message' => 'Username tidak boleh kosong!']);
+    if (empty(trim($username)) || empty(trim($password))) {
+        echo json_encode(['status' => 'error', 'message' => 'Username dan Password wajib diisi!']);
         exit;
     }
 
-    // Cari user berdasarkan username menggunakan Prepared Statement
-    $stmt = $pdo->prepare("SELECT id, name, username, role FROM users WHERE username = ?");
+    $stmt = $pdo->prepare("SELECT id, name, username, password, role FROM users WHERE username = ?");
     $stmt->execute([$username]);
     $user = $stmt->fetch();
 
     if ($user) {
-        // Login berhasil (Hanya cek username sesuai permintaan)
-        // Set Session
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['name'] = $user['name'];
-        $_SESSION['role'] = $user['role'];
+        $login_success = false;
 
-        // Tentukan arah redirect berdasarkan role
-        $redirect_url = '/sim-produksi-kue/'; 
-        if ($user['role'] === 'owner') {
-            $redirect_url .= 'owner/dashboard/';
-        } elseif ($user['role'] === 'produksi') {
-            $redirect_url .= 'produksi/input_produksi/';
-        } elseif ($user['role'] === 'admin') {
-            $redirect_url .= 'admin/scan_barcode/';
+        // 1. Cek apakah password cocok dengan Hash Bcrypt
+        if (password_verify($password, $user['password'])) {
+            $login_success = true;
+        } 
+        // 2. Trik Transisi: Jika password di database belum di-hash (masih teks biasa spt "123456")
+        else if ($password === $user['password']) {
+            $login_success = true;
+            // Otomatis ubah password jadul tersebut menjadi Hash Bcrypt agar aman
+            $newHash = password_hash($password, PASSWORD_DEFAULT);
+            $update = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+            $update->execute([$newHash, $user['id']]);
         }
 
-        echo json_encode([
-            'status' => 'success', 
-            'message' => 'Login berhasil!', 
-            'redirect' => $redirect_url
-        ]);
+        if ($login_success) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['name'] = $user['name'];
+            $_SESSION['role'] = $user['role'];
+
+            $redirect_url = '/sim-produksi-kue/'; 
+            if ($user['role'] === 'owner') $redirect_url .= 'owner/dashboard/';
+            elseif ($user['role'] === 'produksi') $redirect_url .= 'produksi/input_produksi/';
+            elseif ($user['role'] === 'admin') $redirect_url .= 'admin/scan_barcode/';
+
+            echo json_encode(['status' => 'success', 'redirect' => $redirect_url]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Password yang Anda masukkan salah!']);
+        }
     } else {
-        // Username tidak ditemukan
-        echo json_encode(['status' => 'error', 'message' => 'Username tidak ditemukan di sistem!']);
+        echo json_encode(['status' => 'error', 'message' => 'Username tidak ditemukan!']);
     }
-} else {
-    echo json_encode(['status' => 'error', 'message' => 'Metode request tidak diizinkan.']);
 }
 ?>
