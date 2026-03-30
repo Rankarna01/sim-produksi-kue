@@ -21,8 +21,12 @@ try {
             $code = strtoupper(trim($_POST['code']));
             $name = trim($_POST['name']);
             $unit = $_POST['unit'];
-            $stock = $_POST['stock'] ?? 0;
-            $min_stock = $_POST['min_stock'] ?? 0;
+            
+            // Konversi koma ke titik, lalu ubah jadi Float (Bilangan Berkoma)
+            $raw_stock = $_POST['stock'] ?? 0;
+            $raw_min_stock = $_POST['min_stock'] ?? 0;
+            $stock = (float) str_replace(',', '.', $raw_stock);
+            $min_stock = (float) str_replace(',', '.', $raw_min_stock);
 
             if (empty($code) || empty($name)) {
                 echo json_encode(['status' => 'error', 'message' => 'Kode dan Nama Bahan wajib diisi!']);
