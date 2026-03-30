@@ -1,6 +1,6 @@
 <?php
 require_once '../../config/auth.php';
-checkRole(['owner']); // Hanya owner yang boleh akses
+checkRole(['owner']); 
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -20,9 +20,14 @@ checkRole(['owner']); // Hanya owner yang boleh akses
                     <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Data Produk</h2>
                     <p class="text-sm text-secondary mt-1">Kelola daftar kue dan roti yang diproduksi.</p>
                 </div>
-                <button onclick="openModal('modal-produk'); resetForm();" class="bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center gap-2">
-                    <i class="fa-solid fa-plus"></i> Tambah Produk
-                </button>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="openModal('modal-import')" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-csv"></i> Import CSV
+                    </button>
+                    <button onclick="openModal('modal-produk'); resetForm();" class="flex-1 sm:flex-none bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Tambah Produk
+                    </button>
+                </div>
             </div>
 
             <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -97,7 +102,46 @@ checkRole(['owner']); // Hanya owner yang boleh akses
         </div>
     </div>
 
+    <div id="modal-import" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('modal-import')"></div>
+        <div class="bg-surface w-full max-w-md rounded-2xl shadow-xl z-10 transform transition-all flex flex-col">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                <h3 class="text-lg font-bold text-slate-800">Import Data via Excel/CSV</h3>
+                <button onclick="closeModal('modal-import')" class="text-secondary hover:text-danger transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-5 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800">
+                    <p class="font-semibold mb-2"><i class="fa-solid fa-circle-info mr-1"></i> Cara Import:</p>
+                    <ol class="list-decimal pl-5 space-y-1 mb-3 text-xs">
+                        <li>Download template format di bawah.</li>
+                        <li>Buka dengan Excel, isi data Anda.</li>
+                        <li>Saat menyimpan, pilih tipe <strong>CSV (Comma delimited)</strong>.</li>
+                        <li>Upload file CSV tersebut ke sini.</li>
+                    </ol>
+                    <a href="logic.php?action=download_template" class="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-800 underline">
+                        <i class="fa-solid fa-download"></i> Download Template CSV
+                    </a>
+                </div>
+
+                <form id="formImport" enctype="multipart/form-data">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Pilih File CSV <span class="text-danger">*</span></label>
+                    <input type="file" id="file_import" name="file_import" accept=".csv" required class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary hover:file:text-white file:transition-colors file:cursor-pointer border border-slate-300 rounded-xl p-1 mb-6 cursor-pointer bg-slate-50">
+                    
+                    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                        <button type="button" onclick="closeModal('modal-import')" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
+                        <button type="submit" id="btn-import-submit" class="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-upload"></i> Proses Import
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <?php include '../../components/footer.php'; ?>
-    <script src="ajax.js"></script>
+    <script src="ajax.js?v=<?= time() ?>"></script>
 </body>
 </html>

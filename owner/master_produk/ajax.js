@@ -57,15 +57,13 @@ async function loadData() {
     }
 }
 
-// Fungsi Submit Form (Tambah / Edit)
+// Fungsi Submit Form (Tambah / Edit Biasa)
 document.getElementById('formProduk').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
     const formData = new FormData(this);
     const response = await fetchAjax('logic.php?action=save', 'POST', formData);
     
     if (response.status === 'success') {
-        alert(response.message); // Nanti bisa diganti SweetAlert
         closeModal('modal-produk');
         loadData(); // Reload tabel otomatis
     } else {
@@ -99,3 +97,36 @@ async function deleteData(id) {
         }
     }
 }
+
+// --- TAMBAHAN BARU: EVENT LISTENER UNTUK IMPORT CSV ---
+document.getElementById('formImport').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const btnSubmit = document.getElementById('btn-import-submit');
+    const originalText = btnSubmit.innerHTML;
+    
+    // Ubah status tombol jadi loading
+    btnSubmit.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Mengupload...';
+    btnSubmit.disabled = true;
+
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetchAjax('logic.php?action=import', 'POST', formData);
+        
+        if (response.status === 'success') {
+            alert(response.message);
+            closeModal('modal-import');
+            document.getElementById('formImport').reset();
+            loadData(); // Reload Data Tabel Otomatis
+        } else {
+            alert('Gagal: ' + response.message);
+        }
+    } catch (error) {
+        alert("Terjadi kesalahan sistem saat upload file.");
+    } finally {
+        // Kembalikan tombol seperti semula
+        btnSubmit.innerHTML = originalText;
+        btnSubmit.disabled = false;
+    }
+});
