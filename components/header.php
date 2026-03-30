@@ -1,7 +1,7 @@
 <header class="h-16 bg-surface border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-10">
-    <button class="md:hidden text-slate-500 hover:text-primary transition-colors">
-        <i class="fa-solid fa-bars text-xl"></i>
-    </button>
+  <button onclick="toggleSidebar()" class="md:hidden text-secondary hover:text-primary">
+    <i class="fa-solid fa-bars text-xl"></i>
+</button>
     
     <div class="flex items-center gap-4 ml-auto">
         <div class="text-right hidden sm:block">
