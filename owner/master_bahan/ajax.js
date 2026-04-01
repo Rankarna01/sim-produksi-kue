@@ -1,6 +1,23 @@
 document.addEventListener("DOMContentLoaded", () => {
+    loadUnits(); // Panggil data satuan untuk isi dropdown form
     loadData();
 });
+
+// Fungsi untuk menarik data dari master satuan
+async function loadUnits() {
+    const select = document.getElementById('unit');
+    const response = await fetchAjax('logic.php?action=get_units', 'GET');
+    
+    if (response.status === 'success') {
+        let options = '<option value="">-- Pilih --</option>';
+        response.data.forEach(u => {
+            options += `<option value="${u.name}">${u.name}</option>`;
+        });
+        select.innerHTML = options;
+    } else {
+        select.innerHTML = '<option value="">Gagal muat</option>';
+    }
+}
 
 function resetForm() {
     document.getElementById('formBahan').reset();
@@ -8,7 +25,6 @@ function resetForm() {
     document.getElementById('modal-title').innerText = 'Tambah Bahan Baku';
 }
 
-// Format Angka: Jika berkoma tampilkan 2 desimal, jika bulat hilangkan nolnya
 function formatDesimal(angka) {
     const num = parseFloat(angka);
     return num % 1 !== 0 ? num.toFixed(2) : num;
@@ -29,14 +45,12 @@ async function loadData() {
                 const currentStock = parseFloat(item.stock);
                 const minStock = parseFloat(item.min_stock);
                 
-                // Percantik tampilan angka desimal
                 const displayStock = formatDesimal(currentStock);
                 const displayMin = formatDesimal(minStock);
                 
-                let stockClass = "text-slate-800"; // Default warna
+                let stockClass = "text-slate-800"; 
                 let warningIcon = "";
                 
-                // Logika Peringatan Stok
                 if (currentStock <= minStock) {
                     stockClass = "text-danger font-bold";
                     warningIcon = `<i class="fa-solid fa-triangle-exclamation text-danger ml-2" title="Stok Menipis!"></i>`;

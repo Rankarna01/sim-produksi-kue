@@ -9,8 +9,13 @@ $action = $_GET['action'] ?? '';
 
 try {
     switch ($action) {
+        // --- TAMBAHAN: AMBIL DATA SATUAN ---
+        case 'get_units':
+            $stmt = $pdo->query("SELECT name FROM units ORDER BY name ASC");
+            echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll()]);
+            break;
+
         case 'read':
-            // Ambil semua data bahan baku
             $stmt = $pdo->query("SELECT * FROM materials ORDER BY id DESC");
             $data = $stmt->fetchAll();
             echo json_encode(['status' => 'success', 'data' => $data]);
@@ -22,19 +27,17 @@ try {
             $name = trim($_POST['name']);
             $unit = $_POST['unit'];
             
-            // Konversi koma ke titik, lalu ubah jadi Float (Bilangan Berkoma)
             $raw_stock = $_POST['stock'] ?? 0;
             $raw_min_stock = $_POST['min_stock'] ?? 0;
             $stock = (float) str_replace(',', '.', $raw_stock);
             $min_stock = (float) str_replace(',', '.', $raw_min_stock);
 
-            if (empty($code) || empty($name)) {
-                echo json_encode(['status' => 'error', 'message' => 'Kode dan Nama Bahan wajib diisi!']);
+            if (empty($code) || empty($name) || empty($unit)) {
+                echo json_encode(['status' => 'error', 'message' => 'Kode, Nama, dan Satuan wajib diisi!']);
                 exit;
             }
 
             if (empty($id)) {
-                // Cek kode unik saat TAMBAH
                 $cek = $pdo->prepare("SELECT id FROM materials WHERE code = ?");
                 $cek->execute([$code]);
                 if ($cek->rowCount() > 0) {
@@ -46,7 +49,6 @@ try {
                 $stmt->execute([$code, $name, $unit, $stock, $min_stock]);
                 echo json_encode(['status' => 'success', 'message' => 'Bahan baku berhasil ditambahkan!']);
             } else {
-                // Cek kode unik saat EDIT (selain bahan ini sendiri)
                 $cek = $pdo->prepare("SELECT id FROM materials WHERE code = ? AND id != ?");
                 $cek->execute([$code, $id]);
                 if ($cek->rowCount() > 0) {

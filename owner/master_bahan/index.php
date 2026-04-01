@@ -73,13 +73,9 @@ checkRole(['owner']);
                     
                     <div class="grid grid-cols-3 gap-4">
                         <div class="col-span-1">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Satuan</label>
-                            <select id="unit" name="unit" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface">
-                                <option value="Gram">Gram (g)</option>
-                                <option value="Kg">Kilogram (kg)</option>
-                                <option value="Pcs">Pcs</option>
-                                <option value="Liter">Liter (L)</option>
-                                <option value="Ml">Mililiter (ml)</option>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Satuan <span class="text-danger">*</span></label>
+                            <select id="unit" name="unit" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface">
+                                <option value="">-- Memuat --</option>
                             </select>
                         </div>
                         <div class="col-span-1">
@@ -104,6 +100,6 @@ checkRole(['owner']);
     </div>
 
     <?php include '../../components/footer.php'; ?>
-    <script src="ajax.js"></script>
+    <script src="ajax.js?v=<?= time() ?>"></script>
 </body>
 </html>

@@ -73,12 +73,7 @@ checkRole(['owner']);
                     <div class="w-28">
                         <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Satuan</label>
                         <select id="unit_used" name="unit_used" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary outline-none text-sm font-semibold text-slate-700">
-                            <option value="Gram">Gram</option>
-                            <option value="Kg">Kg</option>
-                            <option value="Ons">Ons</option>
-                            <option value="Ml">Mililiter</option>
-                            <option value="Liter">Liter</option>
-                            <option value="Pcs">Pcs</option>
+                            <option value="">Memuat...</option>
                         </select>
                     </div>
 
@@ -106,6 +101,6 @@ checkRole(['owner']);
     </div>
 
     <?php include '../../components/footer.php'; ?>
-   <script src="ajax.js?v=<?= time() ?>"></script>
+    <script src="ajax.js?v=<?= time() ?>"></script>
 </body>
 </html>

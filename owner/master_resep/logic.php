@@ -1,5 +1,4 @@
 <?php
-// owner/master_resep/logic.php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
 checkRole(['owner']);
@@ -10,7 +9,6 @@ $action = $_GET['action'] ?? '';
 try {
     switch ($action) {
         case 'read_products':
-            // Tampilkan semua produk beserta jumlah bahan bakunya
             $stmt = $pdo->query("
                 SELECT p.id, p.name, p.category, 
                 (SELECT COUNT(id) FROM bom WHERE product_id = p.id) as total_bahan 
@@ -21,13 +19,17 @@ try {
             break;
 
         case 'get_materials':
-            // Dropdown bahan baku
             $stmt = $pdo->query("SELECT id, name, unit FROM materials ORDER BY name ASC");
             echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll()]);
             break;
 
+        // TAMBAHAN BARU: AMBIL DATA SATUAN DARI MASTER
+        case 'get_units':
+            $stmt = $pdo->query("SELECT name FROM units ORDER BY name ASC");
+            echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll()]);
+            break;
+
         case 'read_bom':
-            // BACA RESEP: Pastikan b.unit_used di-select dari database
             $product_id = $_GET['product_id'] ?? 0;
             $stmt = $pdo->prepare("
                 SELECT b.id, m.name, b.quantity_needed, b.unit_used 
@@ -40,11 +42,10 @@ try {
             break;
 
         case 'save_bom':
-            // SIMPAN RESEP: Pastikan unit_used ikut disimpan
             $product_id = $_POST['product_id'];
             $material_id = $_POST['material_id'];
             $quantity = $_POST['quantity_needed'];
-            $unit_used = $_POST['unit_used']; // Ambil satuan dari form HTML
+            $unit_used = $_POST['unit_used']; 
 
             // Cek apakah bahan ini sudah ada di resep produk ini
             $cek = $pdo->prepare("SELECT id FROM bom WHERE product_id = ? AND material_id = ?");
@@ -55,7 +56,6 @@ try {
                 exit;
             }
 
-            // Insert ke database
             $stmt = $pdo->prepare("INSERT INTO bom (product_id, material_id, quantity_needed, unit_used) VALUES (?, ?, ?, ?)");
             $stmt->execute([$product_id, $material_id, $quantity, $unit_used]);
             echo json_encode(['status' => 'success', 'message' => 'Bahan berhasil ditambahkan ke resep!']);

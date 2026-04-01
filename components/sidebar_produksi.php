@@ -31,6 +31,9 @@ function getNavClass($path, $current_uri) {
         <a href="/sim-produksi-kue/produksi/riwayat_produksi/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/riwayat_produksi/', $current_uri) ?>">
             <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> <span class="text-sm">Riwayat & Filter</span>
         </a>
+        <a href="/sim-produksi-kue/produksi/produk_keluar/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/produksi/produk_keluar/', $current_uri) ?>">
+            <i class="fa-solid fa-box-open w-5 text-center text-danger"></i> <span class="text-sm">Produk Keluar (Expired)</span>
+        </a>
     </nav>
 </aside>
 

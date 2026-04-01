@@ -29,4 +29,4 @@
 <style>
     body { font-family: 'Poppins', sans-serif; background-color: theme('colors.background'); }
     #global-loader { display: none; backdrop-filter: blur(4px); }
-</style>
+</style> 
