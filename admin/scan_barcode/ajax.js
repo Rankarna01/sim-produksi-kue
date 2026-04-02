@@ -52,6 +52,7 @@ document.getElementById('formScan').addEventListener('submit', async function(e)
     showLoading(); 
     
     const formData = new FormData();
+    // Nilai barcodeVal sekarang bisa berisi Barcode BRC-XXX ataupun Invoice D0126-XXX
     formData.append('barcode', barcodeVal);
 
     try {
@@ -59,18 +60,15 @@ document.getElementById('formScan').addEventListener('submit', async function(e)
         hideLoading();
         resultBox.classList.remove('hidden');
         
-        // JIKA SCAN VALID, MUNCULKAN MODAL CEK FISIK DAN DAFTAR PRODUK
         if (response.status === 'need_confirmation') {
             const h = response.header;
             const details = response.details;
             
-            // Set Info Header
             document.getElementById('konf-invoice').innerText = h.invoice_no;
             document.getElementById('konf-user').innerText = h.karyawan;
             document.getElementById('konf-gudang').innerText = h.gudang;
             document.getElementById('konf-prod-id').value = h.prod_id;
             
-            // Render List Produk
             let htmlList = '';
             details.forEach((item, idx) => {
                 htmlList += `
@@ -85,21 +83,20 @@ document.getElementById('formScan').addEventListener('submit', async function(e)
             });
             document.getElementById('konf-list-produk').innerHTML = htmlList;
             
-            resultBox.classList.add('hidden'); // Sembunyikan notifikasi lama jika ada
+            resultBox.classList.add('hidden'); 
             document.getElementById('modal-konfirmasi').classList.remove('hidden');
         } 
-        // JIKA SUDAH PERNAH DI SCAN / ERROR
         else if (response.status === 'warning') {
             resultBox.innerHTML = `
                 <div class="bg-accent/10 border-2 border-accent p-4 sm:p-6 rounded-2xl flex items-center gap-4 text-left shadow-sm">
-                    <div class="w-12 h-12 bg-accent text-white rounded-full flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                    <div class="flex-1"><h3 class="text-lg font-bold text-accent mb-1">PERHATIAN!</h3><p class="text-slate-700 text-sm font-medium">${response.message}</p></div>
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-accent text-white rounded-full flex items-center justify-center text-lg sm:text-xl shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="flex-1"><h3 class="text-base sm:text-lg font-bold text-accent mb-1">PERHATIAN!</h3><p class="text-slate-700 text-xs sm:text-sm font-medium">${response.message}</p></div>
                 </div>`;
         } else {
             resultBox.innerHTML = `
                 <div class="bg-danger/10 border-2 border-danger p-4 sm:p-6 rounded-2xl flex items-center gap-4 text-left shadow-sm">
-                    <div class="w-12 h-12 bg-danger text-white rounded-full flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-xmark"></i></div>
-                    <div class="flex-1"><h3 class="text-lg font-bold text-danger mb-1">GAGAL!</h3><p class="text-slate-700 text-sm font-medium">${response.message}</p></div>
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-danger text-white rounded-full flex items-center justify-center text-lg sm:text-xl shrink-0"><i class="fa-solid fa-xmark"></i></div>
+                    <div class="flex-1"><h3 class="text-base sm:text-lg font-bold text-danger mb-1">GAGAL!</h3><p class="text-slate-700 text-xs sm:text-sm font-medium">${response.message}</p></div>
                 </div>`;
         }
     } catch (error) {
@@ -133,14 +130,14 @@ async function prosesValidasi(statusBaru) {
             if (response.status_type === 'masuk_gudang') {
                 resultBox.innerHTML = `
                     <div class="bg-success/10 border-2 border-success p-4 rounded-2xl flex items-center gap-4 text-left shadow-sm">
-                        <div class="w-12 h-12 bg-success text-white rounded-full flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-check-double"></i></div>
-                        <div class="flex-1"><h3 class="text-lg font-bold text-success mb-1">Berhasil Disimpan!</h3><p class="text-slate-700 text-sm font-medium">Barang fisik sesuai dan sudah valid masuk ke gudang.</p></div>
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-success text-white rounded-full flex items-center justify-center text-lg sm:text-xl shrink-0"><i class="fa-solid fa-check-double"></i></div>
+                        <div class="flex-1"><h3 class="text-base sm:text-lg font-bold text-success mb-1">Berhasil Disimpan!</h3><p class="text-slate-700 text-xs sm:text-sm font-medium">Barang fisik sesuai dan sudah valid masuk ke gudang.</p></div>
                     </div>`;
             } else {
                 resultBox.innerHTML = `
                     <div class="bg-danger/10 border-2 border-danger p-4 rounded-2xl flex items-center gap-4 text-left shadow-sm">
-                        <div class="w-12 h-12 bg-danger text-white rounded-full flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-rotate-left"></i></div>
-                        <div class="flex-1"><h3 class="text-lg font-bold text-danger mb-1">Dikembalikan ke Dapur!</h3><p class="text-slate-700 text-sm font-medium">Barang tidak sesuai. Status dikembalikan menjadi 'Ditolak'.</p></div>
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-danger text-white rounded-full flex items-center justify-center text-lg sm:text-xl shrink-0"><i class="fa-solid fa-rotate-left"></i></div>
+                        <div class="flex-1"><h3 class="text-base sm:text-lg font-bold text-danger mb-1">Dikembalikan ke Dapur!</h3><p class="text-slate-700 text-xs sm:text-sm font-medium">Barang tidak sesuai. Status dikembalikan menjadi 'Ditolak'.</p></div>
                     </div>`;
             }
         }

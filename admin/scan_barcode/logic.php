@@ -11,12 +11,11 @@ try {
     if ($action === 'scan') {
         $barcode = trim($_POST['barcode']);
         if (empty($barcode)) {
-            echo json_encode(['status' => 'error', 'message' => 'Barcode kosong!']);
+            echo json_encode(['status' => 'error', 'message' => 'Input kosong!']);
             exit;
         }
 
-        // A. Cari Data Header Produksi Berdasarkan Barcode
-        // PERBAIKAN: Menambahkan kembali "JOIN warehouses w" yang sempat tertinggal
+        // A. Cari Data Header Produksi (Berdasarkan Barcode ATAU Nomor Invoice)
         $stmtHead = $pdo->prepare("
             SELECT p.id as prod_id, p.invoice_no, p.status, 
                    COALESCE(e.name, u.name) as karyawan, w.name as gudang
@@ -25,30 +24,31 @@ try {
             JOIN users u ON p.user_id = u.id
             LEFT JOIN employees e ON p.employee_id = e.id
             JOIN warehouses w ON p.warehouse_id = w.id 
-            WHERE d.barcode = ? 
+            WHERE (d.barcode = ? OR p.invoice_no = ?)
             LIMIT 1
         ");
-        $stmtHead->execute([$barcode]);
+        // Eksekusi dengan 2 parameter yang sama untuk mengecek kedua kolom
+        $stmtHead->execute([$barcode, $barcode]);
         $header = $stmtHead->fetch(PDO::FETCH_ASSOC);
 
         if (!$header) {
-            echo json_encode(['status' => 'error', 'message' => "Struk dengan Barcode [{$barcode}] tidak ditemukan!"]);
+            echo json_encode(['status' => 'error', 'message' => "Data dengan Barcode / Invoice [{$barcode}] tidak ditemukan!"]);
             exit;
         }
 
         // Cek status sebelum memunculkan modal
         if ($header['status'] === 'masuk_gudang') {
-            echo json_encode(['status' => 'warning', 'message' => "Struk ini SUDAH PERNAH divalidasi dan barang sudah di Gudang!"]);
+            echo json_encode(['status' => 'warning', 'message' => "Invoice ini SUDAH PERNAH divalidasi dan barang sudah di Gudang!"]);
             exit;
         }
 
         if ($header['status'] === 'ditolak') {
-            echo json_encode(['status' => 'warning', 'message' => "Struk ini SEDANG DITOLAK. Menunggu revisi dari pihak Dapur."]);
+            echo json_encode(['status' => 'warning', 'message' => "Invoice ini SEDANG DITOLAK. Menunggu revisi dari pihak Dapur."]);
             exit;
         }
 
         if ($header['status'] === 'expired') {
-            echo json_encode(['status' => 'warning', 'message' => "Struk ini sudah kedaluwarsa (Expired)."]);
+            echo json_encode(['status' => 'warning', 'message' => "Invoice ini sudah kedaluwarsa (Expired)."]);
             exit;
         }
 
@@ -62,7 +62,7 @@ try {
         $stmtDetail->execute([$header['prod_id']]);
         $details = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
 
-        // Jika status masih "pending", lempar data (Header + Details) ke modal konfirmasi
+        // Jika status masih "pending", lempar data ke modal konfirmasi
         echo json_encode([
             'status' => 'need_confirmation', 
             'header' => $header,
@@ -74,7 +74,7 @@ try {
     // 2. EKSEKUSI TOMBOL DARI MODAL (VALID / TOLAK)
     if ($action === 'execute_validasi') {
         $prod_id = $_POST['prod_id'];
-        $status_baru = $_POST['status']; // 'masuk_gudang' atau 'ditolak'
+        $status_baru = $_POST['status'];
 
         $update = $pdo->prepare("UPDATE productions SET status = ? WHERE id = ?");
         $update->execute([$status_baru, $prod_id]);
