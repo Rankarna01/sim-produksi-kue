@@ -26,6 +26,12 @@ $stmtDetail->execute([$id]);
 $details = $stmtDetail->fetchAll();
 
 $barcode_str = $details[0]['barcode']; 
+
+// MENGHITUNG TOTAL PCS DARI SELURUH PRODUK DI INVOICE INI
+$total_keseluruhan = 0;
+foreach ($details as $d) {
+    $total_keseluruhan += (int)$d['quantity'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -87,6 +93,15 @@ $barcode_str = $details[0]['barcode'];
             <td style="text-align: right; font-weight: bold; width: 60px;" valign="top"><?= $d['quantity'] ?> Pcs</td>
         </tr>
         <?php endforeach; ?>
+    </table>
+    
+    <div class="divider"></div>
+    
+    <table style="width: 100%; font-size: 15px;">
+        <tr>
+            <td class="text-bold" style="text-align: right; padding-right: 10px;">TOTAL :</td>
+            <td class="text-bold" style="text-align: right; width: 60px;"><?= $total_keseluruhan ?> Pcs</td>
+        </tr>
     </table>
     
     <?php if (!empty($header['notes'])): ?>

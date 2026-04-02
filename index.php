@@ -1,10 +1,16 @@
 <?php
 session_start();
+
+// Deteksi Routing Dinamis
+$is_localhost = (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
+$base_url = $is_localhost ? '/sim-produksi-kue/' : '/';
+
+// Cek sesi aktif
 if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
     $role = $_SESSION['role'];
-    if ($role === 'owner') header("Location: /sim-produksi-kue/owner/dashboard/");
-    if ($role === 'produksi') header("Location: /sim-produksi-kue/produksi/input_produksi/");
-    if ($role === 'admin') header("Location: /sim-produksi-kue/admin/scan_barcode/");
+    if ($role === 'owner') header("Location: " . $base_url . "owner/dashboard/");
+    if ($role === 'produksi') header("Location: " . $base_url . "produksi/input_produksi/");
+    if ($role === 'admin') header("Location: " . $base_url . "admin/scan_barcode/");
     exit;
 }
 ?>
@@ -38,7 +44,6 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
 <body class="bg-surface h-screen flex overflow-hidden">
 
     <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary to-blue-800 text-white flex-col justify-center items-center p-12 relative overflow-hidden">
-        
         <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-white opacity-5 rounded-full blur-3xl"></div>
         <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-white opacity-10 rounded-full blur-3xl"></div>
         

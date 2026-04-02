@@ -1,7 +1,7 @@
 <header class="h-16 bg-surface border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-10">
   <button onclick="toggleSidebar()" class="md:hidden text-secondary hover:text-primary">
     <i class="fa-solid fa-bars text-xl"></i>
-</button>
+  </button>
     
     <div class="flex items-center gap-4 ml-auto">
         <div class="text-right hidden sm:block">
@@ -11,7 +11,7 @@
         <div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold cursor-pointer hover:bg-primary/20 transition-colors">
             <i class="fa-regular fa-user"></i>
         </div>
-        <a href="/sim-produksi-kue/logout.php" class="text-danger hover:text-red-700 ml-2" title="Logout">
+        <a href="<?= BASE_URL ?>logout.php" class="text-danger hover:text-red-700 ml-2" title="Logout">
             <i class="fa-solid fa-right-from-bracket"></i>
         </a>
     </div>

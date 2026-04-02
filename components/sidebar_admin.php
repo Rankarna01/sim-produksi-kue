@@ -19,14 +19,14 @@ function getNavClass($path, $current_uri) {
     </div>
 
     <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
-        <a href="/sim-produksi-kue/admin/scan_barcode/" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/admin/scan_barcode/', $current_uri) ?>">
+        <a href="<?= BASE_URL ?>admin/scan_barcode/" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/admin/scan_barcode/', $current_uri) ?>">
             <i class="fa-solid fa-barcode w-5 text-center"></i> <span class="text-sm">Scan Validasi Struk</span>
         </a>
     
-
-        <a href="/sim-produksi-kue/admin/riwayat_validasi/" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/admin/riwayat_validasi/', $current_uri) ?>">
+        <a href="<?= BASE_URL ?>admin/riwayat_validasi/" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/admin/riwayat_validasi/', $current_uri) ?>">
             <i class="fa-solid fa-list-check w-5 text-center"></i> <span class="text-sm">Riwayat Validasi</span>
         </a>
     </nav>
 </aside>
+
 <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-[60] hidden md:hidden backdrop-blur-sm transition-opacity"></div>

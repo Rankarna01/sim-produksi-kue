@@ -20,18 +20,18 @@ function getNavClass($path, $current_uri) {
     </div>
 
     <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
-        <a href="/sim-produksi-kue/produksi/dashboard/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/dashboard/', $current_uri) ?>">
+        <a href="<?= BASE_URL ?>produksi/dashboard/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/dashboard/', $current_uri) ?>">
             <i class="fa-solid fa-chart-pie w-5 text-center"></i> <span class="text-sm">Dashboard</span>
         </a>
         
-        <a href="/sim-produksi-kue/produksi/input_produksi/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/input_produksi/', $current_uri) ?>">
+        <a href="<?= BASE_URL ?>produksi/input_produksi/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/input_produksi/', $current_uri) ?>">
             <i class="fa-solid fa-fire-burner w-5 text-center"></i> <span class="text-sm">Input Produksi</span>
         </a>
         
-        <a href="/sim-produksi-kue/produksi/riwayat_produksi/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/riwayat_produksi/', $current_uri) ?>">
+        <a href="<?= BASE_URL ?>produksi/riwayat_produksi/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/riwayat_produksi/', $current_uri) ?>">
             <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> <span class="text-sm">Riwayat & Filter</span>
         </a>
-        <a href="/sim-produksi-kue/produksi/produk_keluar/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/produksi/produk_keluar/', $current_uri) ?>">
+        <a href="<?= BASE_URL ?>produksi/produk_keluar/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/produksi/produk_keluar/', $current_uri) ?>">
             <i class="fa-solid fa-box-open w-5 text-center text-danger"></i> <span class="text-sm">Produk Keluar (Expired)</span>
         </a>
     </nav>

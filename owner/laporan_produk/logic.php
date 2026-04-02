@@ -6,11 +6,10 @@ checkRole(['owner']);
 $action = $_GET['action'] ?? '';
 
 try {
-    // Ambil Parameter Filter
+  
     $search = $_GET['search'] ?? '';
     $category = $_GET['category'] ?? '';
 
-    // Siapkan Query Dinamis
     $sql = "SELECT id, code, name, category FROM products WHERE 1=1";
     $params = [];
 
