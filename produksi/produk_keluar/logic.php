@@ -8,7 +8,6 @@ $action = $_GET['action'] ?? '';
 $user_id = $_SESSION['user_id'];
 
 try {
-    // ROUTE BARU: Ambil Daftar Pegawai
     if ($action === 'get_employees') {
         $emp = $pdo->query("SELECT id, name FROM employees ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['status' => 'success', 'data' => $emp]);
@@ -17,7 +16,7 @@ try {
 
     if ($action === 'read') {
         $stmt = $pdo->query("
-            SELECT o.id, o.invoice_no, o.origin_invoice, o.created_at, o.quantity, o.reason, o.notes, 
+            SELECT o.id, o.invoice_no as out_id, o.origin_invoice, o.created_at, o.quantity, o.reason, o.notes, 
                    pr.name as product_name, pr.code, COALESCE(e.name, u.name) as karyawan
             FROM product_outs o
             JOIN products pr ON o.product_id = pr.id
@@ -31,86 +30,128 @@ try {
 
     if ($action === 'search_invoice') {
         $inv = trim($_GET['inv'] ?? '');
-        $stmt = $pdo->prepare("
-            SELECT p.invoice_no, pr.id as product_id, pr.name as product_name, d.quantity as original_qty, p.status, d.barcode
+        
+        // PERBAIKAN: Ambil p.created_at untuk informasi Tanggal Produksi
+        $stmtHead = $pdo->prepare("
+            SELECT p.invoice_no, p.status, p.created_at as tgl_produksi 
+            FROM productions p 
+            JOIN production_details d ON p.id = d.production_id 
+            WHERE (p.invoice_no = ? OR d.barcode = ?) 
+            LIMIT 1
+        ");
+        $stmtHead->execute([$inv, $inv]);
+        $header = $stmtHead->fetch();
+
+        if (!$header) {
+            echo json_encode(['status' => 'error', 'message' => 'Data tidak ditemukan! Pastikan nomor invoice / barcode valid.']); exit;
+        }
+        if ($header['status'] === 'expired') {
+            echo json_encode(['status' => 'error', 'message' => 'Seluruh produk di invoice ini SUDAH HABIS ditarik (Expired)!']); exit;
+        }
+        if ($header['status'] !== 'masuk_gudang') {
+            echo json_encode(['status' => 'error', 'message' => 'Gagal: Invoice ini berstatus "'.$header['status'].'", belum divalidasi masuk gudang.']); exit;
+        }
+
+        $real_invoice_no = $header['invoice_no'];
+        $tgl_produksi = $header['tgl_produksi'];
+
+        $stmtDetail = $pdo->prepare("
+            SELECT pr.id as product_id, pr.name as product_name, pr.code, d.quantity as original_qty
             FROM productions p
             JOIN production_details d ON p.id = d.production_id
             JOIN products pr ON d.product_id = pr.id
-            WHERE (p.invoice_no = ? OR d.barcode = ?)
-            LIMIT 1
+            WHERE p.invoice_no = ?
         ");
-        $stmt->execute([$inv, $inv]);
-        $data = $stmt->fetch();
+        $stmtDetail->execute([$real_invoice_no]);
+        $details_raw = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
 
-        if (!$data) {
-            echo json_encode(['status' => 'error', 'message' => 'Struk / Barcode tidak ditemukan di database!']); exit;
-        }
-        if ($data['status'] === 'expired') {
-            echo json_encode(['status' => 'error', 'message' => 'Seluruh produk di struk ini SUDAH HABIS ditarik (Status: Expired)!']); exit;
-        }
-        if ($data['status'] !== 'masuk_gudang') {
-            echo json_encode(['status' => 'error', 'message' => 'Gagal: Struk ini berstatus "'.$data['status'].'", belum valid masuk gudang.']); exit;
-        }
+        $details_final = [];
+        $total_sisa_semua = 0; 
+        
+        foreach ($details_raw as $d) {
+            $cek_out = $pdo->prepare("SELECT SUM(quantity) FROM product_outs WHERE origin_invoice = ? AND product_id = ?");
+            $cek_out->execute([$real_invoice_no, $d['product_id']]);
+            $total_out = $cek_out->fetchColumn() ?: 0;
 
-        $cek_out = $pdo->prepare("SELECT SUM(quantity) as total_out FROM product_outs WHERE origin_invoice = ? AND product_id = ?");
-        $cek_out->execute([$data['invoice_no'], $data['product_id']]);
-        $total_out = $cek_out->fetchColumn() ?: 0;
-
-        $sisa = $data['original_qty'] - $total_out;
-        if ($sisa <= 0) {
-            echo json_encode(['status' => 'error', 'message' => 'Produk ini dari struk tersebut sudah habis ditarik!']); exit;
+            $sisa = $d['original_qty'] - $total_out;
+            if ($sisa > 0) {
+                $d['sisa'] = $sisa;
+                $details_final[] = $d;
+                $total_sisa_semua += $sisa;
+            }
         }
 
-        $data['sisa'] = $sisa;
-        echo json_encode(['status' => 'success', 'data' => $data]);
+        if ($total_sisa_semua <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Seluruh produk di dalam invoice tersebut sudah habis ditarik!']); exit;
+        }
+
+        // Lempar juga tgl_produksi ke Javascript
+        echo json_encode(['status' => 'success', 'invoice_no' => $real_invoice_no, 'tgl_produksi' => $tgl_produksi, 'details' => $details_final]);
         exit;
     }
 
     if ($action === 'save') {
         $origin_invoice = $_POST['origin_invoice'];
-        $product_id = $_POST['product_id'];
-        $employee_id = $_POST['employee_id']; // TANGKAP ID PEGAWAI
-        $quantity_to_pull = (int)$_POST['quantity'];
+        $employee_id = $_POST['employee_id']; 
         $reason = $_POST['reason'];
         $notes = trim($_POST['notes'] ?? '');
 
-        if (empty($origin_invoice) || empty($product_id) || $quantity_to_pull <= 0 || empty($reason) || empty($employee_id)) {
-            echo json_encode(['status' => 'error', 'message' => 'Data tidak lengkap! Pastikan nama pegawai dipilih.']);
-            exit;
+        $product_ids = $_POST['product_id'] ?? []; 
+        $quantities = $_POST['quantity'] ?? []; 
+
+        if (empty($origin_invoice) || empty($employee_id) || empty($product_ids)) {
+            echo json_encode(['status' => 'error', 'message' => 'Data form tidak lengkap!']); exit;
         }
 
         $pdo->beginTransaction();
+        
+        $out_invoice_no = "OUT-" . date('YmdHis') . "-" . strtoupper(substr(uniqid(), -4));
+        $has_valid_item = false;
 
-        $stmt = $pdo->prepare("
-            SELECT d.quantity as original_qty
-            FROM productions p
-            JOIN production_details d ON p.id = d.production_id
-            WHERE p.invoice_no = ? AND d.product_id = ?
-            LIMIT 1
-        ");
-        $stmt->execute([$origin_invoice, $product_id]);
-        $prod = $stmt->fetch();
+        for ($i = 0; $i < count($product_ids); $i++) {
+            $product_id = $product_ids[$i];
+            $quantity_to_pull = (int)($quantities[$i] ?? 0);
 
-        $cek_out = $pdo->prepare("SELECT SUM(quantity) as total_out FROM product_outs WHERE origin_invoice = ? AND product_id = ?");
-        $cek_out->execute([$origin_invoice, $product_id]);
-        $total_out = $cek_out->fetchColumn() ?: 0;
+            if ($quantity_to_pull <= 0) continue; 
 
-        $sisa = $prod['original_qty'] - $total_out;
+            $stmt = $pdo->prepare("
+                SELECT d.quantity as original_qty
+                FROM productions p
+                JOIN production_details d ON p.id = d.production_id
+                WHERE p.invoice_no = ? AND d.product_id = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$origin_invoice, $product_id]);
+            $prod = $stmt->fetch();
 
-        if ($quantity_to_pull > $sisa) {
-            $pdo->rollBack();
-            echo json_encode(['status' => 'error', 'message' => "GAGAL! Anda mencoba menarik {$quantity_to_pull} Pcs, padahal sisa yang belum ditarik tinggal {$sisa} Pcs."]);
-            exit;
+            if (!$prod) {
+                $pdo->rollBack();
+                echo json_encode(['status' => 'error', 'message' => "Produk ID $product_id tidak ditemukan di invoice ini."]); exit;
+            }
+
+            $cek_out = $pdo->prepare("SELECT SUM(quantity) FROM product_outs WHERE origin_invoice = ? AND product_id = ?");
+            $cek_out->execute([$origin_invoice, $product_id]);
+            $total_out = $cek_out->fetchColumn() ?: 0;
+            $sisa = $prod['original_qty'] - $total_out;
+
+            if ($quantity_to_pull > $sisa) {
+                $pdo->rollBack();
+                echo json_encode(['status' => 'error', 'message' => "GAGAL! Anda mencoba menarik $quantity_to_pull Pcs produk, padahal sisanya tinggal $sisa Pcs."]); exit;
+            }
+
+            $insert = $pdo->prepare("INSERT INTO product_outs (invoice_no, origin_invoice, user_id, employee_id, product_id, quantity, reason, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $insert->execute([$out_invoice_no, $origin_invoice, $user_id, $employee_id, $product_id, $quantity_to_pull, $reason, $notes]);
+
+            $update_stok = $pdo->prepare("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?");
+            $update_stok->execute([$quantity_to_pull, $product_id]);
+
+            $has_valid_item = true;
         }
 
-        $out_invoice_no = "OUT-" . date('Ymd') . "-" . strtoupper(substr(uniqid(), -4));
-        
-        // INSERT DENGAN EMPLOYEE_ID
-        $insert = $pdo->prepare("INSERT INTO product_outs (invoice_no, origin_invoice, user_id, employee_id, product_id, quantity, reason, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $insert->execute([$out_invoice_no, $origin_invoice, $user_id, $employee_id, $product_id, $quantity_to_pull, $reason, $notes]);
-
-        $update_stok = $pdo->prepare("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?");
-        $update_stok->execute([$quantity_to_pull, $product_id]);
+        if (!$has_valid_item) {
+            $pdo->rollBack();
+            echo json_encode(['status' => 'error', 'message' => 'Anda belum mengisi jumlah penarikan (minimal 1 produk harus diisi angkanya)!']); exit;
+        }
 
         $cek_total_awal_inv = $pdo->prepare("SELECT SUM(d.quantity) FROM productions p JOIN production_details d ON p.id = d.production_id WHERE p.invoice_no = ?");
         $cek_total_awal_inv->execute([$origin_invoice]);
@@ -126,7 +167,7 @@ try {
         }
 
         $pdo->commit();
-        echo json_encode(['status' => 'success', 'message' => 'Penarikan berhasil dicatat!']);
+        echo json_encode(['status' => 'success', 'message' => 'Semua penarikan produk berhasil dicatat!']);
         exit;
     }
 
