@@ -65,6 +65,10 @@ function getNavClass($path, $current_uri) {
             <i class="fa-solid fa-shoe-prints w-5 text-center text-indigo-500"></i> <span class="text-sm font-bold text-indigo-600">Audit Logs (Lacak)</span>
         </a>
 
+        <a href="<?= BASE_URL ?>owner/analisa_produk/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/owner/analisa_produk/', $current_uri) ?>">
+                <i class="fa-solid fa-chart-simple w-5 text-center text-amber-500"></i> <span class="text-sm font-bold text-amber-600">Analisa Performa & Loss</span>
+            </a>
+
             <a href="<?= BASE_URL ?>owner/laporan_bahan/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors <?= getNavClass('/owner/laporan_bahan/', $current_uri) ?>">
                 <i class="fa-solid fa-wheat-awn-circle-exclamation w-5 text-center"></i> <span class="text-sm">Laporan Bahan Baku</span>
             </a>
