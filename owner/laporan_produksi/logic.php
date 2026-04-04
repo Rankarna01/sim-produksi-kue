@@ -108,7 +108,7 @@ try {
         $sumStmt->execute($params);
         $summary = $sumStmt->fetch(PDO::FETCH_ASSOC);
 
-        // 3. FITUR BARU: REKAPITULASI SPESIFIK PER PRODUK
+        // 3. REKAPITULASI SPESIFIK PER PRODUK
         $rekapStmt = $pdo->prepare("
             SELECT pr.name as produk, SUM(d.quantity) as total_qty
             FROM productions p
@@ -121,7 +121,22 @@ try {
         $rekapStmt->execute($params);
         $rekap_produk = $rekapStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // 4. AMBIL DATA TABEL DETAIL (BERDASARKAN HALAMAN PAGINATION)
+        // 4. REKAPITULASI KINERJA KARYAWAN (FITUR BARU)
+        $karyawanStmt = $pdo->prepare("
+            SELECT COALESCE(e.name, u.name) as karyawan, pr.name as produk, SUM(d.quantity) as total_qty
+            FROM productions p
+            JOIN production_details d ON p.id = d.production_id
+            JOIN products pr ON d.product_id = pr.id
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN employees e ON p.employee_id = e.id
+            $whereClause
+            GROUP BY COALESCE(e.name, u.name), pr.id
+            ORDER BY karyawan ASC, total_qty DESC
+        ");
+        $karyawanStmt->execute($params);
+        $rekap_karyawan = $karyawanStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // 5. AMBIL DATA TABEL DETAIL (BERDASARKAN HALAMAN PAGINATION)
         $sql = "
             SELECT p.created_at, p.invoice_no, COALESCE(e.name, u.name) as karyawan, 
                    pr.name as produk, d.quantity, p.status, w.name as gudang 
@@ -148,7 +163,8 @@ try {
                 'masuk' => $summary['total_masuk'] ?? 0,
                 'gagal' => $summary['total_gagal'] ?? 0
             ],
-            'rekap_produk' => $rekap_produk, // Inject Array Rekap Produk ke Frontend
+            'rekap_produk' => $rekap_produk, 
+            'rekap_karyawan' => $rekap_karyawan, // Inject Array Rekap Karyawan ke Frontend
             'current_page' => $page,
             'total_pages' => $total_pages,
             'total_data' => $total_data

@@ -5,6 +5,30 @@ document.addEventListener("DOMContentLoaded", () => {
     applyQuickFilter(); 
 });
 
+// FUNGSI SWITCH TAB LAPORAN
+function switchTab(tabId) {
+    // Sembunyikan semua tab konten
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    
+    // Reset style semua tombol tab ke inaktif
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-primary', 'text-primary');
+        btn.classList.add('border-transparent', 'text-secondary');
+    });
+
+    // Tampilkan tab yang dipilih
+    document.getElementById(tabId).classList.remove('hidden');
+    
+    // Jadikan tombol aktif
+    const activeBtn = document.getElementById(`btn-${tabId}`);
+    activeBtn.classList.remove('border-transparent', 'text-secondary');
+    activeBtn.classList.add('border-primary', 'text-primary');
+
+    // Ubah Judul Print sesuai Tab yang terbuka
+    let tabName = activeBtn.innerText.trim();
+    document.getElementById('print-tab-name').innerText = tabName;
+}
+
 async function initFilterGudang() {
     const response = await fetchAjax('logic.php?action=init_filter', 'GET');
     if (response.status === 'success') {
@@ -68,9 +92,11 @@ async function loadLaporan(page = 1) {
     currentPage = page;
     const tbodyDetail = document.getElementById('table-laporan');
     const tbodyRekap = document.getElementById('table-rekap');
+    const tbodyKaryawan = document.getElementById('table-rekap-karyawan');
     
     tbodyDetail.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
-    tbodyRekap.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-secondary">Memuat rekap...</td></tr>';
+    tbodyRekap.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-secondary">Memuat rekap...</td></tr>';
+    tbodyKaryawan.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-secondary">Memuat rekap...</td></tr>';
     
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
@@ -89,24 +115,42 @@ async function loadLaporan(page = 1) {
         document.getElementById('sum-masuk').innerHTML = `${formatNumber(response.summary.masuk)} <span class="text-sm font-semibold text-success/70">Pcs</span>`;
         document.getElementById('sum-gagal').innerHTML = `${formatNumber(response.summary.gagal)} <span class="text-sm font-semibold text-danger/70">Pcs</span>`;
 
-        // 2. RENDER TABEL REKAPITULASI (FITUR BARU)
+        // 2. RENDER TABEL REKAPITULASI PRODUK (TAB 2)
         let htmlRekap = '';
         if (response.rekap_produk.length === 0) {
-            htmlRekap = '<tr><td colspan="3" class="p-4 text-center text-secondary font-medium">Tidak ada rekap produk.</td></tr>';
+            htmlRekap = '<tr><td colspan="3" class="p-8 text-center text-secondary font-medium">Tidak ada rekap produk.</td></tr>';
         } else {
             response.rekap_produk.forEach((item, index) => {
                 htmlRekap += `
                     <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="p-3 text-center text-secondary">${index + 1}</td>
-                        <td class="p-3 font-bold text-slate-800">${item.produk}</td>
-                        <td class="p-3 text-right font-black text-primary">${formatNumber(item.total_qty)}</td>
+                        <td class="p-4 text-center text-secondary">${index + 1}</td>
+                        <td class="p-4 font-bold text-slate-800">${item.produk}</td>
+                        <td class="p-4 text-right font-black text-primary">${formatNumber(item.total_qty)}</td>
                     </tr>
                 `;
             });
         }
         tbodyRekap.innerHTML = htmlRekap;
 
-        // 3. RENDER TABEL DETAIL HISTORI
+        // 3. RENDER TABEL REKAPITULASI KARYAWAN (TAB 3)
+        let htmlKaryawan = '';
+        if (response.rekap_karyawan.length === 0) {
+            htmlKaryawan = '<tr><td colspan="4" class="p-8 text-center text-secondary font-medium">Tidak ada rekap kinerja karyawan.</td></tr>';
+        } else {
+            response.rekap_karyawan.forEach((item, index) => {
+                htmlKaryawan += `
+                    <tr class="hover:bg-indigo-50/30 transition-colors border-b border-indigo-50">
+                        <td class="p-4 text-center text-indigo-300 font-bold">${index + 1}</td>
+                        <td class="p-4 font-bold text-indigo-900">${item.karyawan}</td>
+                        <td class="p-4 font-semibold text-slate-700">${item.produk}</td>
+                        <td class="p-4 text-right font-black text-indigo-600">${formatNumber(item.total_qty)}</td>
+                    </tr>
+                `;
+            });
+        }
+        tbodyKaryawan.innerHTML = htmlKaryawan;
+
+        // 4. RENDER TABEL DETAIL HISTORI (TAB 1)
         let htmlDetail = '';
         if (response.data.length === 0) {
             htmlDetail = '<tr><td colspan="8" class="p-8 text-center text-secondary font-medium">Tidak ada data histori produksi.</td></tr>';
