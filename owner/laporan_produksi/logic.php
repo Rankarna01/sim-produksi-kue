@@ -6,7 +6,6 @@ checkRole(['owner']);
 $action = $_GET['action'] ?? '';
 
 try {
-    // RUTE BARU: Tarik data Gudang untuk Dropdown Filter
     if ($action === 'init_filter') {
         $warehouses = $pdo->query("SELECT id, name FROM warehouses ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['status' => 'success', 'warehouses' => $warehouses]);
@@ -90,13 +89,13 @@ try {
         $limit = 10; 
         $offset = ($page - 1) * $limit;
 
-        // 1. HITUNG PAGINATION
+        // 1. HITUNG PAGINATION (berdasarkan tabel detail)
         $countStmt = $pdo->prepare("SELECT COUNT(d.id) FROM productions p JOIN production_details d ON p.id = d.production_id $whereClause");
         $countStmt->execute($params);
         $total_data = $countStmt->fetchColumn();
         $total_pages = ceil($total_data / $limit);
 
-        // 2. HITUNG REKAPITULASI (SUMMARY CARDS)
+        // 2. HITUNG REKAPITULASI UMUM (SUMMARY CARDS)
         $sumStmt = $pdo->prepare("
             SELECT 
                 SUM(d.quantity) as total_all,
@@ -109,7 +108,20 @@ try {
         $sumStmt->execute($params);
         $summary = $sumStmt->fetch(PDO::FETCH_ASSOC);
 
-        // 3. AMBIL DATA TABEL (DENGAN NAMA EMPLOYEES BARU)
+        // 3. FITUR BARU: REKAPITULASI SPESIFIK PER PRODUK
+        $rekapStmt = $pdo->prepare("
+            SELECT pr.name as produk, SUM(d.quantity) as total_qty
+            FROM productions p
+            JOIN production_details d ON p.id = d.production_id
+            JOIN products pr ON d.product_id = pr.id
+            $whereClause
+            GROUP BY pr.id
+            ORDER BY total_qty DESC
+        ");
+        $rekapStmt->execute($params);
+        $rekap_produk = $rekapStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // 4. AMBIL DATA TABEL DETAIL (BERDASARKAN HALAMAN PAGINATION)
         $sql = "
             SELECT p.created_at, p.invoice_no, COALESCE(e.name, u.name) as karyawan, 
                    pr.name as produk, d.quantity, p.status, w.name as gudang 
@@ -136,6 +148,7 @@ try {
                 'masuk' => $summary['total_masuk'] ?? 0,
                 'gagal' => $summary['total_gagal'] ?? 0
             ],
+            'rekap_produk' => $rekap_produk, // Inject Array Rekap Produk ke Frontend
             'current_page' => $page,
             'total_pages' => $total_pages,
             'total_data' => $total_data

@@ -36,6 +36,9 @@ function getNavClass($path, $current_uri) {
         <a href="<?= BASE_URL ?>owner/master_produk/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/owner/master_produk/', $current_uri) ?>">
             <i class="fa-solid fa-box w-5 text-center"></i> <span class="text-sm">Data Produk</span>
         </a>
+        <a href="<?= BASE_URL ?>owner/master_kategori/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/owner/master_kategori/', $current_uri) ?>">
+            <i class="fa-solid fa-tags w-5 text-center"></i> <span class="text-sm">Kategori Produk</span>
+        </a>
 
         <a href="<?= BASE_URL ?>owner/master_bahan/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/owner/master_bahan/', $current_uri) ?>">
             <i class="fa-solid fa-wheat-awn w-5 text-center"></i> <span class="text-sm">Bahan Baku</span>

@@ -1,9 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
-    loadUnits(); // Panggil data satuan untuk isi dropdown form
+    loadUnits(); 
     loadData();
 });
 
-// Fungsi untuk menarik data dari master satuan
 async function loadUnits() {
     const select = document.getElementById('unit');
     const response = await fetchAjax('logic.php?action=get_units', 'GET');
@@ -57,24 +56,24 @@ async function loadData() {
                 }
 
                 html += `
-                    <tr class="hover:bg-slate-50 transition-colors group">
-                        <td class="p-4 text-center text-secondary">${index + 1}</td>
-                        <td class="p-4 font-bold text-slate-700">${item.code}</td>
-                        <td class="p-4 font-semibold text-slate-800">${item.name}</td>
-                        <td class="p-4 text-center"><span class="bg-slate-100 border border-slate-200 text-slate-600 px-3 py-1 rounded-lg text-xs font-semibold">${item.unit}</span></td>
-                        <td class="p-4 text-right ${stockClass} text-base font-black">${displayStock} ${warningIcon}</td>
-                        <td class="p-4 text-right text-slate-500 font-semibold">${displayMin}</td>
-                        <td class="p-4 text-center">
-                            <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick='editData(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center" title="Edit">
-                                    <i class="fa-solid fa-pen text-xs"></i>
-                                </button>
-                                <button onclick="deleteData(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus">
-                                    <i class="fa-solid fa-trash text-xs"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                    <tr class="hover:bg-slate-50 transition-colors">
+    <td class="p-4 text-center text-secondary">${index + 1}</td>
+    <td class="p-4 font-bold text-slate-700">${item.code}</td>
+    <td class="p-4 font-semibold text-slate-800">${item.name}</td>
+    <td class="p-4 text-center"><span class="bg-slate-100 border border-slate-200 text-slate-600 px-3 py-1 rounded-lg text-xs font-semibold">${item.unit}</span></td>
+    <td class="p-4 text-right ${stockClass} text-base font-black">${displayStock} ${warningIcon}</td>
+    <td class="p-4 text-right text-slate-500 font-semibold">${displayMin}</td>
+    <td class="p-4 text-center print:hidden">
+        <div class="flex items-center justify-center gap-2">
+            <button onclick='editData(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Edit">
+                <i class="fa-solid fa-pen text-xs"></i>
+            </button>
+            <button onclick="deleteData(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Hapus">
+                <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+        </div>
+    </td>
+</tr>
                 `;
             });
         }
@@ -121,3 +120,37 @@ async function deleteData(id) {
         }
     }
 }
+
+// ==========================================
+// FITUR IMPORT CSV
+// ==========================================
+function downloadTemplate() {
+    window.location.href = 'logic.php?action=download_template';
+}
+
+document.getElementById('formImport').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const btnImport = document.getElementById('btn-import');
+    btnImport.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...';
+    btnImport.disabled = true;
+
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetchAjax('logic.php?action=import_csv', 'POST', formData);
+        
+        if (response.status === 'success') {
+            alert(response.message);
+            closeModal('modal-import');
+            loadData();
+        } else {
+            alert('Gagal Import: ' + response.message);
+        }
+    } catch (error) {
+        alert('Terjadi kesalahan saat mengunggah file.');
+    } finally {
+        btnImport.innerHTML = '<i class="fa-solid fa-upload"></i> Proses Import';
+        btnImport.disabled = false;
+    }
+});

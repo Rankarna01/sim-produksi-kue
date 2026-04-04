@@ -20,9 +20,14 @@ checkRole(['owner']);
                     <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Bahan Baku</h2>
                     <p class="text-sm text-secondary mt-1">Kelola stok awal dan batas minimum bahan mentah dapur.</p>
                 </div>
-                <button onclick="openModal('modal-bahan'); resetForm();" class="bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center gap-2">
-                    <i class="fa-solid fa-plus"></i> Tambah Bahan
-                </button>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="openModal('modal-import'); document.getElementById('formImport').reset();" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-import"></i> Import CSV
+                    </button>
+                    <button onclick="openModal('modal-bahan'); resetForm();" class="flex-1 sm:flex-none bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Tambah Bahan
+                    </button>
+                </div>
             </div>
 
             <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -92,6 +97,49 @@ checkRole(['owner']);
                         <button type="button" onclick="closeModal('modal-bahan')" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
                         <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-surface bg-primary hover:opacity-90 rounded-xl transition-all flex items-center gap-2 shadow-sm">
                             <i class="fa-solid fa-save"></i> Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-import" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('modal-import')"></div>
+        <div class="relative bg-surface w-full max-w-md rounded-3xl shadow-xl z-10 transform transition-all flex flex-col">
+            <div class="p-6 border-b border-emerald-100 flex justify-between items-center bg-emerald-50 rounded-t-3xl">
+                <h3 class="text-lg font-bold text-emerald-900"><i class="fa-solid fa-file-csv mr-2"></i> Import Data CSV</h3>
+                <button onclick="closeModal('modal-import')" class="text-emerald-400 hover:text-danger transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800">
+                    <p class="font-bold mb-1">Panduan Import:</p>
+                    <ol class="list-decimal pl-4 space-y-1">
+                        <li>Unduh template CSV di bawah ini.</li>
+                        <li>Isi data tanpa mengubah judul kolom (baris pertama).</li>
+                        <li>Jika Kode Bahan sudah ada di sistem, maka sistem akan <strong>memperbarui</strong> datanya (Update).</li>
+                    </ol>
+                </div>
+
+                <div class="mb-6">
+                    <button onclick="downloadTemplate()" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> Download Template CSV
+                    </button>
+                </div>
+
+                <form id="formImport" enctype="multipart/form-data">
+                    <div class="mb-6">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Upload File CSV <span class="text-danger">*</span></label>
+                        <input type="file" id="file_csv" name="file_csv" accept=".csv" required class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-all border-2 border-slate-200 rounded-xl p-1 cursor-pointer">
+                    </div>
+                    
+                    <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                        <button type="button" onclick="closeModal('modal-import')" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
+                        <button type="submit" id="btn-import" class="px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-upload"></i> Proses Import
                         </button>
                     </div>
                 </form>

@@ -13,7 +13,7 @@ checkRole(['owner']);
             #main-sidebar, header, #form-filter-section, .no-print, #pagination { display: none !important; }
             main { padding: 0 !important; margin: 0 !important; overflow: visible !important; }
             .bg-surface { border: none !important; box-shadow: none !important; }
-            table { border-collapse: collapse !important; width: 100% !important; }
+            table { border-collapse: collapse !important; width: 100% !important; margin-bottom: 20px !important; }
             th, td { border: 1px solid #e2e8f0 !important; padding: 8px !important; color: #000 !important; }
             #print-header { display: block !important; text-align: center; margin-bottom: 20px; }
             #summary-cards { display: flex !important; gap: 10px !important; margin-bottom: 20px !important; }
@@ -124,11 +124,35 @@ checkRole(['owner']);
                 </div>
             </div>
 
+            <div id="rekap-produk-container" class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-simple text-primary"></i>
+                    <h3 class="font-bold text-slate-700">Rekapitulasi Per Produk</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[500px]">
+                        <thead>
+                            <tr class="bg-white border-b border-slate-200 text-xs text-secondary uppercase tracking-wider print:bg-slate-100">
+                                <th class="p-3 font-bold w-12 text-center">No</th>
+                                <th class="p-3 font-bold">Nama Produk</th>
+                                <th class="p-3 font-bold text-right">Total Produksi (Pcs)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-rekap" class="text-sm divide-y divide-slate-100">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-none flex flex-col">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-2 print:hidden">
+                    <i class="fa-solid fa-list text-slate-500"></i>
+                    <h3 class="font-bold text-slate-700">Detail Histori Produksi</h3>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[900px]">
                         <thead>
-                            <tr class="bg-slate-50 border-b border-slate-200 text-xs text-secondary uppercase tracking-wider print:bg-slate-100">
+                            <tr class="bg-white border-b border-slate-200 text-xs text-secondary uppercase tracking-wider print:bg-slate-100">
                                 <th class="p-3 font-bold w-12 text-center">No</th>
                                 <th class="p-3 font-bold">Waktu Produksi</th>
                                 <th class="p-3 font-bold">No. Invoice</th>
