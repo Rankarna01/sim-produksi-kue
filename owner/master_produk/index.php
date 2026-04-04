@@ -142,6 +142,6 @@ checkRole(['owner']);
     </div>
 
     <?php include '../../components/footer.php'; ?>
-    <script src="ajax.js?v=<?= time() ?>"></script>
+    <script src="ajax.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

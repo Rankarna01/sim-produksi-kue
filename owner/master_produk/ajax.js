@@ -32,24 +32,24 @@ async function loadData() {
                     : `<span class="bg-danger/10 text-danger px-2 py-1 rounded-md text-xs font-bold">Kosong</span>`;
 
                 html += `
-                    <tr class="hover:bg-slate-50 transition-colors group">
-                        <td class="p-4 text-center text-secondary">${index + 1}</td>
-                        <td class="p-4 font-semibold text-slate-700">${item.code}</td>
-                        <td class="p-4 text-slate-800">${item.name}</td>
-                        <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs">${item.category}</span></td>
-                        <td class="p-4 text-right font-medium text-slate-700">${rp}</td>
-                        <td class="p-4 text-center">${stockBadge}</td>
-                        <td class="p-4 text-center">
-                            <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick='editData(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center" title="Edit">
-                                    <i class="fa-solid fa-pen text-xs"></i>
-                                </button>
-                                <button onclick="deleteData(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus">
-                                    <i class="fa-solid fa-trash text-xs"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                   <tr class="hover:bg-slate-50 transition-colors">
+    <td class="p-4 text-center text-secondary">${index + 1}</td>
+    <td class="p-4 font-semibold text-slate-700">${item.code}</td>
+    <td class="p-4 text-slate-800 font-bold">${item.name}</td>
+    <td class="p-4"><span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wider">${item.category}</span></td>
+    <td class="p-4 text-right font-black text-slate-700">${rp}</td>
+    <td class="p-4 text-center">${stockBadge}</td>
+    <td class="p-4 text-center print:hidden">
+        <div class="flex items-center justify-center gap-2">
+            <button onclick='editData(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Edit">
+                <i class="fa-solid fa-pen text-xs"></i>
+            </button>
+            <button onclick="deleteData(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Hapus">
+                <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+        </div>
+    </td>
+</tr>
                 `;
             });
         }
