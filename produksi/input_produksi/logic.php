@@ -53,22 +53,41 @@ try {
         // 2. Ambil Tanggal dan Tahun
         $tgl_hari_ini = date('d'); 
         $tahun = date('y'); 
+
+        // =================================================================
+        // PERBAIKAN: LOGIKA GENERATOR INVOICE NO YANG KEBAL DUPLIKAT
+        // =================================================================
+        $prefix = "{$kode_bulan}{$tgl_hari_ini}{$tahun}-"; // Contoh Prefix: D0426-
         
-        // 3. Hitung Jumlah Produksi Hari Ini (Untuk Antrian)
-        $hari_ini = date('Y-m-d');
-        $stmt_antrian = $pdo->prepare("SELECT COUNT(id) FROM productions WHERE DATE(created_at) = ?");
-        $stmt_antrian->execute([$hari_ini]);
-        $jumlah_hari_ini = (int)$stmt_antrian->fetchColumn();
+        // Cari nomor invoice TERBESAR di hari ini
+        $stmtCek = $pdo->prepare("
+            SELECT invoice_no 
+            FROM productions 
+            WHERE invoice_no LIKE ? 
+            ORDER BY invoice_no DESC 
+            LIMIT 1
+        ");
+        $stmtCek->execute([$prefix . "%"]);
+        $lastInvoice = $stmtCek->fetchColumn();
+
+        if ($lastInvoice) {
+            // Jika sudah ada, ambil 3 digit terakhirnya, lalu tambah 1
+            $lastUrut = (int) substr($lastInvoice, -3);
+            $nextUrut = $lastUrut + 1;
+        } else {
+            // Jika hari ini belum ada produksi sama sekali, mulai dari 1
+            $nextUrut = 1;
+        }
         
-        // 4. Buat Urutan Invoice (001, 002, 003)
-        $urutan = $jumlah_hari_ini + 1;
-        $urutan_str = str_pad($urutan, 3, '0', STR_PAD_LEFT); 
+        // Format agar selalu 3 digit (contoh: 001, 002, 015)
+        $urutan_str = str_pad($nextUrut, 3, '0', STR_PAD_LEFT); 
         
-        // HASIL INVOICE: D0126-004
-        $invoice_no = "{$kode_bulan}{$tgl_hari_ini}{$tahun}-{$urutan_str}";
+        // HASIL INVOICE (Misal: D0426-003)
+        $invoice_no = $prefix . $urutan_str;
+        // =================================================================
 
         // ==============================================================
-        // PERBAIKAN UTAMA: GENERATOR BARCODE SUPER AMAN (ANTI-DUPLIKAT)
+        // GENERATOR BARCODE SUPER AMAN (ANTI-DUPLIKAT)
         // Format: BRC-TahunBulanTglJamMenitDetik-Random4Angka
         // ==============================================================
         $base_barcode = "BRC-" . date('YmdHis') . "-" . rand(1000, 9999);

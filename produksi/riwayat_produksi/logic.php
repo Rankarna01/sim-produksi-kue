@@ -5,8 +5,8 @@ checkRole(['produksi']);
 
 header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
-$user_id = $_SESSION['user_id'];
 
+// Fungsi Konversi Satuan BOM (TIDAK ADA YANG DIUBAH - AMAN)
 function convertUnit($amount, $from_unit, $to_unit) {
     $from = strtolower(trim($from_unit));
     $to = strtolower(trim($to_unit));
@@ -35,8 +35,12 @@ try {
         $limit = 10; 
         $offset = ($page - 1) * $limit;
 
-        $whereClause = "WHERE p.user_id = ?";
-        $params = [$user_id];
+        // ====================================================================
+        // PERBAIKAN: Ubah menjadi WHERE 1=1
+        // Agar semua histori produksi dapur muncul, tidak dikunci per akun login
+        // ====================================================================
+        $whereClause = "WHERE 1=1";
+        $params = [];
 
         if (!empty($start_date)) {
             $whereClause .= " AND DATE(p.created_at) >= ?";
@@ -83,6 +87,9 @@ try {
         exit;
     }
 
+    // ====================================================================
+    // LOGIKA REVISI (TIDAK DIUBAH - SUDAH SANGAT AMAN)
+    // ====================================================================
     if ($action === 'update_revisi') {
         $prod_id = $_POST['prod_id'];     // ID Payung Produksi (Untuk ubah status jadi pending)
         $detail_id = $_POST['detail_id']; // ID Baris Produk yang direvisi
@@ -113,6 +120,7 @@ try {
             $old_needed_in_gudang = convertUnit($qty_needed_per_item * $old_qty, $bom['unit_used'], $material['unit']);
             $new_needed_in_gudang = convertUnit($qty_needed_per_item * $new_qty, $bom['unit_used'], $material['unit']);
 
+            // Selisih positif (nambah produksi) potong stok. Selisih negatif (kurangi produksi) kembalikan stok.
             $difference = $new_needed_in_gudang - $old_needed_in_gudang;
 
             if ($difference > 0 && floatval($material['stock']) < $difference) {
@@ -134,7 +142,7 @@ try {
         $upd_prod->execute([$prod_id]);
 
         $pdo->commit();
-        echo json_encode(['status' => 'success', 'message' => 'Revisi berhasil disimpan! Silakan minta Admin untuk scan ulang struk lama Anda.']);
+        echo json_encode(['status' => 'success', 'message' => 'Revisi berhasil disimpan! Silakan minta Admin Gudang untuk scan ulang struk lama Anda.']);
         exit;
     }
 

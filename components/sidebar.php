@@ -85,7 +85,7 @@ function getNavClass($path, $current_uri) {
             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 pl-2 sidebar-text transition-all duration-300 opacity-100 whitespace-nowrap overflow-hidden">Laporan & Analitik</p>
             <div class="hidden divider-dot w-full h-[2px] bg-slate-100 rounded-full mt-2"></div>
         </div>
-
+       
         <a href="<?= BASE_URL ?>owner/laporan_produksi/" title="Laporan Produksi" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_produksi/', $current_uri) ?>">
             <i class="fa-solid fa-chart-line w-6 text-center text-lg shrink-0"></i> 
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Laporan Produksi</span>
@@ -120,6 +120,12 @@ function getNavClass($path, $current_uri) {
             <i class="fa-solid fa-clipboard-list w-6 text-center text-lg shrink-0"></i> 
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Laporan Resep (BOM)</span>
         </a>
+
+         <a href="<?= BASE_URL ?>owner/laporan_opname/" title="Laporan Opname" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_opname/', $current_uri) ?>">
+            <i class="fa-solid fa-clipboard-check w-6 text-center text-lg shrink-0 text-emerald-500"></i> 
+            <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-emerald-600">Laporan Opname</span>
+        </a>
+
     </nav>
 </aside>
 

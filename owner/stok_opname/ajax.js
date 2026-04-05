@@ -1,108 +1,162 @@
 let materialsData = [];
+let selectedMaterials = []; 
 
 document.addEventListener("DOMContentLoaded", () => {
     loadHistory();
     loadMaterials();
+    setupSearch();
 });
 
-// Fungsi Format Angka Desimal
 function formatDesimal(angka) {
     const num = parseFloat(angka);
     return num % 1 !== 0 ? num.toFixed(2) : num;
 }
 
-// 1. Tarik Data Master Bahan Baku
 async function loadMaterials() {
     const response = await fetchAjax('logic.php?action=get_materials', 'GET');
     if (response.status === 'success') {
         materialsData = response.data;
-        let opt = '<option value="">-- Pilih Bahan Baku --</option>';
-        materialsData.forEach(m => {
-            opt += `<option value="${m.id}">${m.code} - ${m.name}</option>`;
-        });
-        document.getElementById('material_id').innerHTML = opt;
     }
 }
 
-// 2. Saat Dropdown Bahan Dipilih, Munculkan Stok Sistemnya
-function handleMaterialChange() {
-    const matId = document.getElementById('material_id').value;
-    const systemStockDisplay = document.getElementById('info_system_stock');
-    const systemStockInput = document.getElementById('system_stock');
-    const unitLabels = document.querySelectorAll('.unit-label');
-    const actualInput = document.getElementById('actual_stock');
+// ==========================================
+// FITUR AUTOCOMPLETE SEARCH
+// ==========================================
+function setupSearch() {
+    const input = document.getElementById('search_material');
+    const suggestBox = document.getElementById('suggest_box');
 
-    actualInput.value = ''; // Reset inputan fisik
-    document.getElementById('info_difference').innerText = '-';
-    document.getElementById('diff-container').className = "text-center p-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50";
+    input.addEventListener('input', function() {
+        const keyword = this.value.toLowerCase().trim();
+        suggestBox.innerHTML = '';
+        
+        if (keyword.length === 0) {
+            suggestBox.classList.add('hidden');
+            return;
+        }
 
-    if (!matId) {
-        systemStockDisplay.innerText = '0';
-        systemStockInput.value = '0';
-        unitLabels.forEach(el => el.innerText = 'Satuan');
-        return;
-    }
+        const filtered = materialsData.filter(m => 
+            (m.name.toLowerCase().includes(keyword) || m.code.toLowerCase().includes(keyword)) &&
+            !selectedMaterials.includes(m.id.toString())
+        );
 
-    // Cari data bahan dari array
-    const mat = materialsData.find(m => m.id == matId);
-    if (mat) {
-        systemStockDisplay.innerText = formatDesimal(mat.stock);
-        systemStockInput.value = mat.stock;
-        unitLabels.forEach(el => el.innerText = mat.unit);
+        if (filtered.length === 0) {
+            suggestBox.innerHTML = `<li class="p-3 text-sm text-slate-500 italic text-center">Bahan tidak ditemukan / sudah ditambahkan</li>`;
+        } else {
+            filtered.forEach(m => {
+                const li = document.createElement('li');
+                li.className = "p-3 hover:bg-emerald-50 cursor-pointer flex justify-between items-center transition-colors";
+                li.innerHTML = `
+                    <div>
+                        <div class="font-bold text-slate-800 text-sm">${m.name}</div>
+                        <div class="text-xs text-slate-500">${m.code} | Stok: ${formatDesimal(m.stock)} ${m.unit}</div>
+                    </div>
+                    <i class="fa-solid fa-plus text-emerald-500"></i>
+                `;
+                li.onclick = () => addMaterialToOpname(m);
+                suggestBox.appendChild(li);
+            });
+        }
+        suggestBox.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!input.contains(e.target) && !suggestBox.contains(e.target)) {
+            suggestBox.classList.add('hidden');
+        }
+    });
+}
+
+// ==========================================
+// MENAMBAH ITEM KE DAFTAR FORM (TIDAK ADA KALKULASI SELISIH LIVE)
+// ==========================================
+function addMaterialToOpname(material) {
+    const list = document.getElementById('opname_list');
+    const emptyState = document.getElementById('empty_state');
+    const searchInput = document.getElementById('search_material');
+    const suggestBox = document.getElementById('suggest_box');
+
+    if (emptyState) emptyState.remove();
+
+    selectedMaterials.push(material.id.toString());
+    updateItemCount();
+
+    const rowId = `item_row_${material.id}`;
+    const html = `
+        <div id="${rowId}" class="flex flex-col sm:flex-row items-center gap-4 bg-white p-3 rounded-lg border border-slate-200 shadow-sm relative group">
+            
+            <input type="hidden" name="material_id[]" value="${material.id}">
+            <input type="hidden" name="system_stock[]" value="${material.stock}">
+
+            <div class="flex-1 w-full">
+                <h5 class="font-bold text-slate-800 text-sm">${material.name} <span class="text-xs text-slate-400 font-normal ml-1">(${material.code})</span></h5>
+                <p class="text-xs text-slate-500 mt-0.5">Sistem: <span class="font-bold text-slate-700">${formatDesimal(material.stock)}</span> ${material.unit}</p>
+            </div>
+            
+            <div class="flex items-center gap-4 w-full sm:w-auto justify-end">
+                <div class="flex flex-col w-28">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-1">Stok Fisik (${material.unit})</label>
+                    <input type="number" step="0.01" name="actual_stock[]" required min="0" class="w-full text-center font-black text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0">
+                </div>
+
+                <button type="button" onclick="removeMaterial('${material.id}')" class="w-9 h-9 rounded-lg bg-red-50 text-danger hover:bg-danger hover:text-white transition-colors flex items-center justify-center shrink-0 mt-4" title="Hapus">
+                    <i class="fa-solid fa-trash-can text-sm"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+    list.insertAdjacentHTML('beforeend', html);
+    
+    searchInput.value = '';
+    suggestBox.classList.add('hidden');
+    searchInput.focus();
+}
+
+function removeMaterial(id) {
+    document.getElementById(`item_row_${id}`).remove();
+    selectedMaterials = selectedMaterials.filter(mId => mId !== id.toString());
+    updateItemCount();
+
+    if (selectedMaterials.length === 0) {
+        document.getElementById('opname_list').innerHTML = `
+            <div id="empty_state" class="text-center py-6 text-secondary text-sm font-medium">
+                <i class="fa-solid fa-box-open text-3xl mb-2 text-slate-300 block"></i>
+                Belum ada bahan baku yang dipilih.<br>Silakan cari dan pilih pada kolom di atas.
+            </div>
+        `;
     }
 }
 
-// 3. Hitung Selisih Real Time Saat Mengetik
-function calculateDifference() {
-    const system = parseFloat(document.getElementById('system_stock').value) || 0;
-    const actual = parseFloat(document.getElementById('actual_stock').value);
-    const diffDisplay = document.getElementById('info_difference');
-    const diffContainer = document.getElementById('diff-container');
-    const unit = document.querySelector('.unit-label').innerText;
-
-    if (isNaN(actual)) {
-        diffDisplay.innerText = '-';
-        diffContainer.className = "text-center p-3 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50";
-        return;
-    }
-
-    const difference = actual - system;
-    const formattedDiff = formatDesimal(Math.abs(difference));
-
-    if (difference > 0) {
-        // Surplus
-        diffDisplay.innerHTML = `+ ${formattedDiff} <span class="text-xs">${unit}</span> (SURPLUS)`;
-        diffDisplay.className = "text-lg font-black text-emerald-600";
-        diffContainer.className = "text-center p-3 rounded-xl border-2 border-emerald-200 bg-emerald-50";
-    } else if (difference < 0) {
-        // Defisit / Minus
-        diffDisplay.innerHTML = `- ${formattedDiff} <span class="text-xs">${unit}</span> (MINUS)`;
-        diffDisplay.className = "text-lg font-black text-danger";
-        diffContainer.className = "text-center p-3 rounded-xl border-2 border-red-200 bg-danger/10";
-    } else {
-        // Sesuai
-        diffDisplay.innerHTML = `Sesuai / Cocok`;
-        diffDisplay.className = "text-lg font-bold text-slate-500";
-        diffContainer.className = "text-center p-3 rounded-xl border-2 border-slate-200 bg-slate-50";
-    }
+function updateItemCount() {
+    document.getElementById('item_count').innerText = `${selectedMaterials.length} Item`;
 }
 
 function resetForm() {
     document.getElementById('formOpname').reset();
-    handleMaterialChange(); // Reset UI
+    selectedMaterials = [];
+    updateItemCount();
+    document.getElementById('opname_list').innerHTML = `
+        <div id="empty_state" class="text-center py-6 text-secondary text-sm font-medium">
+            <i class="fa-solid fa-box-open text-3xl mb-2 text-slate-300 block"></i>
+            Belum ada bahan baku yang dipilih.<br>Silakan cari dan pilih pada kolom di atas.
+        </div>
+    `;
 }
 
-// 4. Render Tabel Riwayat
+// ==========================================
+// RENDER TABEL & SUBMIT
+// ==========================================
 async function loadHistory() {
     const tbody = document.getElementById('table-body');
-    tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
     
     const response = await fetchAjax('logic.php?action=read_history', 'GET');
     
     if (response.status === 'success') {
         let html = '';
         if (response.data.length === 0) {
-            html = '<tr><td colspan="8" class="p-8 text-center text-secondary font-medium">Belum ada riwayat penyesuaian stok.</td></tr>';
+            html = '<tr><td colspan="9" class="p-8 text-center text-secondary font-medium">Belum ada riwayat penyesuaian stok.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 const dateObj = new Date(item.created_at);
@@ -125,6 +179,7 @@ async function loadHistory() {
                             <div class="font-bold text-slate-700">${tgl}</div>
                             <div class="text-[10px] text-slate-500">${waktu} WIB</div>
                         </td>
+                        <td class="p-3 font-mono text-sm text-emerald-600 font-bold">${item.opname_no || '-'}</td>
                         <td class="p-3 font-bold text-slate-800 text-sm">${item.code} - ${item.material_name}</td>
                         <td class="p-3 text-right font-medium text-slate-500">${formatDesimal(item.system_stock)} <span class="text-[10px]">${item.unit}</span></td>
                         <td class="p-3 text-right font-black text-indigo-600">${formatDesimal(item.actual_stock)} <span class="text-[10px]">${item.unit}</span></td>
@@ -141,11 +196,15 @@ async function loadHistory() {
     }
 }
 
-// 5. Proses Simpan
 document.getElementById('formOpname').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    if (confirm("Apakah Anda yakin ingin memperbarui stok bahan ini secara permanen?")) {
+    if (selectedMaterials.length === 0) {
+        alert("Silakan cari dan tambahkan minimal 1 bahan baku terlebih dahulu!");
+        return;
+    }
+
+    if (confirm("Apakah Anda yakin ingin mem-post dokumen opname ini? Stok akan langsung diupdate.")) {
         const btnSave = document.getElementById('btn-save');
         btnSave.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menyimpan...';
         btnSave.disabled = true;
@@ -153,14 +212,14 @@ document.getElementById('formOpname').addEventListener('submit', async function(
         const formData = new FormData(this);
         const response = await fetchAjax('logic.php?action=save', 'POST', formData);
         
-        btnSave.innerHTML = '<i class="fa-solid fa-save"></i> Simpan Penyesuaian';
+        btnSave.innerHTML = '<i class="fa-solid fa-save"></i> Post Opname';
         btnSave.disabled = false;
 
         if (response.status === 'success') {
             closeModal('modal-opname');
             loadHistory();
-            loadMaterials(); // Refresh stok sistem di array dropdown
-            alert("Berhasil! Stok berhasil diperbarui.");
+            loadMaterials(); 
+            alert(response.message);
         } else {
             alert('Gagal: ' + response.message);
         }

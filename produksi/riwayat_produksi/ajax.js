@@ -1,7 +1,17 @@
 let currentPage = 1;
 
+// FUNGSI BARU: Mengambil Tanggal Hari Ini Sesuai Zona Waktu Lokal (Bukan UTC)
+function getTodayLocal() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-    const today = new Date().toISOString().split('T')[0];
+    // Gunakan fungsi tanggal lokal
+    const today = getTodayLocal();
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
     loadHistory(1);
@@ -14,8 +24,13 @@ document.getElementById('formFilter').addEventListener('submit', function(e) {
 
 function resetFilter() {
     document.getElementById('formFilter').reset();
-    document.getElementById('start_date').value = '';
-    document.getElementById('end_date').value = '';
+    
+    // PERBAIKAN: Kembalikan tanggal ke hari ini saat di-reset, bukan dikosongkan
+    const today = getTodayLocal();
+    document.getElementById('start_date').value = today;
+    document.getElementById('end_date').value = today;
+    document.getElementById('status').value = '';
+    
     loadHistory(1);
 }
 
@@ -50,7 +65,6 @@ async function loadHistory(page = 1) {
                     editButton = ``; 
                 } else if (item.status === 'ditolak') {
                     statusBadge = `<span class="bg-danger/10 text-danger px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> Ditolak</span>`;
-                    // PERBAIKAN: Melempar item secara utuh
                     editButton = `<button onclick='bukaEdit(${JSON.stringify(item).replace(/'/g, "&apos;")})' title="Perbaiki Data" class="bg-danger hover:bg-red-700 text-white w-9 h-9 rounded-lg flex items-center justify-center transition-colors shadow-md"><i class="fa-solid fa-pen"></i></button>`;
                 } else if (item.status === 'expired') {
                     statusBadge = `<span class="bg-slate-200 text-slate-600 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-ban"></i> Expired</span>`;
@@ -122,7 +136,6 @@ function renderPagination(totalPages, current) {
 }
 
 function bukaEdit(item) {
-    // Memasukkan kedua ID untuk sistem revisi terpisah
     document.getElementById('edit_prod_id').value = item.prod_id;
     document.getElementById('edit_detail_id').value = item.detail_id;
     document.getElementById('edit_produk').value = item.product_name;
