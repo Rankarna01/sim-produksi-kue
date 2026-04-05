@@ -16,6 +16,7 @@ try {
     $end_date = $_GET['end_date'] ?? '';
     $status = $_GET['status'] ?? '';
     $warehouse_id = $_GET['warehouse_id'] ?? '';
+    $is_print = $_GET['is_print'] ?? 'false'; 
     
     $whereClause = "WHERE 1=1";
     $params = [];
@@ -46,7 +47,7 @@ try {
             JOIN products pr ON d.product_id = pr.id
             JOIN users u ON p.user_id = u.id
             LEFT JOIN employees e ON p.employee_id = e.id
-            JOIN warehouses w ON p.warehouse_id = w.id
+            LEFT JOIN warehouses w ON p.warehouse_id = w.id
             $whereClause
             ORDER BY p.created_at DESC
         ";
@@ -79,7 +80,6 @@ try {
                 $row['gudang']
             ]);
         }
-        
         fclose($output);
         exit;
     }
@@ -89,13 +89,12 @@ try {
         $limit = 10; 
         $offset = ($page - 1) * $limit;
 
-        // 1. HITUNG PAGINATION (berdasarkan tabel detail)
         $countStmt = $pdo->prepare("SELECT COUNT(d.id) FROM productions p JOIN production_details d ON p.id = d.production_id $whereClause");
         $countStmt->execute($params);
         $total_data = $countStmt->fetchColumn();
         $total_pages = ceil($total_data / $limit);
 
-        // 2. HITUNG REKAPITULASI UMUM (SUMMARY CARDS)
+        // 2. REKAPITULASI UMUM (SUMMARY CARDS)
         $sumStmt = $pdo->prepare("
             SELECT 
                 SUM(d.quantity) as total_all,
@@ -108,7 +107,6 @@ try {
         $sumStmt->execute($params);
         $summary = $sumStmt->fetch(PDO::FETCH_ASSOC);
 
-        // 3. REKAPITULASI SPESIFIK PER PRODUK
         $rekapStmt = $pdo->prepare("
             SELECT pr.name as produk, SUM(d.quantity) as total_qty
             FROM productions p
@@ -121,7 +119,6 @@ try {
         $rekapStmt->execute($params);
         $rekap_produk = $rekapStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // 4. REKAPITULASI KINERJA KARYAWAN (FITUR BARU)
         $karyawanStmt = $pdo->prepare("
             SELECT COALESCE(e.name, u.name) as karyawan, pr.name as produk, SUM(d.quantity) as total_qty
             FROM productions p
@@ -136,7 +133,42 @@ try {
         $karyawanStmt->execute($params);
         $rekap_karyawan = $karyawanStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // 5. AMBIL DATA TABEL DETAIL (BERDASARKAN HALAMAN PAGINATION)
+        // REKAP BAHAN BAKU (NESTED ARRAY UNTUK CARD/PRINT)
+        $bahanStmt = $pdo->prepare("
+            SELECT pr.name as produk, SUM(d.quantity) as total_qty_produk,
+                   m.name as bahan, SUM(d.quantity * b.quantity_needed) as total_dipakai, b.unit_used as satuan
+            FROM productions p
+            JOIN production_details d ON p.id = d.production_id
+            JOIN products pr ON d.product_id = pr.id
+            JOIN bom b ON d.product_id = b.product_id
+            JOIN materials m ON b.material_id = m.id
+            $whereClause
+            GROUP BY pr.id, m.id, b.unit_used
+            ORDER BY pr.name ASC, total_dipakai DESC
+        ");
+        $bahanStmt->execute($params);
+        $rekap_bahan_raw = $bahanStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $rekap_bahan_grouped = [];
+        foreach($rekap_bahan_raw as $row) {
+            $prod = $row['produk'];
+            if(!isset($rekap_bahan_grouped[$prod])) {
+                $rekap_bahan_grouped[$prod] = [
+                    'produk' => $prod,
+                    'total_produksi' => $row['total_qty_produk'],
+                    'materials' => []
+                ];
+            }
+            $rekap_bahan_grouped[$prod]['materials'][] = [
+                'bahan' => $row['bahan'],
+                'dipakai' => $row['total_dipakai'],
+                'satuan' => $row['satuan']
+            ];
+        }
+
+        // PENTING: Jika is_print=true, buang LIMIT agar semua data terekstrak
+        $limitClause = ($is_print === 'true') ? "" : "LIMIT $limit OFFSET $offset";
+        
         $sql = "
             SELECT p.created_at, p.invoice_no, COALESCE(e.name, u.name) as karyawan, 
                    pr.name as produk, d.quantity, p.status, w.name as gudang 
@@ -145,10 +177,10 @@ try {
             JOIN products pr ON d.product_id = pr.id
             JOIN users u ON p.user_id = u.id
             LEFT JOIN employees e ON p.employee_id = e.id
-            JOIN warehouses w ON p.warehouse_id = w.id
+           LEFT JOIN warehouses w ON p.warehouse_id = w.id
             $whereClause
             ORDER BY p.created_at DESC 
-            LIMIT $limit OFFSET $offset
+            $limitClause
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
@@ -164,7 +196,8 @@ try {
                 'gagal' => $summary['total_gagal'] ?? 0
             ],
             'rekap_produk' => $rekap_produk, 
-            'rekap_karyawan' => $rekap_karyawan, // Inject Array Rekap Karyawan ke Frontend
+            'rekap_karyawan' => $rekap_karyawan,
+            'rekap_bahan' => array_values($rekap_bahan_grouped),
             'current_page' => $page,
             'total_pages' => $total_pages,
             'total_data' => $total_data
@@ -173,11 +206,7 @@ try {
     }
 
 } catch (PDOException $e) {
-    if ($action === 'read') {
-        header('Content-Type: application/json');
-        echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . $e->getMessage()]);
-    } else {
-        die("Database Error: " . $e->getMessage());
-    }
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . $e->getMessage()]);
 }
 ?>

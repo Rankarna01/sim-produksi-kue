@@ -1,30 +1,34 @@
 let currentPage = 1;
 
+function getTodayLocal() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     initFilterGudang(); 
-    applyQuickFilter(); 
+    const today = getTodayLocal();
+    document.getElementById('start_date').value = today;
+    document.getElementById('end_date').value = today;
+    loadLaporan(1); 
 });
 
-// FUNGSI SWITCH TAB LAPORAN
 function switchTab(tabId) {
-    // Sembunyikan semua tab konten
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    
-    // Reset style semua tombol tab ke inaktif
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('border-primary', 'text-primary');
         btn.classList.add('border-transparent', 'text-secondary');
     });
 
-    // Tampilkan tab yang dipilih
     document.getElementById(tabId).classList.remove('hidden');
     
-    // Jadikan tombol aktif
     const activeBtn = document.getElementById(`btn-${tabId}`);
     activeBtn.classList.remove('border-transparent', 'text-secondary');
     activeBtn.classList.add('border-primary', 'text-primary');
 
-    // Ubah Judul Print sesuai Tab yang terbuka
     let tabName = activeBtn.innerText.trim();
     document.getElementById('print-tab-name').innerText = tabName;
 }
@@ -88,54 +92,60 @@ function formatNumber(num) {
     return new Intl.NumberFormat('id-ID').format(num);
 }
 
+// ===========================================================================
+// FUNGSI LOAD DATA KE LAYAR WEB
+// ===========================================================================
 async function loadLaporan(page = 1) {
     currentPage = page;
     const tbodyDetail = document.getElementById('table-laporan');
     const tbodyRekap = document.getElementById('table-rekap');
     const tbodyKaryawan = document.getElementById('table-rekap-karyawan');
+    const bahanGrid = document.getElementById('bahan-grid'); 
     
     tbodyDetail.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
     tbodyRekap.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-secondary">Memuat rekap...</td></tr>';
     tbodyKaryawan.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-secondary">Memuat rekap...</td></tr>';
+    bahanGrid.innerHTML = '<div class="col-span-full p-8 text-center text-secondary">Memuat rincian bahan...</div>';
     
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     const status = document.getElementById('status').value;
     const warehouse = document.getElementById('warehouse_filter').value;
     
-    document.getElementById('print-periode').innerText = `Periode: ${start || 'Awal'} s/d ${end || 'Akhir'} | Status: ${status === '' ? 'Semua' : status.toUpperCase()}`;
+    let statusText = status === '' ? 'Semua' : (status === 'masuk_gudang' ? 'Selesai' : status);
+    document.getElementById('print-periode').innerText = `Periode: ${start || 'Awal'} s/d ${end || 'Akhir'} | Status: ${statusText.toUpperCase()}`;
 
     const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}&page=${currentPage}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
         
-        // 1. UPDATE KARTU RINGKASAN
+        // Isi Infobox di layar Web
         document.getElementById('sum-total').innerHTML = `${formatNumber(response.summary.total)} <span class="text-sm font-semibold text-slate-500">Pcs</span>`;
         document.getElementById('sum-masuk').innerHTML = `${formatNumber(response.summary.masuk)} <span class="text-sm font-semibold text-success/70">Pcs</span>`;
         document.getElementById('sum-gagal').innerHTML = `${formatNumber(response.summary.gagal)} <span class="text-sm font-semibold text-danger/70">Pcs</span>`;
 
-        // 2. RENDER TABEL REKAPITULASI PRODUK (TAB 2)
+        // Tab Rekap Produk
         let htmlRekap = '';
         if (response.rekap_produk.length === 0) {
-            htmlRekap = '<tr><td colspan="3" class="p-8 text-center text-secondary font-medium">Tidak ada rekap produk.</td></tr>';
+            htmlRekap = '<tr><td colspan="3" class="p-8 text-center text-secondary font-medium">Tidak ada data.</td></tr>';
         } else {
             response.rekap_produk.forEach((item, index) => {
                 htmlRekap += `
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="p-4 text-center text-secondary">${index + 1}</td>
                         <td class="p-4 font-bold text-slate-800">${item.produk}</td>
-                        <td class="p-4 text-right font-black text-primary">${formatNumber(item.total_qty)}</td>
+                        <td class="p-4 text-center font-black text-primary">${formatNumber(item.total_qty)}</td>
                     </tr>
                 `;
             });
         }
         tbodyRekap.innerHTML = htmlRekap;
 
-        // 3. RENDER TABEL REKAPITULASI KARYAWAN (TAB 3)
+        // Tab Rekap Karyawan
         let htmlKaryawan = '';
         if (response.rekap_karyawan.length === 0) {
-            htmlKaryawan = '<tr><td colspan="4" class="p-8 text-center text-secondary font-medium">Tidak ada rekap kinerja karyawan.</td></tr>';
+            htmlKaryawan = '<tr><td colspan="4" class="p-8 text-center text-secondary font-medium">Tidak ada data.</td></tr>';
         } else {
             response.rekap_karyawan.forEach((item, index) => {
                 htmlKaryawan += `
@@ -143,17 +153,47 @@ async function loadLaporan(page = 1) {
                         <td class="p-4 text-center text-indigo-300 font-bold">${index + 1}</td>
                         <td class="p-4 font-bold text-indigo-900">${item.karyawan}</td>
                         <td class="p-4 font-semibold text-slate-700">${item.produk}</td>
-                        <td class="p-4 text-right font-black text-indigo-600">${formatNumber(item.total_qty)}</td>
+                        <td class="p-4 text-center font-black text-indigo-600">${formatNumber(item.total_qty)}</td>
                     </tr>
                 `;
             });
         }
         tbodyKaryawan.innerHTML = htmlKaryawan;
 
-        // 4. RENDER TABEL DETAIL HISTORI (TAB 1)
+        // Tab Pemakaian Bahan (Card Grid)
+        let htmlBahan = '';
+        if (response.rekap_bahan.length === 0) {
+            htmlBahan = '<div class="col-span-full p-8 text-center text-slate-400 bg-white rounded-2xl border border-slate-200">Tidak ada pemakaian bahan baku pada periode ini.</div>';
+        } else {
+            response.rekap_bahan.forEach(group => {
+                htmlBahan += `
+                    <div class="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col">
+                        <div class="bg-slate-50 border-b border-slate-200 p-4 flex justify-between items-center">
+                            <h4 class="font-bold text-slate-800 text-sm">${group.produk}</h4>
+                            <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-xs font-bold border border-emerald-200">
+                                Produksi: ${formatNumber(group.total_produksi)} Pcs
+                            </span>
+                        </div>
+                        <div class="p-4 flex-1">
+                            <ul class="space-y-3">
+                `;
+                group.materials.forEach(mat => {
+                    htmlBahan += `
+                        <li class="flex justify-between items-center text-sm border-b border-slate-50 pb-2 last:border-0 last:pb-0">
+                            <span class="text-slate-600 font-medium">${mat.bahan}</span>
+                            <span class="font-black text-slate-800">${formatNumber(mat.dipakai)} <span class="text-[10px] text-slate-400 uppercase tracking-wider font-bold ml-0.5">${mat.satuan}</span></span>
+                        </li>
+                    `;
+                });
+                htmlBahan += `</ul></div></div>`;
+            });
+        }
+        bahanGrid.innerHTML = htmlBahan;
+
+        // Tab Detail Histori (DIPERBAIKI UNTUK MENAMPILKAN GUDANG)
         let htmlDetail = '';
         if (response.data.length === 0) {
-            htmlDetail = '<tr><td colspan="8" class="p-8 text-center text-secondary font-medium">Tidak ada data histori produksi.</td></tr>';
+            htmlDetail = '<tr><td colspan="8" class="p-8 text-center text-secondary font-medium">Tidak ada data histori.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 const no = (currentPage - 1) * 10 + index + 1;
@@ -163,13 +203,13 @@ async function loadLaporan(page = 1) {
 
                 let statusBadge = '';
                 if (item.status === 'pending') {
-                    statusBadge = `<span class="bg-accent/10 text-accent border border-accent/20 px-2 py-1 rounded text-[10px] font-bold uppercase print:border-none print:text-black print:p-0">Pending</span>`;
+                    statusBadge = `<span class="text-accent bg-accent/10 px-3 py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1 w-24 mx-auto"><i class="fa-solid fa-clock"></i> Pending</span>`;
                 } else if (item.status === 'ditolak') {
-                    statusBadge = `<span class="bg-danger/10 text-danger border border-danger/20 px-2 py-1 rounded text-[10px] font-bold uppercase print:border-none print:text-black print:p-0">Ditolak</span>`;
+                    statusBadge = `<span class="text-danger bg-danger/10 px-3 py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1 w-24 mx-auto"><i class="fa-solid fa-xmark"></i> Ditolak</span>`;
                 } else if (item.status === 'expired') {
-                    statusBadge = `<span class="bg-slate-200 text-slate-600 border border-slate-300 px-2 py-1 rounded text-[10px] font-bold uppercase print:border-none print:text-black print:p-0">Expired</span>`;
+                    statusBadge = `<span class="text-slate-500 bg-slate-200 px-3 py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1 w-24 mx-auto"><i class="fa-solid fa-ban"></i> Expired</span>`;
                 } else {
-                    statusBadge = `<span class="bg-success/10 text-success border border-success/20 px-2 py-1 rounded text-[10px] font-bold uppercase print:border-none print:text-black print:p-0">Selesai</span>`;
+                    statusBadge = `<span class="text-success bg-success/10 px-3 py-1 rounded-full text-xs font-bold flex items-center justify-center gap-1 w-24 mx-auto"><i class="fa-solid fa-check"></i> Selesai</span>`;
                 }
 
                 htmlDetail += `
@@ -182,9 +222,9 @@ async function loadLaporan(page = 1) {
                         <td class="p-3 font-mono text-xs font-bold text-primary">${item.invoice_no}</td>
                         <td class="p-3 font-medium text-sm">${item.karyawan}</td>
                         <td class="p-3 font-bold text-slate-800 text-sm">${item.produk}</td>
-                        <td class="p-3 text-right font-black text-slate-800 text-base print:text-black">${formatNumber(item.quantity)}</td>
+                        <td class="p-3 text-center font-black text-slate-800 text-base">${formatNumber(item.quantity)}</td>
                         <td class="p-3 text-center">${statusBadge}</td>
-                        <td class="p-3 text-xs font-semibold text-slate-600">${item.gudang}</td>
+                        <td class="p-3 text-xs font-semibold text-slate-600">${item.gudang || '-'}</td>
                     </tr>
                 `;
             });
@@ -200,31 +240,108 @@ function renderPagination(totalPages, current) {
     
     if (totalPages === 0) totalPages = 1;
 
-    if (current > 1) {
-        html += `<button type="button" onclick="loadLaporan(${current - 1})" class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-sm font-semibold transition-colors shadow-sm"><i class="fa-solid fa-chevron-left"></i> Prev</button>`;
-    } else {
-        html += `<button type="button" disabled class="px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-300 text-sm font-semibold cursor-not-allowed shadow-sm"><i class="fa-solid fa-chevron-left"></i> Prev</button>`;
-    }
+    html += `<button type="button" ${current > 1 ? `onclick="loadLaporan(${current - 1})"` : 'disabled'} class="px-4 py-2 rounded-lg ${current > 1 ? 'bg-white hover:bg-slate-100 text-slate-700' : 'bg-slate-50 text-slate-300 cursor-not-allowed'} border border-slate-200 text-sm font-semibold transition-colors shadow-sm"><i class="fa-solid fa-chevron-left mr-1"></i> Prev</button>`;
 
-    for (let i = 1; i <= totalPages; i++) {
+    let startPage = Math.max(1, current - 1);
+    let endPage = Math.min(totalPages, current + 1);
+
+    if (current === 1) endPage = Math.min(3, totalPages);
+    if (current === totalPages) startPage = Math.max(1, totalPages - 2);
+
+    for (let i = startPage; i <= endPage; i++) {
         if (i === current) {
             html += `<button type="button" class="px-4 py-2 rounded-lg bg-primary border border-primary text-white text-sm font-bold shadow-sm">${i}</button>`;
         } else {
-            if (i === 1 || i === totalPages || (i >= current - 1 && i <= current + 1)) {
-                html += `<button type="button" onclick="loadLaporan(${i})" class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-sm font-semibold transition-colors shadow-sm">${i}</button>`;
-            } else if (i === current - 2 || i === current + 2) {
-                html += `<span class="px-2 text-slate-400">...</span>`;
-            }
+            html += `<button type="button" onclick="loadLaporan(${i})" class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-sm font-semibold transition-colors shadow-sm">${i}</button>`;
         }
     }
 
-    if (current < totalPages) {
-        html += `<button type="button" onclick="loadLaporan(${current + 1})" class="px-4 py-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-sm font-semibold transition-colors shadow-sm">Next <i class="fa-solid fa-chevron-right"></i></button>`;
-    } else {
-        html += `<button type="button" disabled class="px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-300 text-sm font-semibold cursor-not-allowed shadow-sm">Next <i class="fa-solid fa-chevron-right"></i></button>`;
-    }
+    html += `<button type="button" ${current < totalPages ? `onclick="loadLaporan(${current + 1})"` : 'disabled'} class="px-4 py-2 rounded-lg ${current < totalPages ? 'bg-white hover:bg-slate-100 text-slate-700' : 'bg-slate-50 text-slate-300 cursor-not-allowed'} border border-slate-200 text-sm font-semibold transition-colors shadow-sm">Next <i class="fa-solid fa-chevron-right ml-1"></i></button>`;
 
     container.innerHTML = html;
+}
+
+// ===========================================================================
+// CETAK PDF (ANTI LIMIT & TETAP ADA KOTAK INFOBOX, DIPERBAIKI UNTUK GUDANG)
+// ===========================================================================
+async function cetakPDF() {
+    Swal.fire({ title: 'Menyiapkan Dokumen...', text: 'Mengambil seluruh data...', icon: 'info', showConfirmButton: false, allowOutsideClick: false });
+
+    const activeTabId = document.querySelector('.tab-btn.text-primary').id;
+    const start = document.getElementById('start_date').value;
+    const end = document.getElementById('end_date').value;
+    const status = document.getElementById('status').value;
+    const warehouse = document.getElementById('warehouse_filter').value;
+    
+    // Ambil seluruh data dengan is_print=true (Limit Pagination Mati)
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}&is_print=true`;
+    const response = await fetchAjax(url, 'GET');
+    
+    if (response.status === 'success') {
+        const wrapper = document.getElementById('print-table-wrapper');
+        let htmlPrint = '';
+
+        // Masukkan data Summary ke kotak Print
+        document.getElementById('print-sum-total').innerText = `${formatNumber(response.summary.total)} Pcs`;
+        document.getElementById('print-sum-masuk').innerText = `${formatNumber(response.summary.masuk)} Pcs`;
+        document.getElementById('print-sum-gagal').innerText = `${formatNumber(response.summary.gagal)} Pcs`;
+
+        if (activeTabId === 'btn-tab-detail') {
+            htmlPrint = `<table><thead><tr><th>No</th><th>Waktu Produksi</th><th>No. Invoice</th><th>Karyawan (Dapur)</th><th>Produk</th><th>Qty</th><th>Status</th><th>Gudang</th></tr></thead><tbody>`;
+            response.data.forEach((item, index) => {
+                const d = new Date(item.created_at);
+                const tgl = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const st = item.status === 'masuk_gudang' ? 'Selesai' : (item.status === 'ditolak' ? 'Ditolak' : (item.status === 'expired' ? 'Expired' : 'Pending'));
+                
+                htmlPrint += `<tr>
+                    <td style="text-align:center;">${index + 1}</td>
+                    <td>${tgl}</td>
+                    <td>${item.invoice_no}</td>
+                    <td>${item.karyawan}</td>
+                    <td>${item.produk}</td>
+                    <td style="text-align:center; font-weight:bold;">${formatNumber(item.quantity)}</td>
+                    <td style="text-align:center;"><span class="print-badge">${st}</span></td>
+                    <td>${item.gudang || '-'}</td>
+                </tr>`;
+            });
+            htmlPrint += `</tbody></table>`;
+        } 
+        else if (activeTabId === 'btn-tab-rekap-produk') {
+            htmlPrint = `<table><thead><tr><th>No</th><th>Nama Produk</th><th>Total (Pcs)</th></tr></thead><tbody>`;
+            response.rekap_produk.forEach((item, index) => {
+                htmlPrint += `<tr><td style="text-align:center;">${index + 1}</td><td>${item.produk}</td><td style="text-align:center; font-weight:bold;">${formatNumber(item.total_qty)}</td></tr>`;
+            });
+            htmlPrint += `</tbody></table>`;
+        }
+        else if (activeTabId === 'btn-tab-rekap-karyawan') {
+            htmlPrint = `<table><thead><tr><th>No</th><th>Nama Karyawan</th><th>Produk</th><th>Total (Pcs)</th></tr></thead><tbody>`;
+            response.rekap_karyawan.forEach((item, index) => {
+                htmlPrint += `<tr><td style="text-align:center;">${index + 1}</td><td>${item.karyawan}</td><td>${item.produk}</td><td style="text-align:center; font-weight:bold;">${formatNumber(item.total_qty)}</td></tr>`;
+            });
+            htmlPrint += `</tbody></table>`;
+        }
+        else if (activeTabId === 'btn-tab-pemakaian-bahan') {
+            htmlPrint = `<table><thead><tr><th>Produk</th><th>Total Produksi</th><th>Rincian Bahan Baku Digunakan</th></tr></thead><tbody>`;
+            response.rekap_bahan.forEach(group => {
+                let bahanList = group.materials.map(m => `- ${m.bahan}: <b>${formatNumber(m.dipakai)} ${m.satuan}</b>`).join('<br>');
+                htmlPrint += `<tr>
+                    <td style="vertical-align: top; font-weight: bold;">${group.produk}</td>
+                    <td style="vertical-align: top; text-align:center; font-weight: bold; color: #059669;">${formatNumber(group.total_produksi)} Pcs</td>
+                    <td style="vertical-align: top; line-height: 1.6;">${bahanList}</td>
+                </tr>`;
+            });
+            htmlPrint += `</tbody></table>`;
+        }
+
+        wrapper.innerHTML = htmlPrint;
+        Swal.close();
+
+        // Panggil jendela cetak PDF bawaan browser
+        setTimeout(() => { window.print(); }, 500);
+
+    } else {
+        Swal.fire('Error', 'Gagal memuat data cetak', 'error');
+    }
 }
 
 function exportExcel() {
@@ -232,7 +349,5 @@ function exportExcel() {
     const end = document.getElementById('end_date').value;
     const status = document.getElementById('status').value;
     const warehouse = document.getElementById('warehouse_filter').value;
-    
-    const url = `logic.php?action=export_excel&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}`;
-    window.location.href = url; 
+    window.location.href = `logic.php?action=export_excel&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}`; 
 }

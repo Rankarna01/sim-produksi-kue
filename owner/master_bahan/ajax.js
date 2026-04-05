@@ -107,18 +107,25 @@ function editData(item) {
     openModal('modal-bahan');
 }
 
-async function deleteData(id) {
-    if (confirm('Yakin ingin menghapus bahan baku ini? Pastikan bahan ini belum terpakai di resep manapun.')) {
+function deleteData(id) {
+    // Memanggil customConfirm yang sudah kita buat di head.php
+    customConfirm('Yakin ingin menghapus bahan baku ini? Pastikan bahan ini belum terpakai di resep manapun.', async () => {
+        
         const formData = new FormData();
         formData.append('id', id);
         
         const response = await fetchAjax('logic.php?action=delete', 'POST', formData);
+        
         if (response.status === 'success') {
             loadData();
+            // Tambahkan alert sukses agar Toast hijau muncul di layar!
+            alert('Berhasil menghapus bahan baku!'); 
         } else {
-            alert('Gagal menghapus: ' + response.message);
+            // Memunculkan popup error merah
+            alert('Gagal menghapus: ' + response.message); 
         }
-    }
+
+    });
 }
 
 // ==========================================
