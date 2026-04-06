@@ -2,13 +2,15 @@
 require_once '../../config/database.php';
 $id = $_GET['id'] ?? 0;
 
-// AMBIL NAMA KARYAWAN DARI TABEL EMPLOYEES (FALLBACK KE TABEL USERS JIKA KOSONG UNTUK DATA LAMA)
+// AMBIL NAMA KARYAWAN & GUDANG TUJUAN
 $stmtHead = $pdo->prepare("
     SELECT p.invoice_no, p.created_at, p.notes, 
-           COALESCE(e.name, u.name) as karyawan
+           COALESCE(e.name, u.name) as karyawan,
+           w.name as gudang
     FROM productions p
     JOIN users u ON p.user_id = u.id
     LEFT JOIN employees e ON p.employee_id = e.id
+    LEFT JOIN warehouses w ON p.warehouse_id = w.id
     WHERE p.id = ?
 ");
 $stmtHead->execute([$id]);
@@ -43,7 +45,7 @@ foreach ($details as $d) {
         @page { margin: 0; }
         body {
             font-family: 'Courier New', Courier, monospace;
-            width: 80mm;
+            width: 80mm; /* Ukuran standar kertas thermal kasir */
             margin: 0 auto;
             padding: 5mm;
             color: #000;
@@ -61,8 +63,15 @@ foreach ($details as $d) {
         .table-produk th { border-bottom: 1px solid #000; padding-bottom: 5px; text-align: left; }
         .table-produk td { padding-top: 5px; }
         
-        .barcode-container { margin-top: 15px; text-align: center; }
-        .barcode-container svg { width: 100%; max-height: 75px; }
+        .barcode-container { margin-top: 10px; text-align: center; }
+        
+        /* PERBAIKAN: Jangan paksa width 85%, biarkan proporsional agar mudah di-scan */
+        .barcode-container svg { 
+            max-width: 100%; 
+            height: auto; 
+            display: block;
+            margin: 0 auto;
+        }
         
         @media print { .no-print { display: none; } }
     </style>
@@ -77,9 +86,10 @@ foreach ($details as $d) {
     <div class="divider"></div>
     
     <table class="table-info">
-        <tr><td style="width: 40px;">Tgl</td><td>: <?= date('d/m/Y H:i', strtotime($header['created_at'])) ?></td></tr>
+        <tr><td style="width: 50px;">Tgl</td><td>: <?= date('d/m/Y H:i', strtotime($header['created_at'])) ?></td></tr>
         <tr><td>Inv</td><td>: <?= $header['invoice_no'] ?></td></tr>
         <tr><td>Oleh</td><td>: <?= $header['karyawan'] ?></td></tr>
+        <tr><td>Gudang</td><td>: <span class="text-bold"><?= strtoupper($header['gudang'] ?? '-') ?></span></td></tr>
     </table>
     
     <div class="divider"></div>
@@ -122,18 +132,20 @@ foreach ($details as $d) {
     </div>
 
     <div class="text-center no-print" style="margin-top: 20px;">
-        <button onclick="window.print()" style="padding: 10px; cursor: pointer; border: 1px solid #000; background: #eee; border-radius: 5px;">Print Ulang</button>
-        <button onclick="window.close()" style="padding: 10px; cursor: pointer; border: 1px solid #000; background: #eee; border-radius: 5px;">Tutup</button>
+        <button onclick="window.print()" style="padding: 10px; cursor: pointer; border: 1px solid #000; background: #eee; border-radius: 5px; font-weight:bold;">Print Ulang</button>
+        <button onclick="window.close()" style="padding: 10px; cursor: pointer; border: 1px solid #000; background: #eee; border-radius: 5px; margin-left: 5px;">Tutup</button>
     </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // PERBAIKAN SETINGAN JSBARCODE
             JsBarcode("#barcode", "<?= $barcode_str ?>", {
                 format: "CODE128",
                 displayValue: true,
-                fontSize: 14,        
-                height: 50,          
-                width: 2,            
+                fontSize: 14,        // Ukuran font sedikit dibesarkan agar jelas dibaca Karyawan
+                height: 40,          // Tinggi garis barcode dipendekkan (Bantet)
+                width: 1.5,          // Ketebalan garis ideal agar tidak meluber
+                textMargin: 4,       // Jarak antara garis barcode dan angka
                 margin: 0            
             });
 
@@ -142,5 +154,5 @@ foreach ($details as $d) {
             }, 500);
         });
     </script>
-</body>
+</body> 
 </html>
