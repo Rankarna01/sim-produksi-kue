@@ -17,13 +17,11 @@ function switchTab(tabId) {
 
 // FUNGSI CETAK LAPORAN 
 function cetakLaporan(activeTabId) {
-    // Sembunyikan semua tab yang bisa diprint dulu, lalu hanya tampilkan yang aktif
     document.querySelectorAll('.printable-area').forEach(el => el.classList.add('hidden'));
     document.getElementById(activeTabId).classList.remove('hidden');
     
     window.print();
     
-    // Kembalikan keadaan normal setelah diprint (atau dibatalkan)
     setTimeout(() => {
         switchTab(activeTabId);
     }, 500);
@@ -54,20 +52,20 @@ async function loadUsers() {
         } else {
             response.data.forEach((item, index) => {
                 let roleBadge = '';
-                // Menambahkan styling khusus print agar teks terbaca tanpa background color
                 if(item.role === 'owner') roleBadge = `<span class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">Owner</span>`;
                 else if(item.role === 'produksi') roleBadge = `<span class="bg-accent/10 text-accent border border-accent/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">T. Produksi</span>`;
                 else if(item.role === 'admin') roleBadge = `<span class="bg-success/10 text-success border border-success/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">Admin</span>`;
+                else if(item.role === 'auditor') roleBadge = `<span class="bg-indigo-100 text-indigo-600 border border-indigo-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">Auditor</span>`;
 
                 html += `
-                    <tr class="hover:bg-slate-50 transition-colors group">
+                    <tr class="hover:bg-slate-50 transition-colors">
                         <td class="p-4 text-center text-secondary">${index + 1}</td>
                         <td class="p-4 font-bold text-slate-800">${item.name}</td>
                         <td class="p-4 text-secondary font-mono text-sm">${item.username}</td>
                         <td class="p-4 text-center">${roleBadge}</td>
                         <td class="p-4 text-center btn-aksi">
-                            <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick='editUser(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick='editUser(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
                                 <button onclick="deleteUser(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
                             </div>
                         </td>
@@ -81,14 +79,19 @@ async function loadUsers() {
 
 document.getElementById('formUser').addEventListener('submit', async function(e) {
     e.preventDefault();
+    
+    // Tampilkan loading SweetAlert
+    Swal.fire({ title: 'Menyimpan...', text: 'Mohon tunggu', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
+
     const formData = new FormData(this);
     const response = await fetchAjax('logic.php?action=save_user', 'POST', formData);
     
     if (response.status === 'success') {
         closeModal('modal-user');
         loadUsers(); 
+        Swal.fire({ title: 'Berhasil!', text: response.message, icon: 'success', timer: 1500, showConfirmButton: false });
     } else {
-        alert('Gagal: ' + response.message);
+        Swal.fire('Gagal!', response.message, 'error');
     }
 });
 
@@ -107,12 +110,31 @@ function editUser(item) {
 }
 
 async function deleteUser(id) {
-    if (confirm('Yakin ingin menghapus akun ini secara permanen?')) {
+    // Gunakan Konfirmasi Custom (SweetAlert)
+    const result = await Swal.fire({
+        title: 'Hapus Akun?',
+        text: "Akun ini akan dihapus secara permanen dan tidak dapat login lagi!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#94A3B8',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        Swal.fire({ title: 'Menghapus...', text: 'Mohon tunggu', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
+        
         const formData = new FormData();
         formData.append('id', id);
         const response = await fetchAjax('logic.php?action=delete_user', 'POST', formData);
-        if (response.status === 'success') loadUsers();
-        else alert('Gagal menghapus: ' + response.message);
+        
+        if (response.status === 'success') {
+            loadUsers();
+            Swal.fire({ title: 'Terhapus!', text: 'Akun berhasil dihapus.', icon: 'success', timer: 1500, showConfirmButton: false });
+        } else {
+            Swal.fire('Gagal!', response.message, 'error');
+        }
     }
 }
 
@@ -142,13 +164,13 @@ async function loadEmployees() {
                 const tgl = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 
                 html += `
-                    <tr class="hover:bg-slate-50 transition-colors group">
+                    <tr class="hover:bg-slate-50 transition-colors">
                         <td class="p-4 text-center text-secondary">${index + 1}</td>
                         <td class="p-4 font-black text-indigo-900 text-lg">${item.name}</td>
                         <td class="p-4 text-secondary text-sm">${tgl}</td>
                         <td class="p-4 text-center btn-aksi">
-                            <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick='editEmployee(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick='editEmployee(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
                                 <button onclick="deleteEmployee(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
                             </div>
                         </td>
@@ -162,14 +184,18 @@ async function loadEmployees() {
 
 document.getElementById('formKaryawan').addEventListener('submit', async function(e) {
     e.preventDefault();
+    
+    Swal.fire({ title: 'Menyimpan...', text: 'Mohon tunggu', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
+
     const formData = new FormData(this);
     const response = await fetchAjax('logic.php?action=save_employee', 'POST', formData);
     
     if (response.status === 'success') {
         closeModal('modal-karyawan');
         loadEmployees(); 
+        Swal.fire({ title: 'Berhasil!', text: response.message, icon: 'success', timer: 1500, showConfirmButton: false });
     } else {
-        alert('Gagal: ' + response.message);
+        Swal.fire('Gagal!', response.message, 'error');
     }
 });
 
@@ -181,11 +207,30 @@ function editEmployee(item) {
 }
 
 async function deleteEmployee(id) {
-    if (confirm('Yakin ingin menghapus nama karyawan ini? Ia tidak akan bisa dipilih lagi di form Dapur.')) {
+    // Gunakan Konfirmasi Custom (SweetAlert)
+    const result = await Swal.fire({
+        title: 'Hapus Karyawan?',
+        text: "Karyawan ini tidak akan bisa dipilih lagi di form Dapur!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#94A3B8',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        Swal.fire({ title: 'Menghapus...', text: 'Mohon tunggu', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
+        
         const formData = new FormData();
         formData.append('id', id);
         const response = await fetchAjax('logic.php?action=delete_employee', 'POST', formData);
-        if (response.status === 'success') loadEmployees();
-        else alert(response.message); 
+        
+        if (response.status === 'success') {
+            loadEmployees();
+            Swal.fire({ title: 'Terhapus!', text: 'Karyawan berhasil dihapus.', icon: 'success', timer: 1500, showConfirmButton: false });
+        } else {
+            Swal.fire('Gagal!', response.message, 'error');
+        }
     }
 }

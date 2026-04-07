@@ -14,9 +14,9 @@ function resetForm() {
 async function loadData() {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
-    
+
     const response = await fetchAjax('logic.php?action=read', 'GET');
-    
+
     if (response.status === 'success') {
         let html = '';
         if (response.data.length === 0) {
@@ -25,10 +25,10 @@ async function loadData() {
             response.data.forEach((item, index) => {
                 // Format Rupiah
                 let rp = new Intl.NumberFormat('id-ID').format(item.price);
-                
+
                 // Badge stok (Jika stok 0 merah, jika ada hijau)
-                let stockBadge = item.stock > 0 
-                    ? `<span class="bg-success/10 text-success px-2 py-1 rounded-md text-xs font-bold">${item.stock}</span>` 
+                let stockBadge = item.stock > 0
+                    ? `<span class="bg-success/10 text-success px-2 py-1 rounded-md text-xs font-bold">${item.stock}</span>`
                     : `<span class="bg-danger/10 text-danger px-2 py-1 rounded-md text-xs font-bold">Kosong</span>`;
 
                 html += `
@@ -58,11 +58,11 @@ async function loadData() {
 }
 
 // Fungsi Submit Form (Tambah / Edit Biasa)
-document.getElementById('formProduk').addEventListener('submit', async function(e) {
+document.getElementById('formProduk').addEventListener('submit', async function (e) {
     e.preventDefault();
     const formData = new FormData(this);
     const response = await fetchAjax('logic.php?action=save', 'POST', formData);
-    
+
     if (response.status === 'success') {
         closeModal('modal-produk');
         loadData(); // Reload tabel otomatis
@@ -78,42 +78,64 @@ function editData(item) {
     document.getElementById('name').value = item.name;
     document.getElementById('category').value = item.category;
     document.getElementById('price').value = item.price;
-    
+
     document.getElementById('modal-title').innerText = 'Edit Produk';
     openModal('modal-produk');
 }
 
 // Fungsi Delete
+// async function deleteData(id) {
+//     if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
+//         const formData = new FormData();
+//         formData.append('id', id);
+
+//         const response = await fetchAjax('logic.php?action=delete', 'POST', formData);
+//         if (response.status === 'success') {
+//             loadData(); // Reload tabel
+//         } else {
+//             alert('Gagal menghapus: ' + response.message);
+//         }
+//     }
+// }
+
+
 async function deleteData(id) {
-    if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
+    // Memanggil customConfirm yang sudah kita buat di head.php
+    customConfirm('Yakin ingin menghapus data produk ini?', async () => {
+        
         const formData = new FormData();
         formData.append('id', id);
         
         const response = await fetchAjax('logic.php?action=delete', 'POST', formData);
+        
         if (response.status === 'success') {
-            loadData(); // Reload tabel
+            loadData();
+            // Tambahkan alert sukses agar Toast hijau muncul di layar!
+            alert('Berhasil menghapus Data Produk!'); 
         } else {
-            alert('Gagal menghapus: ' + response.message);
+            // Memunculkan popup error merah
+            alert('Gagal menghapus: ' + response.message); 
         }
-    }
+
+    });
 }
 
 // --- TAMBAHAN BARU: EVENT LISTENER UNTUK IMPORT CSV ---
-document.getElementById('formImport').addEventListener('submit', async function(e) {
+document.getElementById('formImport').addEventListener('submit', async function (e) {
     e.preventDefault();
-    
+
     const btnSubmit = document.getElementById('btn-import-submit');
     const originalText = btnSubmit.innerHTML;
-    
+
     // Ubah status tombol jadi loading
     btnSubmit.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Mengupload...';
     btnSubmit.disabled = true;
 
     const formData = new FormData(this);
-    
+
     try {
         const response = await fetchAjax('logic.php?action=import', 'POST', formData);
-        
+
         if (response.status === 'success') {
             alert(response.message);
             closeModal('modal-import');

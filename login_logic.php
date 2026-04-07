@@ -40,9 +40,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['role'] = $user['role'];
 
             $redirect_url = '/sim-produksi-kue/'; 
-            if ($user['role'] === 'owner') $redirect_url .= 'owner/dashboard/';
-            elseif ($user['role'] === 'produksi') $redirect_url .= 'produksi/input_produksi/';
-            elseif ($user['role'] === 'admin') $redirect_url .= 'admin/scan_barcode/';
+            
+            // ==========================================
+            // PERBAIKAN: Routing untuk masing-masing role
+            // ==========================================
+            if ($user['role'] === 'owner') {
+                $redirect_url .= 'owner/dashboard/';
+            } elseif ($user['role'] === 'produksi') {
+                $redirect_url .= 'produksi/input_produksi/';
+            } elseif ($user['role'] === 'admin') {
+                $redirect_url .= 'admin/scan_barcode/';
+            } elseif ($user['role'] === 'auditor') {
+                $redirect_url .= 'owner/dashboard/'; // Auditor dilempar ke Dashboard Owner
+            }
 
             echo json_encode(['status' => 'success', 'redirect' => $redirect_url]);
         } else {
@@ -52,3 +62,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['status' => 'error', 'message' => 'Username tidak ditemukan!']);
     }
 }
+?>

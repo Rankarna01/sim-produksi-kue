@@ -1,57 +1,32 @@
 <?php
 require_once '../../config/auth.php';
-checkRole(['owner']);
+checkRole(['owner', 'auditor']);
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <?php include '../../components/head.php'; ?>
     <style>
-        /* =========================================================
-           CSS KHUSUS PRINT - SUPER CLEAN & FIX BLANK SPACE
-           ========================================================= */
         @media print {
-            /* 1. HILANGKAN HEADER/FOOTER BAWAAN BROWSER (Tgl, URL) */
             @page { margin: 0; size: landscape; }
-            
-            /* 2. RESET SEMUA ELEMEN WRAPPER & PADDING BAWAAN WEB */
             html, body, .flex-1, main { 
-                height: auto !important; 
-                min-height: 100% !important; 
-                overflow: visible !important; 
-                display: block !important; 
-                position: static !important; 
-                margin: 0 !important; 
-                padding: 0 !important; /* Kunci perbaikan: Hapus padding dari <main> */
-                background-color: white !important;
+                height: auto !important; min-height: 100% !important; overflow: visible !important; 
+                display: block !important; position: static !important; margin: 0 !important; 
+                padding: 0 !important; background-color: white !important;
             }
-            
-            /* 3. SEMBUNYIKAN TOTAL SEMUA ELEMEN WEB */
-            aside, header, nav, #normal-content, .no-print, .swal2-container { 
-                display: none !important; 
-            }
-            
-            /* 4. MUNCULKAN CONTAINER PRINT & BERI JARAK KERTAS (PENGGANTI MARGIN) */
+            aside, header, nav, #normal-content, .no-print, .swal2-container { display: none !important; }
             #print-container { 
-                display: block !important; 
-                width: 100% !important; 
-                margin: 0 !important; 
-                padding: 1.5cm !important; /* Jarak aman tepi kertas */
-                box-sizing: border-box !important;
+                display: block !important; width: 100% !important; margin: 0 !important; 
+                padding: 1.5cm !important; box-sizing: border-box !important;
             }
-
-            /* Kotak Infobox Print */
             #print-summary-cards { display: flex !important; gap: 15px; margin-bottom: 20px; width: 100%; }
             .print-card { flex: 1; border: 2px solid #cbd5e1; padding: 12px; border-radius: 8px; text-align: center; }
             .print-card p { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin: 0; }
             .print-card h3 { font-size: 24px; font-weight: 900; color: #0f172a; margin: 5px 0 0 0; }
-
-            /* Styling Tabel Print yang Elegan */
             table { border-collapse: collapse !important; width: 100% !important; margin-bottom: 20px !important; page-break-inside: auto; }
             tr { page-break-inside: avoid; page-break-after: auto; }
             th, td { border: 1px solid #94a3b8 !important; padding: 8px 10px !important; color: #000 !important; font-size: 12px !important; }
             th { background-color: #f1f5f9 !important; font-weight: bold !important; text-transform: uppercase; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            
             #print-header { text-align: center; margin-bottom: 20px; }
             .print-badge { border: 1px solid #000; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
         }
@@ -62,7 +37,6 @@ checkRole(['owner']);
     <?php include '../../components/sidebar.php'; ?>
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
-        
         <header class="no-print">
             <?php include '../../components/header.php'; ?>
         </header>
@@ -87,7 +61,6 @@ checkRole(['owner']);
 
                 <div id="form-filter-section" class="bg-surface p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
                     <form id="formFilter" class="flex flex-col lg:flex-row gap-4 items-end">
-                        
                         <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Pilih Cepat</label>
@@ -139,7 +112,7 @@ checkRole(['owner']);
                     </form>
                 </div>
 
-                <div id="summary-cards" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div id="summary-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                     <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 relative overflow-hidden">
                         <div class="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-2xl z-10"><i class="fa-solid fa-boxes-stacked"></i></div>
                         <div class="z-10">
@@ -157,8 +130,15 @@ checkRole(['owner']);
                     <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 relative overflow-hidden">
                         <div class="w-14 h-14 rounded-full bg-danger/10 text-danger flex items-center justify-center text-2xl z-10"><i class="fa-solid fa-triangle-exclamation"></i></div>
                         <div class="z-10">
-                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Ditolak / Expired</p>
-                            <h3 class="text-2xl font-black text-danger" id="sum-gagal">0 <span class="text-sm font-semibold text-danger/70">Pcs</span></h3>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Ditolak / Revisi</p>
+                            <h3 class="text-2xl font-black text-danger" id="sum-ditolak">0 <span class="text-sm font-semibold text-danger/70">Pcs</span></h3>
+                        </div>
+                    </div>
+                    <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 relative overflow-hidden">
+                        <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-2xl z-10"><i class="fa-solid fa-ban"></i></div>
+                        <div class="z-10">
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Expired / Rusak</p>
+                            <h3 class="text-2xl font-black text-slate-600" id="sum-expired">0 <span class="text-sm font-semibold text-slate-400">Pcs</span></h3>
                         </div>
                     </div>
                 </div>
@@ -249,12 +229,16 @@ checkRole(['owner']);
                         <h3 id="print-sum-total">0 Pcs</h3>
                     </div>
                     <div class="print-card" style="border-color: #10B981; color: #10B981;">
-                        <p style="color: #10B981;">Sukses (Masuk Gudang)</p>
+                        <p style="color: #10B981;">Sukses (Gudang)</p>
                         <h3 id="print-sum-masuk" style="color: #10B981;">0 Pcs</h3>
                     </div>
                     <div class="print-card" style="border-color: #EF4444; color: #EF4444;">
-                        <p style="color: #EF4444;">Ditolak / Expired</p>
-                        <h3 id="print-sum-gagal" style="color: #EF4444;">0 Pcs</h3>
+                        <p style="color: #EF4444;">Ditolak / Revisi</p>
+                        <h3 id="print-sum-ditolak" style="color: #EF4444;">0 Pcs</h3>
+                    </div>
+                    <div class="print-card" style="border-color: #64748b; color: #64748b;">
+                        <p style="color: #64748b;">Expired / Rusak</p>
+                        <h3 id="print-sum-expired" style="color: #64748b;">0 Pcs</h3>
                     </div>
                 </div>
 

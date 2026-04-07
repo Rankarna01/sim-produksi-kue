@@ -21,20 +21,20 @@ async function loadData() {
         } else {
             response.data.forEach((item, index) => {
                 html += `
-                    <tr class="hover:bg-slate-50 transition-colors group">
-                        <td class="p-4 text-center text-secondary">${index + 1}</td>
-                        <td class="p-4 font-bold text-slate-800">${item.name}</td>
-                        <td class="p-4 text-center">
-                            <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick='editData(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center" title="Edit">
-                                    <i class="fa-solid fa-pen text-xs"></i>
-                                </button>
-                                <button onclick="deleteData(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus">
-                                    <i class="fa-solid fa-trash text-xs"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                    <tr class="hover:bg-slate-50 transition-colors">
+    <td class="p-4 text-center text-secondary">${index + 1}</td>
+    <td class="p-4 font-bold text-slate-800">${item.name}</td>
+    <td class="p-4 text-center">
+        <div class="flex items-center justify-center gap-2">
+            <button onclick='editData(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center" title="Edit">
+                <i class="fa-solid fa-pen text-xs"></i>
+            </button>
+            <button onclick="deleteData(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus">
+                <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+        </div>
+    </td>
+</tr>
                 `;
             });
         }
@@ -64,16 +64,38 @@ function editData(item) {
     openModal('modal-satuan');
 }
 
+// async function deleteData(id) {
+//     if (confirm('Yakin ingin menghapus satuan ini?')) {
+//         const formData = new FormData();
+//         formData.append('id', id);
+        
+//         const response = await fetchAjax('logic.php?action=delete', 'POST', formData);
+//         if (response.status === 'success') {
+//             loadData();
+//         } else {
+//             alert('Gagal menghapus: ' + response.message);
+//         }
+//     }
+// }
+
+
 async function deleteData(id) {
-    if (confirm('Yakin ingin menghapus satuan ini?')) {
+    // Memanggil customConfirm yang sudah kita buat di head.php
+    customConfirm('Yakin ingin menghapus data satuan ini?', async () => {
+        
         const formData = new FormData();
         formData.append('id', id);
         
         const response = await fetchAjax('logic.php?action=delete', 'POST', formData);
+        
         if (response.status === 'success') {
             loadData();
+            // Tambahkan alert sukses agar Toast hijau muncul di layar!
+            alert('Berhasil menghapus Data Satuan!'); 
         } else {
-            alert('Gagal menghapus: ' + response.message);
+            // Memunculkan popup error merah
+            alert('Gagal menghapus: ' + response.message); 
         }
-    }
+
+    });
 }

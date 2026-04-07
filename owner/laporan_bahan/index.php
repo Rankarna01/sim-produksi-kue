@@ -1,6 +1,6 @@
 <?php
 require_once '../../config/auth.php';
-checkRole(['owner']);
+checkRole(['owner','auditor']);
 ?>
 <!DOCTYPE html>
 <html lang="id">

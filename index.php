@@ -5,13 +5,20 @@ session_start();
 $is_localhost = (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
 $base_url = $is_localhost ? '/sim-produksi-kue/' : '/';
 
-// Cek sesi aktif
+// ==========================================
+// PERBAIKAN: Cek sesi aktif & Cegah Blank Page
+// ==========================================
 if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
     $role = $_SESSION['role'];
-    if ($role === 'owner') header("Location: " . $base_url . "owner/dashboard/");
-    if ($role === 'produksi') header("Location: " . $base_url . "produksi/input_produksi/");
-    if ($role === 'admin') header("Location: " . $base_url . "admin/scan_barcode/");
-    exit;
+    
+    if ($role === 'owner') { header("Location: " . $base_url . "owner/dashboard/"); exit; }
+    elseif ($role === 'produksi') { header("Location: " . $base_url . "produksi/input_produksi/"); exit; }
+    elseif ($role === 'admin') { header("Location: " . $base_url . "admin/scan_barcode/"); exit; }
+    elseif ($role === 'auditor') { header("Location: " . $base_url . "owner/dashboard/"); exit; }
+    else {
+        // Jika ada role aneh/nyangkut, hancurkan sesi agar tidak nyangkut di layar putih
+        session_destroy(); 
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -30,7 +37,7 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
                     fontFamily: { sans: ['Poppins', 'sans-serif'] },
                     colors: {
                         surface: '#FFFFFF',
-                        background: '#F1F5F9', /* Sedikit digelapkan agar Card putihnya menonjol */
+                        background: '#F1F5F9',
                         primary: '#2563EB',
                         secondary: '#94A3B8',
                         danger: '#EF4444'

@@ -66,16 +66,37 @@ function editData(item) {
     openModal('modal-gudang');
 }
 
+// async function deleteData(id) {
+//     if (confirm('Yakin ingin menghapus data gudang ini?')) {
+//         const formData = new FormData();
+//         formData.append('id', id);
+        
+//         const response = await fetchAjax('logic.php?action=delete', 'POST', formData);
+//         if (response.status === 'success') {
+//             loadData();
+//         } else {
+//             alert('Gagal menghapus: ' + response.message);
+//         }
+//     }
+// }
+
 async function deleteData(id) {
-    if (confirm('Yakin ingin menghapus data gudang ini?')) {
+    // Memanggil customConfirm yang sudah kita buat di head.php
+    customConfirm('Yakin ingin menghapus data gudang ini?', async () => {
+        
         const formData = new FormData();
         formData.append('id', id);
         
         const response = await fetchAjax('logic.php?action=delete', 'POST', formData);
+        
         if (response.status === 'success') {
             loadData();
+            // Tambahkan alert sukses agar Toast hijau muncul di layar!
+            alert('Berhasil menghapus Data Gudang!'); 
         } else {
-            alert('Gagal menghapus: ' + response.message);
+            // Memunculkan popup error merah
+            alert('Gagal menghapus: ' + response.message); 
         }
-    }
+
+    });
 }

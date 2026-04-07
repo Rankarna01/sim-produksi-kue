@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
-checkRole(['owner']);
+checkRole(['owner', 'auditor']);
 
 $action = $_GET['action'] ?? '';
 
@@ -94,12 +94,15 @@ try {
         $total_data = $countStmt->fetchColumn();
         $total_pages = ceil($total_data / $limit);
 
-        // 2. REKAPITULASI UMUM (SUMMARY CARDS)
+        // ==============================================================
+        // PERBAIKAN: MEMISAHKAN STATUS DITOLAK DAN EXPIRED
+        // ==============================================================
         $sumStmt = $pdo->prepare("
             SELECT 
                 SUM(d.quantity) as total_all,
                 SUM(CASE WHEN p.status = 'masuk_gudang' THEN d.quantity ELSE 0 END) as total_masuk,
-                SUM(CASE WHEN p.status IN ('ditolak', 'expired') THEN d.quantity ELSE 0 END) as total_gagal
+                SUM(CASE WHEN p.status = 'ditolak' THEN d.quantity ELSE 0 END) as total_ditolak,
+                SUM(CASE WHEN p.status = 'expired' THEN d.quantity ELSE 0 END) as total_expired
             FROM productions p
             JOIN production_details d ON p.id = d.production_id
             $whereClause
@@ -133,7 +136,6 @@ try {
         $karyawanStmt->execute($params);
         $rekap_karyawan = $karyawanStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // REKAP BAHAN BAKU (NESTED ARRAY UNTUK CARD/PRINT)
         $bahanStmt = $pdo->prepare("
             SELECT pr.name as produk, SUM(d.quantity) as total_qty_produk,
                    m.name as bahan, SUM(d.quantity * b.quantity_needed) as total_dipakai, b.unit_used as satuan
@@ -166,7 +168,6 @@ try {
             ];
         }
 
-        // PENTING: Jika is_print=true, buang LIMIT agar semua data terekstrak
         $limitClause = ($is_print === 'true') ? "" : "LIMIT $limit OFFSET $offset";
         
         $sql = "
@@ -177,7 +178,7 @@ try {
             JOIN products pr ON d.product_id = pr.id
             JOIN users u ON p.user_id = u.id
             LEFT JOIN employees e ON p.employee_id = e.id
-           LEFT JOIN warehouses w ON p.warehouse_id = w.id
+            LEFT JOIN warehouses w ON p.warehouse_id = w.id
             $whereClause
             ORDER BY p.created_at DESC 
             $limitClause
@@ -193,7 +194,8 @@ try {
             'summary' => [
                 'total' => $summary['total_all'] ?? 0,
                 'masuk' => $summary['total_masuk'] ?? 0,
-                'gagal' => $summary['total_gagal'] ?? 0
+                'ditolak' => $summary['total_ditolak'] ?? 0,
+                'expired' => $summary['total_expired'] ?? 0
             ],
             'rekap_produk' => $rekap_produk, 
             'rekap_karyawan' => $rekap_karyawan,

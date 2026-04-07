@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
-checkRole(['owner']);
+checkRole(['owner', 'auditor']);
 
 header('Content-Type: application/json');
 

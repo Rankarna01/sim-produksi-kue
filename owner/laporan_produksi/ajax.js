@@ -50,6 +50,17 @@ document.getElementById('formFilter').addEventListener('submit', function(e) {
     loadLaporan(1);
 });
 
+function resetFilter() {
+    document.getElementById('formFilter').reset();
+    const today = getTodayLocal();
+    document.getElementById('start_date').value = today;
+    document.getElementById('end_date').value = today;
+    document.getElementById('status').value = '';
+    document.getElementById('warehouse_filter').value = '';
+    document.getElementById('quick_filter').value = 'this_month';
+    loadLaporan(1);
+}
+
 function applyQuickFilter() {
     const filterType = document.getElementById('quick_filter').value;
     const startDateInput = document.getElementById('start_date');
@@ -120,10 +131,11 @@ async function loadLaporan(page = 1) {
     
     if (response.status === 'success') {
         
-        // Isi Infobox di layar Web
+        // Isi Infobox di layar Web (Pisah antara Ditolak dan Expired)
         document.getElementById('sum-total').innerHTML = `${formatNumber(response.summary.total)} <span class="text-sm font-semibold text-slate-500">Pcs</span>`;
         document.getElementById('sum-masuk').innerHTML = `${formatNumber(response.summary.masuk)} <span class="text-sm font-semibold text-success/70">Pcs</span>`;
-        document.getElementById('sum-gagal').innerHTML = `${formatNumber(response.summary.gagal)} <span class="text-sm font-semibold text-danger/70">Pcs</span>`;
+        document.getElementById('sum-ditolak').innerHTML = `${formatNumber(response.summary.ditolak)} <span class="text-sm font-semibold text-danger/70">Pcs</span>`;
+        document.getElementById('sum-expired').innerHTML = `${formatNumber(response.summary.expired)} <span class="text-sm font-semibold text-slate-400">Pcs</span>`;
 
         // Tab Rekap Produk
         let htmlRekap = '';
@@ -190,7 +202,7 @@ async function loadLaporan(page = 1) {
         }
         bahanGrid.innerHTML = htmlBahan;
 
-        // Tab Detail Histori (DIPERBAIKI UNTUK MENAMPILKAN GUDANG)
+        // Tab Detail Histori
         let htmlDetail = '';
         if (response.data.length === 0) {
             htmlDetail = '<tr><td colspan="8" class="p-8 text-center text-secondary font-medium">Tidak ada data histori.</td></tr>';
@@ -262,7 +274,7 @@ function renderPagination(totalPages, current) {
 }
 
 // ===========================================================================
-// CETAK PDF (ANTI LIMIT & TETAP ADA KOTAK INFOBOX, DIPERBAIKI UNTUK GUDANG)
+// CETAK PDF (4 KOLOM INFOBOX)
 // ===========================================================================
 async function cetakPDF() {
     Swal.fire({ title: 'Menyiapkan Dokumen...', text: 'Mengambil seluruh data...', icon: 'info', showConfirmButton: false, allowOutsideClick: false });
@@ -273,7 +285,6 @@ async function cetakPDF() {
     const status = document.getElementById('status').value;
     const warehouse = document.getElementById('warehouse_filter').value;
     
-    // Ambil seluruh data dengan is_print=true (Limit Pagination Mati)
     const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}&is_print=true`;
     const response = await fetchAjax(url, 'GET');
     
@@ -281,10 +292,11 @@ async function cetakPDF() {
         const wrapper = document.getElementById('print-table-wrapper');
         let htmlPrint = '';
 
-        // Masukkan data Summary ke kotak Print
+        // Masukkan data ke 4 kotak Print
         document.getElementById('print-sum-total').innerText = `${formatNumber(response.summary.total)} Pcs`;
         document.getElementById('print-sum-masuk').innerText = `${formatNumber(response.summary.masuk)} Pcs`;
-        document.getElementById('print-sum-gagal').innerText = `${formatNumber(response.summary.gagal)} Pcs`;
+        document.getElementById('print-sum-ditolak').innerText = `${formatNumber(response.summary.ditolak)} Pcs`;
+        document.getElementById('print-sum-expired').innerText = `${formatNumber(response.summary.expired)} Pcs`;
 
         if (activeTabId === 'btn-tab-detail') {
             htmlPrint = `<table><thead><tr><th>No</th><th>Waktu Produksi</th><th>No. Invoice</th><th>Karyawan (Dapur)</th><th>Produk</th><th>Qty</th><th>Status</th><th>Gudang</th></tr></thead><tbody>`;
@@ -336,7 +348,6 @@ async function cetakPDF() {
         wrapper.innerHTML = htmlPrint;
         Swal.close();
 
-        // Panggil jendela cetak PDF bawaan browser
         setTimeout(() => { window.print(); }, 500);
 
     } else {

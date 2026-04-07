@@ -1,15 +1,13 @@
 <?php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
-checkRole(['owner']);
+checkRole(['owner', 'auditor']);
 
 $action = $_GET['action'] ?? '';
 
 try {
-    // Ambil Parameter Filter
     $search = $_GET['search'] ?? '';
 
-    // Siapkan Query Dinamis (Join 3 Tabel)
     $sql = "
         SELECT p.name AS product_name, m.name AS material_name, b.quantity_needed, b.unit_used 
         FROM bom b
@@ -21,21 +19,19 @@ try {
     $params = [];
 
     if (!empty($search)) {
-        // Cari di Nama Produk ATAU Nama Bahan Baku
         $sql .= " AND (p.name LIKE ? OR m.name LIKE ?)";
         $params[] = "%$search%";
         $params[] = "%$search%";
     }
 
-    // Urutkan berdasarkan Produk, lalu Bahan Baku
     $sql .= " ORDER BY p.name ASC, m.name ASC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    $data = $stmt->fetchAll();
+    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // ============================================
-    // ROUTE 1: EXCEL EXPORT (DOWNLOAD FILE)
+    // ROUTE 1: EXCEL EXPORT (FLAT FORMAT)
     // ============================================
     if ($action === 'export_excel') {
         $filename = "Laporan_Resep_BOM_" . date('Ymd_His') . ".csv";
@@ -58,26 +54,39 @@ try {
                 $row['unit_used']
             ]);
         }
-        
         fclose($output);
         exit;
     }
 
     // ============================================
-    // ROUTE 2: BACA DATA JSON
+    // ROUTE 2: BACA DATA JSON (GROUPED FORMAT)
     // ============================================
     if ($action === 'read') {
+        // Logika Pengelompokan Data per Produk
+        $grouped_data = [];
+        foreach ($data as $row) {
+            $prod = $row['product_name'];
+            if (!isset($grouped_data[$prod])) {
+                $grouped_data[$prod] = [
+                    'product_name' => $prod,
+                    'materials' => []
+                ];
+            }
+            $grouped_data[$prod]['materials'][] = [
+                'material_name' => $row['material_name'],
+                'quantity_needed' => $row['quantity_needed'],
+                'unit_used' => $row['unit_used']
+            ];
+        }
+
         header('Content-Type: application/json');
-        echo json_encode(['status' => 'success', 'data' => $data]);
+        // Re-index array agar format JSON-nya rapi (List of Objects)
+        echo json_encode(['status' => 'success', 'data' => array_values($grouped_data)]);
         exit;
     }
 
 } catch (PDOException $e) {
-    if ($action === 'read') {
-        header('Content-Type: application/json');
-        echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . $e->getMessage()]);
-    } else {
-        die("Database Error: " . $e->getMessage());
-    }
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . $e->getMessage()]);
 }
 ?>
