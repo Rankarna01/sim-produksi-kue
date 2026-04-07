@@ -30,7 +30,7 @@ try {
             JOIN users u ON p.user_id = u.id
             LEFT JOIN employees e ON p.employee_id = e.id
             $whereClause
-            ORDER BY p.created_at ASC 
+            ORDER BY p.created_at DESC 
             $limitClause
         ";
         $stmt = $pdo->query($sql);

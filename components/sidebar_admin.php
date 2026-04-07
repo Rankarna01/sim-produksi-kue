@@ -50,6 +50,11 @@ function getNavClass($path, $current_uri) {
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 font-bold <?= strpos($current_uri, '/admin/antrean_validasi/') !== false ? 'text-primary' : 'text-amber-600' ?>">Antrean Validasi</span>
         </a>
 
+        <a href="<?= BASE_URL ?>admin/riwayat_status/" title="Riwayat & Status" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/admin/riwayat_status/', $current_uri) ?>">
+    <i class="fa-solid fa-clock-rotate-left w-6 text-center text-lg shrink-0"></i> 
+    <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Riwayat & Status</span>
+</a>
+
         <div class="px-2 py-2 mt-4 border-t border-slate-100"></div>
 
         <a href="<?= BASE_URL ?>logout.php" title="Keluar Sistem" onclick="return confirm('Yakin ingin keluar?')" class="md:hidden flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-danger hover:bg-red-50 hover:text-red-700 font-medium">
