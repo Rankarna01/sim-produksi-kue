@@ -17,7 +17,7 @@ checkRole(['produksi']);
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
             <div class="mb-6">
                 <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Riwayat Produksi</h2>
-                <p class="text-sm text-secondary mt-1">Daftar semua produk yang diproduksi. Anda dapat merevisi data yang Ditolak oleh Admin.</p>
+                <p class="text-sm text-secondary mt-1">Daftar semua produk yang diproduksi. Anda dapat merevisi atau membatalkan data.</p>
             </div>
 
             <div class="bg-surface p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">

@@ -14,7 +14,6 @@ async function initForm() {
         res.warehouses.forEach(w => optWarehouse += `<option value="${w.id}">${w.name}</option>`);
         document.getElementById('warehouse_id').innerHTML = optWarehouse;
 
-        // RENDER DATA PEGAWAI
         let optEmployee = '<option value="">-- Pilih Nama Anda --</option>';
         res.employees.forEach(e => optEmployee += `<option value="${e.id}">${e.name}</option>`);
         document.getElementById('employee_id').innerHTML = optEmployee;
@@ -39,6 +38,26 @@ function renderDropdownList(wrapper, productList) {
                 const textInput = wrapper.querySelector('.search-input');
                 const hiddenInput = wrapper.querySelector('.hidden-id');
                 
+                // =======================================================
+                // CEK DUPLIKAT: Pastikan produk belum ada di baris lain
+                // =======================================================
+                const allHidden = document.querySelectorAll('.hidden-id');
+                let isDuplicate = false;
+                allHidden.forEach(inp => {
+                    if (inp !== hiddenInput && inp.value == p.id) {
+                        isDuplicate = true;
+                    }
+                });
+
+                if (isDuplicate) {
+                    alert(`⚠️ Produk "${p.name}" sudah ada di daftar!\nSilakan ubah jumlah (Qty) pada baris yang sudah ada saja.`);
+                    textInput.value = '';
+                    hiddenInput.value = '';
+                    ul.classList.add('hidden');
+                    return; // Hentikan proses
+                }
+                // =======================================================
+
                 textInput.value = `[${p.code}] ${p.name}`;
                 hiddenInput.value = p.id;
                 
@@ -144,10 +163,13 @@ document.getElementById('formProduksi').addEventListener('submit', async functio
         }
     }
     
-    showLoading();
+    // Asumsi function showLoading() & hideLoading() sudah ada di main.js kamu
+    if(typeof showLoading === "function") showLoading();
+    
     const formData = new FormData(this);
     const response = await fetchAjax('logic.php?action=save', 'POST', formData);
-    hideLoading();
+    
+    if(typeof hideLoading === "function") hideLoading();
 
     if (response.status === 'success') {
         document.getElementById('btnCetak').setAttribute('onclick', `cetakStruk(${response.production_id})`);

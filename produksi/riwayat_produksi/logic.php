@@ -35,10 +35,6 @@ try {
         $limit = 10; 
         $offset = ($page - 1) * $limit;
 
-        // ====================================================================
-        // PERBAIKAN: Ubah menjadi WHERE 1=1
-        // Agar semua histori produksi dapur muncul, tidak dikunci per akun login
-        // ====================================================================
         $whereClause = "WHERE 1=1";
         $params = [];
 
@@ -55,13 +51,11 @@ try {
             $params[] = $status;
         }
 
-        // 1. Hitung Total Data (Menghitung Total Detail Produk)
         $countStmt = $pdo->prepare("SELECT COUNT(d.id) FROM productions p JOIN production_details d ON p.id = d.production_id $whereClause");
         $countStmt->execute($params);
         $total_data = $countStmt->fetchColumn();
         $total_pages = ceil($total_data / $limit);
 
-        // 2. Ambil Data Terbatas
         $sql = "
             SELECT p.id as prod_id, d.id as detail_id, p.invoice_no, p.created_at, p.status, 
                    pr.name as product_name, d.quantity 
@@ -88,11 +82,11 @@ try {
     }
 
     // ====================================================================
-    // LOGIKA REVISI (TIDAK DIUBAH - SUDAH SANGAT AMAN)
+    // LOGIKA REVISI (TIDAK DIUBAH)
     // ====================================================================
     if ($action === 'update_revisi') {
-        $prod_id = $_POST['prod_id'];     // ID Payung Produksi (Untuk ubah status jadi pending)
-        $detail_id = $_POST['detail_id']; // ID Baris Produk yang direvisi
+        $prod_id = $_POST['prod_id'];     
+        $detail_id = $_POST['detail_id']; 
         $new_qty = (int)$_POST['quantity'];
 
         if ($new_qty <= 0) {
@@ -120,7 +114,6 @@ try {
             $old_needed_in_gudang = convertUnit($qty_needed_per_item * $old_qty, $bom['unit_used'], $material['unit']);
             $new_needed_in_gudang = convertUnit($qty_needed_per_item * $new_qty, $bom['unit_used'], $material['unit']);
 
-            // Selisih positif (nambah produksi) potong stok. Selisih negatif (kurangi produksi) kembalikan stok.
             $difference = $new_needed_in_gudang - $old_needed_in_gudang;
 
             if ($difference > 0 && floatval($material['stock']) < $difference) {
@@ -133,16 +126,69 @@ try {
             $upd_stok->execute([$difference, $bom['material_id']]);
         }
 
-        // Update Detail Produksi (Hanya Produk yang dipilih)
         $upd_det = $pdo->prepare("UPDATE production_details SET quantity = ? WHERE id = ?");
         $upd_det->execute([$new_qty, $detail_id]);
 
-        // Ubah Status Payung Invoice jadi Pending agar discan ulang
         $upd_prod = $pdo->prepare("UPDATE productions SET status = 'pending' WHERE id = ?");
         $upd_prod->execute([$prod_id]);
 
         $pdo->commit();
         echo json_encode(['status' => 'success', 'message' => 'Revisi berhasil disimpan! Silakan minta Admin Gudang untuk scan ulang struk lama Anda.']);
+        exit;
+    }
+
+    // ====================================================================
+    // FITUR BARU: BATALKAN PRODUKSI (HAPUS & KEMBALIKAN STOK 100%)
+    // ====================================================================
+    if ($action === 'cancel_produksi') {
+        $detail_id = $_POST['detail_id'];
+        $prod_id = $_POST['prod_id'];
+
+        $pdo->beginTransaction();
+
+        // 1. Ambil Data Item yang mau dibatalkan
+        $stmt = $pdo->prepare("SELECT product_id, quantity FROM production_details WHERE id = ?");
+        $stmt->execute([$detail_id]);
+        $detail = $stmt->fetch();
+
+        if (!$detail) {
+            $pdo->rollBack();
+            echo json_encode(['status' => 'error', 'message' => 'Data tidak ditemukan!']); exit;
+        }
+
+        // 2. Kembalikan semua stok bahan baku (REFUND)
+        $bom_stmt = $pdo->prepare("SELECT material_id, quantity_needed, unit_used FROM bom WHERE product_id = ?");
+        $bom_stmt->execute([$detail['product_id']]);
+        $bom_list = $bom_stmt->fetchAll();
+
+        foreach ($bom_list as $bom) {
+            $stok_stmt = $pdo->prepare("SELECT stock, unit FROM materials WHERE id = ? FOR UPDATE");
+            $stok_stmt->execute([$bom['material_id']]);
+            $material = $stok_stmt->fetch();
+
+            $qty_needed_per_item = floatval($bom['quantity_needed']);
+            // Total Refund 100%
+            $refund_amount = convertUnit($qty_needed_per_item * $detail['quantity'], $bom['unit_used'], $material['unit']);
+
+            // Refund (+) Kembalikan ke Stok
+            $upd_stok = $pdo->prepare("UPDATE materials SET stock = stock + ? WHERE id = ?");
+            $upd_stok->execute([$refund_amount, $bom['material_id']]);
+        }
+
+        // 3. Hapus baris produk tersebut dari database
+        $del_det = $pdo->prepare("DELETE FROM production_details WHERE id = ?");
+        $del_det->execute([$detail_id]);
+
+        // 4. Jika di Invoice tsb sudah tidak ada produk lain, hapus sekalian payung Invoice-nya
+        $cek_sisa = $pdo->prepare("SELECT COUNT(id) FROM production_details WHERE production_id = ?");
+        $cek_sisa->execute([$prod_id]);
+        if ($cek_sisa->fetchColumn() == 0) {
+            $del_prod = $pdo->prepare("DELETE FROM productions WHERE id = ?");
+            $del_prod->execute([$prod_id]);
+        }
+
+        $pdo->commit();
+        echo json_encode(['status' => 'success', 'message' => 'Produksi dibatalkan. Seluruh stok bahan baku telah dikembalikan secara otomatis.']);
         exit;
     }
 

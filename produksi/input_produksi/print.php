@@ -2,7 +2,6 @@
 require_once '../../config/database.php';
 $id = $_GET['id'] ?? 0;
 
-// AMBIL NAMA KARYAWAN & GUDANG TUJUAN
 $stmtHead = $pdo->prepare("
     SELECT p.invoice_no, p.created_at, p.notes, 
            COALESCE(e.name, u.name) as karyawan,
@@ -29,7 +28,6 @@ $details = $stmtDetail->fetchAll();
 
 $barcode_str = $details[0]['barcode']; 
 
-// MENGHITUNG TOTAL PCS DARI SELURUH PRODUK DI INVOICE INI
 $total_keseluruhan = 0;
 foreach ($details as $d) {
     $total_keseluruhan += (int)$d['quantity'];
@@ -45,7 +43,7 @@ foreach ($details as $d) {
         @page { margin: 0; }
         body {
             font-family: 'Courier New', Courier, monospace;
-            width: 80mm; /* Ukuran standar kertas thermal kasir */
+            width: 80mm; 
             margin: 0 auto;
             padding: 5mm;
             color: #000;
@@ -63,9 +61,7 @@ foreach ($details as $d) {
         .table-produk th { border-bottom: 1px solid #000; padding-bottom: 5px; text-align: left; }
         .table-produk td { padding-top: 5px; }
         
-        .barcode-container { margin-top: 10px; text-align: center; }
-        
-        /* PERBAIKAN: Jangan paksa width 85%, biarkan proporsional agar mudah di-scan */
+        .barcode-container { margin-top: 15px; text-align: center; }
         .barcode-container svg { 
             max-width: 100%; 
             height: auto; 
@@ -138,15 +134,15 @@ foreach ($details as $d) {
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // PERBAIKAN SETINGAN JSBARCODE
+            // PERBAIKAN BARCODE: Dibuat lebih tinggi, garis lebih tebal, dan proporsional
             JsBarcode("#barcode", "<?= $barcode_str ?>", {
                 format: "CODE128",
                 displayValue: true,
-                fontSize: 14,        // Ukuran font sedikit dibesarkan agar jelas dibaca Karyawan
-                height: 40,          // Tinggi garis barcode dipendekkan (Bantet)
-                width: 1.5,          // Ketebalan garis ideal agar tidak meluber
-                textMargin: 4,       // Jarak antara garis barcode dan angka
-                margin: 0            
+                fontSize: 18,        // Angka diperbesar
+                height: 70,          // Tinggi diperbesar agar lebih 'kotak'
+                width: 1.8,          // Garis dipertebal sedikit
+                textMargin: 6,       
+                margin: 5            
             });
 
             setTimeout(() => {

@@ -1,6 +1,5 @@
 let currentPage = 1;
 
-// FUNGSI BARU: Mengambil Tanggal Hari Ini Sesuai Zona Waktu Lokal (Bukan UTC)
 function getTodayLocal() {
     const now = new Date();
     const year = now.getFullYear();
@@ -10,7 +9,6 @@ function getTodayLocal() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Gunakan fungsi tanggal lokal
     const today = getTodayLocal();
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
@@ -25,7 +23,6 @@ document.getElementById('formFilter').addEventListener('submit', function(e) {
 function resetFilter() {
     document.getElementById('formFilter').reset();
     
-    // PERBAIKAN: Kembalikan tanggal ke hari ini saat di-reset, bukan dikosongkan
     const today = getTodayLocal();
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
@@ -58,20 +55,29 @@ async function loadHistory(page = 1) {
                 const waktu = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
                 let statusBadge = '';
-                let editButton = '';
+                let actionButtons = '';
+
+                // Tombol Print
+                let btnPrint = `<button onclick="cetakUlangStruk(${item.prod_id})" title="Print Struk" class="bg-slate-800 hover:bg-slate-900 text-white w-9 h-9 rounded-lg flex items-center justify-center transition-colors shadow-md"><i class="fa-solid fa-print text-xs"></i></button>`;
+                
+                // Tombol Batal
+                let btnBatal = `<button onclick="batalkanProduksi(${item.detail_id}, ${item.prod_id})" title="Batalkan Produksi" class="bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-danger w-9 h-9 rounded-lg flex items-center justify-center transition-colors shadow-sm"><i class="fa-solid fa-trash text-xs"></i></button>`;
+                
+                // Tombol Edit
+                let btnEdit = `<button onclick='bukaEdit(${JSON.stringify(item).replace(/'/g, "&apos;")})' title="Perbaiki Data" class="bg-danger hover:bg-red-700 text-white w-9 h-9 rounded-lg flex items-center justify-center transition-colors shadow-md"><i class="fa-solid fa-pen text-xs"></i></button>`;
 
                 if (item.status === 'pending') {
                     statusBadge = `<span class="bg-accent/10 text-accent px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-clock"></i> Pending</span>`;
-                    editButton = ``; 
+                    actionButtons = btnPrint + btnBatal; 
                 } else if (item.status === 'ditolak') {
                     statusBadge = `<span class="bg-danger/10 text-danger px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> Ditolak</span>`;
-                    editButton = `<button onclick='bukaEdit(${JSON.stringify(item).replace(/'/g, "&apos;")})' title="Perbaiki Data" class="bg-danger hover:bg-red-700 text-white w-9 h-9 rounded-lg flex items-center justify-center transition-colors shadow-md"><i class="fa-solid fa-pen"></i></button>`;
+                    actionButtons = btnPrint + btnEdit + btnBatal;
                 } else if (item.status === 'expired') {
                     statusBadge = `<span class="bg-slate-200 text-slate-600 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-ban"></i> Expired</span>`;
-                    editButton = ``;
+                    actionButtons = btnPrint; // Kalau expired gak bisa dibatalkan lagi
                 } else {
                     statusBadge = `<span class="bg-success/10 text-success px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-check-double"></i> Selesai</span>`;
-                    editButton = ``;
+                    actionButtons = btnPrint; // Kalau sukses gak bisa dibatalkan dari Dapur
                 }
 
                 html += `
@@ -87,10 +93,7 @@ async function loadHistory(page = 1) {
                         <td class="p-4 text-center">${statusBadge}</td>
                         <td class="p-4 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <button onclick="cetakUlangStruk(${item.prod_id})" title="Print Struk" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-2">
-                                    <i class="fa-solid fa-print"></i> Print
-                                </button>
-                                ${editButton}
+                                ${actionButtons}
                             </div>
                         </td>
                     </tr>
@@ -146,20 +149,50 @@ function bukaEdit(item) {
 
 document.getElementById('formEdit').addEventListener('submit', async function(e) {
     e.preventDefault();
-    showLoading();
+    Swal.fire({ title: 'Menyimpan Revisi...', text: 'Menyesuaikan stok bahan baku...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
     
     const formData = new FormData(this);
     const response = await fetchAjax('logic.php?action=update_revisi', 'POST', formData);
     
-    hideLoading();
     if (response.status === 'success') {
-        alert(response.message);
+        Swal.fire('Berhasil!', response.message, 'success');
         closeModal('modal-edit');
         loadHistory(currentPage);
     } else {
-        alert('Gagal: ' + response.message);
+        Swal.fire('Gagal!', response.message, 'error');
     }
 });
+
+// FUNGSI BARU: BATALKAN PRODUKSI (Dengan SweetAlert)
+async function batalkanProduksi(detail_id, prod_id) {
+    const result = await Swal.fire({
+        title: 'Batalkan Produksi?',
+        text: "Data ini akan dihapus dan bahan baku akan dikembalikan 100% ke stok gudang!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#94A3B8',
+        confirmButtonText: 'Ya, Batalkan!',
+        cancelButtonText: 'Tutup'
+    });
+
+    if (result.isConfirmed) {
+        Swal.fire({ title: 'Memproses...', text: 'Mengembalikan bahan baku ke Gudang...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
+        
+        const formData = new FormData();
+        formData.append('detail_id', detail_id);
+        formData.append('prod_id', prod_id);
+        
+        const response = await fetchAjax('logic.php?action=cancel_produksi', 'POST', formData);
+        
+        if (response.status === 'success') {
+            Swal.fire('Dibatalkan!', response.message, 'success');
+            loadHistory(currentPage);
+        } else {
+            Swal.fire('Gagal!', response.message, 'error');
+        }
+    }
+}
 
 function cetakUlangStruk(id) {
     window.open(`../input_produksi/print.php?id=${id}`, 'CetakStruk', 'width=400,height=600');
