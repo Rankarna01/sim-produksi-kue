@@ -49,7 +49,7 @@ checkRole(['owner', 'auditor']);
             </div>
 
             <div id="form-filter-section" class="bg-surface p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                <form id="formFilter" class="flex flex-col md:flex-row gap-4 items-end">
+                <form id="formFilter" class="flex flex-col md:flex-row gap-4 items-end flex-wrap">
                     <div class="w-full md:w-48">
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Pilih Periode</label>
                         <select id="quick_filter" onchange="applyQuickFilter()" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm font-semibold">
@@ -68,6 +68,13 @@ checkRole(['owner', 'auditor']);
                     <div class="w-full md:w-40">
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Sampai Tanggal</label>
                         <input type="date" id="end_date" name="end_date" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm">
+                    </div>
+
+                    <div class="w-full md:w-48">
+                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Lokasi Gudang</label>
+                        <select id="warehouse_id" name="warehouse_id" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm">
+                            <option value="">Semua Gudang</option>
+                            </select>
                     </div>
 
                     <div class="w-full md:w-auto flex gap-2">

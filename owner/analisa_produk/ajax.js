@@ -1,6 +1,25 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    // Muat daftar gudang untuk dropdown filter
+    await loadFilterGudang();
     applyQuickFilter(); 
 });
+
+// FITUR BARU: Ambil Daftar Gudang dari Server
+async function loadFilterGudang() {
+    try {
+        const response = await fetchAjax('logic.php?action=init_filter', 'GET');
+        if (response.status === 'success') {
+            const selectGudang = document.getElementById('warehouse_id');
+            let options = '<option value="">Semua Gudang</option>';
+            response.warehouses.forEach(w => {
+                options += `<option value="${w.id}">${w.name}</option>`;
+            });
+            selectGudang.innerHTML = options;
+        }
+    } catch (e) {
+        console.error("Gagal memuat filter gudang");
+    }
+}
 
 document.getElementById('formFilter').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -57,9 +76,15 @@ async function loadAnalisa() {
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     
-    document.getElementById('print-periode').innerText = `Periode: ${start || 'Awal'} s/d ${end || 'Akhir'}`;
+    // Ambil Filter Gudang
+    const warehouseSelect = document.getElementById('warehouse_id');
+    const warehouseId = warehouseSelect.value;
+    const warehouseName = warehouseSelect.options[warehouseSelect.selectedIndex].text;
+    
+    document.getElementById('print-periode').innerText = `Periode: ${start || 'Awal'} s/d ${end || 'Akhir'} | Lokasi: ${warehouseName.toUpperCase()}`;
 
-    const url = `logic.php?action=read&start_date=${start}&end_date=${end}`;
+    // Kirimkan parameter gudang ke URL
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
@@ -72,7 +97,7 @@ async function loadAnalisa() {
         // 2. RENDER TABEL PERINGKAT
         let html = '';
         if (response.data.length === 0) {
-            html = '<tr><td colspan="6" class="p-8 text-center text-secondary font-medium">Tidak ada data produksi atau penarikan pada periode ini.</td></tr>';
+            html = '<tr><td colspan="6" class="p-8 text-center text-secondary font-medium">Tidak ada data analisa pada filter ini.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 
