@@ -1,12 +1,41 @@
-document.addEventListener("DOMContentLoaded", () => {
-    // Set default tanggal hari ini di kotak input saat pertama kali dibuka
-    const today = new Date().toISOString().split('T')[0];
+// Tambahkan fungsi untuk format tanggal lokal
+function getTodayLocal() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Muat dropdown gudang terlebih dahulu
+    await loadFilterGudang();
+    
+    // 2. Set default tanggal hari ini
+    const today = getTodayLocal();
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
     
-    // Langsung muat data
+    // 3. Langsung muat data tabel
     loadHistory();
 });
+
+// FITUR BARU: Ambil Daftar Gudang dari Server
+async function loadFilterGudang() {
+    try {
+        const response = await fetchAjax('logic.php?action=init_filter', 'GET');
+        if (response.status === 'success') {
+            const selectGudang = document.getElementById('warehouse_id');
+            let options = '<option value="">Semua Gudang</option>';
+            response.warehouses.forEach(w => {
+                options += `<option value="${w.id}">${w.name}</option>`;
+            });
+            if(selectGudang) selectGudang.innerHTML = options;
+        }
+    } catch (e) {
+        console.error("Gagal memuat filter gudang");
+    }
+}
 
 // Event ketika tombol Filter diklik
 document.getElementById('formFilter').addEventListener('submit', function(e) {
@@ -17,8 +46,12 @@ document.getElementById('formFilter').addEventListener('submit', function(e) {
 // Fungsi untuk tombol Reset
 function resetFilter() {
     document.getElementById('formFilter').reset();
-    document.getElementById('start_date').value = '';
-    document.getElementById('end_date').value = '';
+    
+    const today = getTodayLocal();
+    document.getElementById('start_date').value = today;
+    document.getElementById('end_date').value = today;
+    document.getElementById('warehouse_id').value = '';
+    
     loadHistory();
 }
 
@@ -29,15 +62,16 @@ async function loadHistory() {
     // Ambil nilai dari input filter
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
+    const warehouseId = document.getElementById('warehouse_id').value; // Ambil nilai Gudang
     
     // Panggil AJAX dengan parameter filter
-    const url = `logic.php?action=read&start_date=${start}&end_date=${end}`;
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
         let html = '';
         if (response.data.length === 0) {
-            html = '<tr><td colspan="5" class="p-8 text-center text-secondary font-medium">Tidak ada riwayat validasi pada rentang tanggal tersebut.</td></tr>';
+            html = '<tr><td colspan="5" class="p-8 text-center text-secondary font-medium">Tidak ada riwayat validasi pada filter tersebut.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 // Konversi tanggal database ke format lokal yang rapi

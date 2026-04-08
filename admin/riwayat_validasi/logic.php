@@ -7,13 +7,19 @@ header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
 
 try {
+    // FITUR BARU: Tarik data Master Gudang untuk Dropdown Filter
+    if ($action === 'init_filter') {
+        $warehouses = $pdo->query("SELECT id, name FROM warehouses ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'warehouses' => $warehouses]);
+        exit;
+    }
+
     if ($action === 'read') {
-        // Ambil nilai filter dari URL (jika ada)
         $start_date = $_GET['start_date'] ?? '';
         $end_date = $_GET['end_date'] ?? '';
+        $warehouse_id = $_GET['warehouse_id'] ?? '';
 
-        // Query dasar
- $sql = "
+        $sql = "
             SELECT p.created_at as updated_at, pr.name as produk, d.quantity, w.name as gudang, p.invoice_no
             FROM productions p
             JOIN production_details d ON p.id = d.production_id
@@ -24,7 +30,6 @@ try {
         
         $params = [];
 
-        // Tambahkan filter tanggal secara dinamis
         if (!empty($start_date)) {
             $sql .= " AND DATE(p.created_at) >= ?";
             $params[] = $start_date;
@@ -32,6 +37,12 @@ try {
         if (!empty($end_date)) {
             $sql .= " AND DATE(p.created_at) <= ?";
             $params[] = $end_date;
+        }
+        
+        // TAMBAHAN BARU: Filter Berdasarkan Gudang
+        if (!empty($warehouse_id)) {
+            $sql .= " AND p.warehouse_id = ?";
+            $params[] = $warehouse_id;
         }
 
         // Urutkan dari yang paling baru di-scan

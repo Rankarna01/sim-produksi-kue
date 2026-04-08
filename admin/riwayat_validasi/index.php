@@ -30,6 +30,14 @@ checkRole(['admin']);
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Sampai Tanggal</label>
                         <input type="date" id="end_date" name="end_date" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
                     </div>
+                    
+                    <div class="flex-1 w-full">
+                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Lokasi Gudang</label>
+                        <select id="warehouse_id" name="warehouse_id" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                            <option value="">Semua Gudang</option>
+                            </select>
+                    </div>
+
                     <div class="w-full sm:w-auto flex gap-2">
                         <button type="submit" class="flex-1 bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-sm">
                             <i class="fa-solid fa-filter"></i> Filter
