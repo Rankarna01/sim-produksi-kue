@@ -17,7 +17,7 @@ checkRole(['produksi']);
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
             <div class="mb-6">
                 <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Riwayat Produksi</h2>
-                <p class="text-sm text-secondary mt-1">Daftar semua produk yang diproduksi. Anda dapat merevisi atau membatalkan data.</p>
+                <p class="text-sm text-secondary mt-1">Daftar semua produksi berdasarkan Invoice. Anda dapat merevisi atau membatalkan data.</p>
             </div>
 
             <div class="bg-surface p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
@@ -59,8 +59,8 @@ checkRole(['produksi']);
                                 <th class="p-4 font-semibold w-16 text-center">No</th>
                                 <th class="p-4 font-semibold">Tanggal & Waktu</th>
                                 <th class="p-4 font-semibold">No. Invoice</th>
-                                <th class="p-4 font-semibold">Produk</th>
-                                <th class="p-4 font-semibold text-center">Jumlah</th>
+                                <th class="p-4 font-semibold">Daftar Produk (Qty)</th>
+                                <th class="p-4 font-semibold text-center">Total Pcs</th>
                                 <th class="p-4 font-semibold text-center">Status</th>
                                 <th class="p-4 font-semibold text-center w-40">Aksi</th>
                             </tr>
@@ -79,32 +79,26 @@ checkRole(['produksi']);
 
     <div id="modal-edit" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-edit')"></div>
-        <div class="relative bg-surface w-full max-w-sm rounded-3xl shadow-xl z-10 transform transition-all flex flex-col">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
-                <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-pen-to-square text-primary mr-2"></i> Revisi Produksi</h3>
+        <div class="relative bg-surface w-full max-w-md rounded-3xl shadow-xl z-10 transform transition-all flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl shrink-0">
+                <h3 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-pen-to-square text-primary mr-2"></i> Revisi Invoice</h3>
                 <button onclick="closeModal('modal-edit')" class="text-secondary hover:text-danger transition-colors">
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
             
-            <div class="p-6">
-                <div class="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800 font-medium">
-                    Struk fisik lama Anda masih berlaku. Stok bahan baku akan dihitung ulang secara otomatis jika merubah jumlah.
+            <div class="p-6 flex-1 overflow-hidden flex flex-col">
+                <div class="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800 font-medium shrink-0">
+                    Silakan ubah jumlah produk di bawah ini. Stok bahan baku akan dihitung ulang secara otomatis.
                 </div>
-                <form id="formEdit" class="space-y-4">
+                
+                <form id="formEdit" class="flex flex-col flex-1 overflow-hidden">
                     <input type="hidden" id="edit_prod_id" name="prod_id">
-                    <input type="hidden" id="edit_detail_id" name="detail_id">
                     
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Produk (Tidak bisa diubah)</label>
-                        <input type="text" id="edit_produk" readonly class="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-100 text-slate-600 font-bold outline-none cursor-not-allowed">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Jumlah Aktual (Pcs)</label>
-                        <input type="number" id="edit_qty" name="quantity" required min="1" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none font-black text-primary text-2xl text-center">
-                    </div>
+                    <div id="edit-produk-list" class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3 mb-6">
+                        </div>
                     
-                    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
                         <button type="button" onclick="closeModal('modal-edit')" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
                         <button type="submit" class="w-full sm:w-auto px-5 py-2.5 text-sm font-bold text-white bg-primary hover:bg-blue-700 rounded-xl transition-all shadow-sm">
                             <i class="fa-solid fa-save mr-1"></i> Simpan Revisi
@@ -116,6 +110,11 @@ checkRole(['produksi']);
     </div>
 
     <?php include '../../components/footer.php'; ?>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
     <script src="ajax.js?v=<?= time() ?>"></script>
 </body>
 </html>
