@@ -57,6 +57,36 @@ checkRole(['admin']); // Khusus Admin
                 </div>
 
                 <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                    
+                    <div class="p-4 sm:p-5 border-b border-slate-100 bg-slate-50">
+                        <form id="formFilter" class="flex flex-col sm:flex-row gap-4 items-end">
+                            <div class="w-full sm:flex-1">
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Mulai Tanggal</label>
+                                <input type="date" id="start_date" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all text-sm bg-white">
+                            </div>
+                            <div class="w-full sm:flex-1">
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Sampai Tanggal</label>
+                                <input type="date" id="end_date" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all text-sm bg-white">
+                            </div>
+                            
+                            <div class="w-full sm:flex-1">
+                                <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Gudang Tujuan</label>
+                                <select id="warehouse_id" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all text-sm bg-white">
+                                    <option value="">Semua Gudang</option>
+                                    </select>
+                            </div>
+
+                            <div class="w-full sm:w-auto flex gap-2">
+                                <button type="submit" class="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-sm">
+                                    <i class="fa-solid fa-filter"></i> Filter
+                                </button>
+                                <button type="button" onclick="resetFilter()" class="bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm">
+                                    Reset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
                     <div class="p-4 bg-amber-50 border-b border-amber-100 flex items-center justify-between">
                         <div class="flex items-center gap-2 text-amber-800">
                             <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
@@ -70,6 +100,7 @@ checkRole(['admin']); // Khusus Admin
                                 <tr class="bg-slate-50 border-b border-slate-200 text-xs text-secondary uppercase tracking-wider">
                                     <th class="p-4 font-bold w-12 text-center">No</th>
                                     <th class="p-4 font-bold">Waktu Produksi</th>
+                                    <th class="p-4 font-bold">Gudang Tujuan</th>
                                     <th class="p-4 font-bold">No. Invoice</th>
                                     <th class="p-4 font-bold">Karyawan Dapur</th>
                                     <th class="p-4 font-bold">Nama Produk</th>
@@ -77,7 +108,7 @@ checkRole(['admin']); // Khusus Admin
                                 </tr>
                             </thead>
                             <tbody id="table-data" class="text-sm divide-y divide-slate-100">
-                                <tr><td colspan="6" class="p-8 text-center text-secondary">Memuat data...</td></tr>
+                                <tr><td colspan="7" class="p-8 text-center text-secondary">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>

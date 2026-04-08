@@ -1,5 +1,5 @@
 let currentPage = 1;
-let alertShown = false; // Mencegah alert muncul berkali-kali saat ganti halaman
+let alertShown = false; 
 
 function getTodayLocal() {
     const now = new Date();
@@ -9,16 +9,61 @@ function getTodayLocal() {
     return `${year}-${month}-${day}`;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Muat Dropdown Gudang
+    await loadFilterGudang();
+    
+    // 2. Set default tanggal hari ini
+    const today = getTodayLocal();
+    document.getElementById('start_date').value = today;
+    document.getElementById('end_date').value = today;
+    
+    // 3. Load data
     loadData(1);
 });
+
+// FITUR BARU: Ambil Daftar Gudang dari Server
+async function loadFilterGudang() {
+    try {
+        const response = await fetchAjax('logic.php?action=init_filter', 'GET');
+        if (response.status === 'success') {
+            const selectGudang = document.getElementById('warehouse_id');
+            let options = '<option value="">Semua Gudang</option>';
+            response.warehouses.forEach(w => {
+                options += `<option value="${w.id}">${w.name}</option>`;
+            });
+            if(selectGudang) selectGudang.innerHTML = options;
+        }
+    } catch (e) {
+        console.error("Gagal memuat filter gudang");
+    }
+}
+
+document.getElementById('formFilter').addEventListener('submit', function(e) {
+    e.preventDefault();
+    loadData(1);
+});
+
+function resetFilter() {
+    document.getElementById('formFilter').reset();
+    const today = getTodayLocal();
+    document.getElementById('start_date').value = today;
+    document.getElementById('end_date').value = today;
+    document.getElementById('warehouse_id').value = '';
+    loadData(1);
+}
 
 async function loadData(page = 1) {
     currentPage = page;
     const tbody = document.getElementById('table-data');
-    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data antrean...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data antrean...</td></tr>';
     
-    const url = `logic.php?action=read&page=${currentPage}`;
+    // Ambil Filter
+    const start = document.getElementById('start_date').value;
+    const end = document.getElementById('end_date').value;
+    const warehouseId = document.getElementById('warehouse_id').value;
+    
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}&page=${currentPage}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
@@ -26,7 +71,7 @@ async function loadData(page = 1) {
 
         let html = '';
         if (response.data.length === 0) {
-            html = '<tr><td colspan="6" class="p-12 text-center text-secondary"><div class="flex flex-col items-center justify-center"><i class="fa-solid fa-box-open text-4xl text-slate-300 mb-3"></i><span class="font-bold text-slate-500">Hebat! Tidak ada antrean.</span><span class="text-xs">Semua barang produksi sudah divalidasi.</span></div></td></tr>';
+            html = '<tr><td colspan="7" class="p-12 text-center text-secondary"><div class="flex flex-col items-center justify-center"><i class="fa-solid fa-box-open text-4xl text-slate-300 mb-3"></i><span class="font-bold text-slate-500">Hebat! Tidak ada antrean.</span><span class="text-xs">Semua barang produksi pada filter ini sudah divalidasi.</span></div></td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 const no = (currentPage - 1) * 15 + index + 1;
@@ -40,6 +85,9 @@ async function loadData(page = 1) {
                         <td class="p-4">
                             <div class="font-bold text-slate-700">${tgl}</div>
                             <div class="text-[10px] text-slate-400 font-bold text-amber-600">${waktu} WIB</div>
+                        </td>
+                        <td class="p-4 font-semibold text-slate-600 text-xs">
+                            <i class="fa-solid fa-warehouse text-slate-400 mr-1"></i>${item.gudang ?? 'Gudang Utama'}
                         </td>
                         <td class="p-4 font-mono text-xs font-bold text-slate-500">${item.invoice_no}</td>
                         <td class="p-4 font-medium text-sm">${item.karyawan}</td>
@@ -62,7 +110,6 @@ async function loadData(page = 1) {
             // Jika sudah jam 15:00 (Jam 3 Sore) ke atas
             if (jamSekarang >= 15) {
                 const todayStr = getTodayLocal();
-                
                 // Cek apakah ada barang pending yang diproduksi HARI INI
                 const pendingTodayCount = response.data.filter(item => item.created_at.startsWith(todayStr)).length;
                 
@@ -103,24 +150,33 @@ function renderPagination(totalPages, current) {
 }
 
 // ===========================================================================
-// CETAK PDF (ANTI LIMIT & ANTI iOS BUG)
+// CETAK PDF (ANTI LIMIT & BACA FILTER)
 // ===========================================================================
 async function cetakPDF() {
     Swal.fire({ title: 'Menyiapkan Dokumen...', text: 'Mengambil daftar jemputan...', icon: 'info', showConfirmButton: false, allowOutsideClick: false });
     
-    // Tarik data tanpa limit
-    const url = `logic.php?action=read&is_print=true`;
+    const start = document.getElementById('start_date').value;
+    const end = document.getElementById('end_date').value;
+    const warehouseId = document.getElementById('warehouse_id').value;
+    
+    // Tarik data tanpa limit dengan filter yang aktif
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}&is_print=true`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
         const wrapper = document.getElementById('print-table-wrapper');
         const now = new Date();
-        document.getElementById('print-periode').innerText = `Dicetak pada: ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')} WIB`;
+        
+        // Ambil nama gudang untuk judul PDF
+        const warehouseSelect = document.getElementById('warehouse_id');
+        const warehouseName = warehouseId ? warehouseSelect.options[warehouseSelect.selectedIndex].text : 'Semua Gudang';
 
-        let htmlPrint = `<table><thead><tr><th>No</th><th>Waktu Produksi</th><th>No. Invoice</th><th>Karyawan (Dapur)</th><th>Nama Produk</th><th>Qty</th></tr></thead><tbody>`;
+        document.getElementById('print-periode').innerText = `Lokasi Penjemputan: ${warehouseName.toUpperCase()} | Dicetak pada: ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')} WIB`;
+
+        let htmlPrint = `<table><thead><tr><th>No</th><th>Waktu Produksi</th><th>Gudang Tujuan</th><th>No. Invoice</th><th>Karyawan (Dapur)</th><th>Nama Produk</th><th>Qty</th></tr></thead><tbody>`;
         
         if(response.data.length === 0){
-             htmlPrint += `<tr><td colspan="6" style="text-align:center;">Tidak ada antrean barang (Semua bersih).</td></tr>`;
+             htmlPrint += `<tr><td colspan="7" style="text-align:center;">Tidak ada antrean barang pada filter tersebut.</td></tr>`;
         } else {
             response.data.forEach((item, index) => {
                 const d = new Date(item.created_at);
@@ -129,6 +185,7 @@ async function cetakPDF() {
                 htmlPrint += `<tr>
                     <td style="text-align:center;">${index + 1}</td>
                     <td>${tgl}</td>
+                    <td>${item.gudang ?? 'Gudang Utama'}</td>
                     <td>${item.invoice_no}</td>
                     <td>${item.karyawan}</td>
                     <td style="font-weight:bold;">${item.produk}</td>
