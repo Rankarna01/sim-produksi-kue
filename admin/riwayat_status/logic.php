@@ -11,6 +11,7 @@ try {
     $end_date = $_GET['end_date'] ?? '';
     $is_print = $_GET['is_print'] ?? 'false';
     
+    // Logika normal kembali, karena masing-masing punya tab sendiri
     $whereClause = "WHERE p.status = ?";
     $params = [$status];
 
@@ -35,7 +36,7 @@ try {
     if ($action === 'export_excel') {
         $sql = "
             SELECT p.created_at, p.invoice_no, COALESCE(e.name, u.name) as karyawan, 
-                   pr.name as produk, d.quantity 
+                   pr.name as produk, d.quantity, p.status 
             FROM productions p
             JOIN production_details d ON p.id = d.production_id
             JOIN products pr ON d.product_id = pr.id
@@ -55,17 +56,21 @@ try {
         $output = fopen('php://output', 'w');
         fputs($output, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
 
-        fputcsv($output, ['No', 'Waktu', 'No. Invoice', 'Karyawan', 'Nama Produk', 'Jumlah (Pcs)']);
+        fputcsv($output, ['No', 'Waktu', 'No. Invoice', 'Karyawan', 'Nama Produk', 'Jumlah (Pcs)', 'Status Aktual']);
         
         $no = 1;
         foreach ($data as $row) {
+            $st_aktual = strtoupper($row['status']);
+            if($row['status'] === 'masuk_gudang') $st_aktual = 'SELESAI';
+            
             fputcsv($output, [
                 $no++,
                 $row['created_at'],
                 $row['invoice_no'],
                 $row['karyawan'],
                 $row['produk'],
-                $row['quantity']
+                $row['quantity'],
+                $st_aktual
             ]);
         }
         fclose($output);
@@ -90,7 +95,7 @@ try {
         
         $sql = "
             SELECT p.created_at, p.invoice_no, COALESCE(e.name, u.name) as karyawan, 
-                   pr.name as produk, d.quantity 
+                   pr.name as produk, d.quantity, p.status 
             FROM productions p
             JOIN production_details d ON p.id = d.production_id
             JOIN products pr ON d.product_id = pr.id

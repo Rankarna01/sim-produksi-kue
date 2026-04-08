@@ -82,7 +82,7 @@ try {
     }
 
     // ====================================================================
-    // LOGIKA REVISI (TIDAK DIUBAH)
+    // LOGIKA REVISI (TIDAK DIUBAH - SUDAH AMAN)
     // ====================================================================
     if ($action === 'update_revisi') {
         $prod_id = $_POST['prod_id'];     
@@ -138,57 +138,63 @@ try {
     }
 
     // ====================================================================
-    // FITUR BARU: BATALKAN PRODUKSI (HAPUS & KEMBALIKAN STOK 100%)
+    // FITUR BARU: BATALKAN PRODUKSI (SOFT DELETE & REFUND STOK)
     // ====================================================================
     if ($action === 'cancel_produksi') {
-        $detail_id = $_POST['detail_id'];
         $prod_id = $_POST['prod_id'];
 
         $pdo->beginTransaction();
 
-        // 1. Ambil Data Item yang mau dibatalkan
-        $stmt = $pdo->prepare("SELECT product_id, quantity FROM production_details WHERE id = ?");
-        $stmt->execute([$detail_id]);
-        $detail = $stmt->fetch();
+        // 1. Cek Status saat ini (Anti Double-Refund)
+        $stmtCek = $pdo->prepare("SELECT status FROM productions WHERE id = ? FOR UPDATE");
+        $stmtCek->execute([$prod_id]);
+        $currentStatus = $stmtCek->fetchColumn();
 
-        if (!$detail) {
+        if ($currentStatus === 'dibatalkan') {
             $pdo->rollBack();
-            echo json_encode(['status' => 'error', 'message' => 'Data tidak ditemukan!']); exit;
+            echo json_encode(['status' => 'error', 'message' => 'Data ini sudah dibatalkan sebelumnya!']); exit;
+        }
+        if ($currentStatus === 'masuk_gudang') {
+            $pdo->rollBack();
+            echo json_encode(['status' => 'error', 'message' => 'Tidak bisa dibatalkan karena produk sudah masuk gudang!']); exit;
         }
 
-        // 2. Kembalikan semua stok bahan baku (REFUND)
-        $bom_stmt = $pdo->prepare("SELECT material_id, quantity_needed, unit_used FROM bom WHERE product_id = ?");
-        $bom_stmt->execute([$detail['product_id']]);
-        $bom_list = $bom_stmt->fetchAll();
+        // 2. Ambil SEMUA detail produk dalam Invoice ini untuk di-refund
+        $stmtDet = $pdo->prepare("SELECT product_id, quantity FROM production_details WHERE production_id = ?");
+        $stmtDet->execute([$prod_id]);
+        $details = $stmtDet->fetchAll();
 
-        foreach ($bom_list as $bom) {
-            $stok_stmt = $pdo->prepare("SELECT stock, unit FROM materials WHERE id = ? FOR UPDATE");
-            $stok_stmt->execute([$bom['material_id']]);
-            $material = $stok_stmt->fetch();
-
-            $qty_needed_per_item = floatval($bom['quantity_needed']);
-            // Total Refund 100%
-            $refund_amount = convertUnit($qty_needed_per_item * $detail['quantity'], $bom['unit_used'], $material['unit']);
-
-            // Refund (+) Kembalikan ke Stok
-            $upd_stok = $pdo->prepare("UPDATE materials SET stock = stock + ? WHERE id = ?");
-            $upd_stok->execute([$refund_amount, $bom['material_id']]);
+        if (!$details) {
+            $pdo->rollBack();
+            echo json_encode(['status' => 'error', 'message' => 'Data detail produk tidak ditemukan!']); exit;
         }
 
-        // 3. Hapus baris produk tersebut dari database
-        $del_det = $pdo->prepare("DELETE FROM production_details WHERE id = ?");
-        $del_det->execute([$detail_id]);
+        // 3. Kembalikan semua stok bahan baku ke gudang (REFUND)
+        foreach ($details as $detail) {
+            $bom_stmt = $pdo->prepare("SELECT material_id, quantity_needed, unit_used FROM bom WHERE product_id = ?");
+            $bom_stmt->execute([$detail['product_id']]);
+            $bom_list = $bom_stmt->fetchAll();
 
-        // 4. Jika di Invoice tsb sudah tidak ada produk lain, hapus sekalian payung Invoice-nya
-        $cek_sisa = $pdo->prepare("SELECT COUNT(id) FROM production_details WHERE production_id = ?");
-        $cek_sisa->execute([$prod_id]);
-        if ($cek_sisa->fetchColumn() == 0) {
-            $del_prod = $pdo->prepare("DELETE FROM productions WHERE id = ?");
-            $del_prod->execute([$prod_id]);
+            foreach ($bom_list as $bom) {
+                $stok_stmt = $pdo->prepare("SELECT stock, unit FROM materials WHERE id = ? FOR UPDATE");
+                $stok_stmt->execute([$bom['material_id']]);
+                $material = $stok_stmt->fetch();
+
+                $qty_needed_per_item = floatval($bom['quantity_needed']);
+                $refund_amount = convertUnit($qty_needed_per_item * $detail['quantity'], $bom['unit_used'], $material['unit']);
+
+                // Refund (+) Kembalikan ke Stok
+                $upd_stok = $pdo->prepare("UPDATE materials SET stock = stock + ? WHERE id = ?");
+                $upd_stok->execute([$refund_amount, $bom['material_id']]);
+            }
         }
+
+        // 4. UBAH STATUS (Soft Delete) - JANGAN HAPUS DATA
+        $upd_prod = $pdo->prepare("UPDATE productions SET status = 'dibatalkan' WHERE id = ?");
+        $upd_prod->execute([$prod_id]);
 
         $pdo->commit();
-        echo json_encode(['status' => 'success', 'message' => 'Produksi dibatalkan. Seluruh stok bahan baku telah dikembalikan secara otomatis.']);
+        echo json_encode(['status' => 'success', 'message' => 'Produksi berhasil dibatalkan. Stok bahan baku telah dikembalikan otomatis.']);
         exit;
     }
 

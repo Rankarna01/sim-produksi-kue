@@ -89,6 +89,9 @@ checkRole(['admin', 'produksi', 'owner', 'auditor']);
                     <button onclick="switchTab('ditolak')" id="tab-btn-ditolak" class="pb-3 text-sm font-bold border-b-2 border-transparent text-secondary hover:text-slate-700 transition-colors flex items-center gap-2">
                         <i class="fa-solid fa-rotate-left"></i> Ditolak (Perlu Revisi)
                     </button>
+                    <button onclick="switchTab('dibatalkan')" id="tab-btn-dibatalkan" class="pb-3 text-sm font-bold border-b-2 border-transparent text-secondary hover:text-slate-700 transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-trash-can"></i> Dibatalkan (Refund Stok)
+                    </button>
                     <button onclick="switchTab('expired')" id="tab-btn-expired" class="pb-3 text-sm font-bold border-b-2 border-transparent text-secondary hover:text-slate-700 transition-colors flex items-center gap-2">
                         <i class="fa-solid fa-ban"></i> Expired / Rusak
                     </button>

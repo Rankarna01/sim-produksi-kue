@@ -1,41 +1,45 @@
-let currentStatus = 'pending'; // Default tab yang aktif pertama kali
+let currentStatus = 'pending'; 
 let currentPage = 1;
 
 function getTodayLocal() {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Set default tanggal hari ini
     const today = getTodayLocal();
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
-    
     loadData(1); 
 });
 
-// FUNGSI PINDAH TAB
 function switchTab(status) {
     currentStatus = status;
-    currentPage = 1; // Reset halaman ke 1 setiap pindah tab
+    currentPage = 1; 
     
-    // Reset styling semua tombol tab
-    const tabs = ['pending', 'masuk_gudang', 'ditolak', 'expired'];
+    // Tambahkan 'dibatalkan' ke dalam array tabs
+    const tabs = ['pending', 'masuk_gudang', 'ditolak', 'dibatalkan', 'expired'];
     tabs.forEach(t => {
         const btn = document.getElementById(`tab-btn-${t}`);
-        btn.classList.remove('border-accent', 'text-accent', 'border-success', 'text-success', 'border-danger', 'text-danger', 'border-slate-500', 'text-slate-600');
-        btn.classList.add('border-transparent', 'text-secondary');
+        if(btn) {
+            btn.classList.remove('border-accent', 'text-accent', 'border-success', 'text-success', 'border-danger', 'text-danger', 'border-slate-500', 'text-slate-600');
+            btn.classList.add('border-transparent', 'text-secondary');
+        }
     });
 
-    // Beri warna aktif sesuai tab yang dipilih
     const activeBtn = document.getElementById(`tab-btn-${status}`);
-    activeBtn.classList.remove('border-transparent', 'text-secondary');
-    
-    if(status === 'pending') activeBtn.classList.add('border-accent', 'text-accent');
-    else if(status === 'masuk_gudang') activeBtn.classList.add('border-success', 'text-success');
-    else if(status === 'ditolak') activeBtn.classList.add('border-danger', 'text-danger');
-    else if(status === 'expired') activeBtn.classList.add('border-slate-500', 'text-slate-600');
+    if(activeBtn) {
+        activeBtn.classList.remove('border-transparent', 'text-secondary');
+        
+        if(status === 'pending') activeBtn.classList.add('border-accent', 'text-accent');
+        else if(status === 'masuk_gudang') activeBtn.classList.add('border-success', 'text-success');
+        else if(status === 'ditolak') activeBtn.classList.add('border-danger', 'text-danger');
+        else if(status === 'dibatalkan') activeBtn.classList.add('border-slate-500', 'text-slate-600');
+        else if(status === 'expired') activeBtn.classList.add('border-slate-500', 'text-slate-600');
+    }
 
     loadData(1);
 }
@@ -60,7 +64,7 @@ function formatNumber(num) {
 async function loadData(page = 1) {
     currentPage = page;
     const tbody = document.getElementById('table-data');
-    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
     
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
@@ -71,13 +75,27 @@ async function loadData(page = 1) {
     if (response && response.status === 'success') {
         let html = '';
         if (response.data.length === 0) {
-            html = `<tr><td colspan="6" class="p-8 text-center text-secondary font-medium">Tidak ada data untuk status ini.</td></tr>`;
+            html = `<tr><td colspan="7" class="p-8 text-center text-secondary font-medium">Tidak ada data untuk status ini.</td></tr>`;
         } else {
             response.data.forEach((item, index) => {
                 const no = (currentPage - 1) * 15 + index + 1;
                 const d = new Date(item.created_at);
                 const tgl = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
                 const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                let statusBadge = '';
+                
+                if (item.status === 'pending') {
+                    statusBadge = `<span class="bg-accent/10 text-accent px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-clock"></i> Pending</span>`;
+                } else if (item.status === 'ditolak') {
+                    statusBadge = `<span class="bg-danger/10 text-danger px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> Ditolak Admin</span>`;
+                } else if (item.status === 'dibatalkan') {
+                    statusBadge = `<span class="bg-slate-200 text-slate-500 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> Batal / Dihapus</span>`;
+                } else if (item.status === 'expired') {
+                    statusBadge = `<span class="bg-slate-200 text-slate-600 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-ban"></i> Expired</span>`;
+                } else {
+                    statusBadge = `<span class="bg-success/10 text-success px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-check-double"></i> Selesai</span>`;
+                }
 
                 html += `
                     <tr class="hover:bg-slate-50 transition-colors text-slate-700">
@@ -90,6 +108,7 @@ async function loadData(page = 1) {
                         <td class="p-4 font-medium">${item.karyawan}</td>
                         <td class="p-4 font-bold text-slate-800">${item.produk}</td>
                         <td class="p-4 text-center font-black text-lg text-slate-800">${formatNumber(item.quantity)}</td>
+                        <td class="p-4 text-center">${statusBadge}</td>
                     </tr>
                 `;
             });
@@ -97,7 +116,7 @@ async function loadData(page = 1) {
         tbody.innerHTML = html;
         renderPagination(response.total_pages, response.current_page);
     } else {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-danger font-medium">Terjadi kesalahan sistem.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-danger font-medium">Terjadi kesalahan sistem.</td></tr>`;
     }
 }
 
@@ -126,21 +145,21 @@ function renderPagination(totalPages, current) {
     container.innerHTML = html;
 }
 
-// =========================================================
-// FITUR CETAK PDF (FULL DATA SESUAI TAB AKTIF)
-// =========================================================
 async function cetakPDF() {
     Swal.fire({ title: 'Menyiapkan Data...', text: 'Mengekstrak seluruh halaman...', icon: 'info', showConfirmButton: false, allowOutsideClick: false });
 
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     
-    // Panggil is_print=true agar tidak dibatasi limit 15 baris
     const url = `logic.php?action=read&status=${currentStatus}&start_date=${start}&end_date=${end}&is_print=true`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
-        let labelStatus = currentStatus === 'masuk_gudang' ? 'Selesai (Masuk Gudang)' : currentStatus.toUpperCase();
+        let labelStatus = '';
+        if(currentStatus === 'masuk_gudang') labelStatus = 'SELESAI (MASUK GUDANG)';
+        else if(currentStatus === 'dibatalkan') labelStatus = 'DIBATALKAN (REFUND STOK)';
+        else labelStatus = currentStatus.toUpperCase();
+
         document.getElementById('print-subtitle').innerText = `Status Data: ${labelStatus}`;
         document.getElementById('print-periode').innerText = `Filter Tanggal: ${start || 'Awal'} s/d ${end || 'Akhir'}`;
 
@@ -153,14 +172,23 @@ async function cetakPDF() {
                                     <th>Dapur</th>
                                     <th>Produk</th>
                                     <th style="text-align:center;">Qty</th>
+                                    <th style="text-align:center;">Status</th>
                                 </tr>
                             </thead>
                             <tbody>`;
         
         if(response.data.length === 0){
-             htmlPrint += `<tr><td colspan="6" style="text-align:center; padding:20px;">Tidak ada data.</td></tr>`;
+             htmlPrint += `<tr><td colspan="7" style="text-align:center; padding:20px;">Tidak ada data.</td></tr>`;
         } else {
             response.data.forEach((item, i) => {
+                
+                let printStatus = '';
+                if(item.status === 'masuk_gudang') printStatus = 'Selesai';
+                else if(item.status === 'ditolak') printStatus = 'Ditolak';
+                else if(item.status === 'dibatalkan') printStatus = 'Dibatalkan';
+                else if(item.status === 'expired') printStatus = 'Expired';
+                else printStatus = 'Pending';
+
                 htmlPrint += `
                     <tr>
                         <td style="text-align:center;">${i + 1}</td>
@@ -169,6 +197,7 @@ async function cetakPDF() {
                         <td>${item.karyawan}</td>
                         <td>${item.produk}</td>
                         <td style="text-align:center; font-weight:bold;">${formatNumber(item.quantity)}</td>
+                        <td style="text-align:center;">${printStatus}</td>
                     </tr>
                 `;
             });
@@ -178,7 +207,6 @@ async function cetakPDF() {
         document.getElementById('print-table-wrapper').innerHTML = htmlPrint;
         Swal.close();
 
-        // Jeda sedikit agar browser memproses HTML tabelnya, lalu Print
         setTimeout(() => { window.print(); }, 500);
     } else {
         Swal.fire('Error', 'Gagal menyiapkan data cetak', 'error');
