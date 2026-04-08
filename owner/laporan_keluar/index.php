@@ -51,7 +51,7 @@ checkRole(['owner', 'auditor']);
             </div>
 
             <div id="form-filter-section" class="bg-surface p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                <form id="formFilter" class="flex flex-col md:flex-row gap-4 items-end">
+                <form id="formFilter" class="flex flex-col md:flex-row gap-4 items-end flex-wrap">
                     
                     <div class="w-full md:w-48">
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Pilih Periode</label>
@@ -84,6 +84,13 @@ checkRole(['owner', 'auditor']);
                         </select>
                     </div>
 
+                    <div class="w-full md:w-48">
+                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Lokasi Gudang</label>
+                        <select id="warehouse_id" name="warehouse_id" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm">
+                            <option value="">Semua Gudang</option>
+                            </select>
+                    </div>
+
                     <div class="w-full md:w-auto flex gap-2">
                         <button type="submit" class="flex-1 bg-primary hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-bold transition-all shadow-sm">
                             Terapkan
@@ -99,6 +106,7 @@ checkRole(['owner', 'auditor']);
                             <tr class="bg-slate-50 border-b border-slate-200 text-xs text-secondary uppercase tracking-wider print:bg-slate-100">
                                 <th class="p-3 font-bold w-12 text-center">No</th>
                                 <th class="p-3 font-bold">Waktu Ditarik</th>
+                                <th class="p-3 font-bold">Gudang</th>
                                 <th class="p-3 font-bold">No. Invoice Asal</th>
                                 <th class="p-3 font-bold">Petugas</th>
                                 <th class="p-3 font-bold">Produk</th>
@@ -108,7 +116,7 @@ checkRole(['owner', 'auditor']);
                             </tr>
                         </thead>
                         <tbody id="table-laporan" class="text-sm divide-y divide-slate-100">
-                            <tr><td colspan="8" class="p-8 text-center text-secondary">Memuat data...</td></tr>
+                            <tr><td colspan="9" class="p-8 text-center text-secondary">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>

@@ -1,8 +1,26 @@
 let currentPage = 1;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    // Muat daftar gudang untuk dropdown filter
+    await loadFilterGudang();
     applyQuickFilter(); 
 });
+
+async function loadFilterGudang() {
+    try {
+        const response = await fetchAjax('logic.php?action=init_filter', 'GET');
+        if (response.status === 'success') {
+            const selectGudang = document.getElementById('warehouse_id');
+            let options = '<option value="">Semua Gudang</option>';
+            response.warehouses.forEach(w => {
+                options += `<option value="${w.id}">${w.name}</option>`;
+            });
+            selectGudang.innerHTML = options;
+        }
+    } catch (e) {
+        console.error("Gagal memuat filter gudang");
+    }
+}
 
 document.getElementById('formFilter').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -48,27 +66,32 @@ function applyQuickFilter() {
 async function loadLaporan(page = 1) {
     currentPage = page;
     const tbody = document.getElementById('table-laporan');
-    tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data laporan...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data laporan...</td></tr>';
     
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     const reason = document.getElementById('reason').value;
+    const warehouseId = document.getElementById('warehouse_id').value; // Ambil nilai Gudang
     
     document.getElementById('print-periode').innerText = `Periode: ${start || 'Awal'} s/d ${end || 'Akhir'} | Alasan: ${reason === '' ? 'Semua' : reason.toUpperCase()}`;
 
-    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&reason=${reason}&page=${currentPage}`;
+    // Kirankan parameter gudang
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&reason=${reason}&warehouse_id=${warehouseId}&page=${currentPage}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
         let html = '';
         if (response.data.length === 0) {
-            html = '<tr><td colspan="8" class="p-8 text-center text-secondary font-medium">Tidak ada data produk keluar pada periode ini. Bagus!</td></tr>';
+            html = '<tr><td colspan="9" class="p-8 text-center text-secondary font-medium">Tidak ada data produk keluar pada filter ini. Bagus!</td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 const no = (currentPage - 1) * 10 + index + 1;
                 const dateObj = new Date(item.created_at);
                 const tgl = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
                 const waktu = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                // Ambil data nama gudang (Jika kosong, tulis Gudang Utama)
+                const namaGudang = item.gudang ? item.gudang : '<span class="text-slate-400">Gudang Utama</span>';
 
                 let reasonBadge = '';
                 if (item.reason === 'Expired') reasonBadge = `<span class="bg-danger/10 text-danger border border-danger/20 px-2 py-1 rounded text-[10px] font-bold uppercase print:border-none print:text-black print:p-0">${item.reason}</span>`;
@@ -82,6 +105,7 @@ async function loadLaporan(page = 1) {
                             <div class="font-semibold">${tgl}</div>
                             <div class="text-[10px] text-slate-500">${waktu} WIB</div>
                         </td>
+                        <td class="p-3 font-bold text-slate-700 text-xs">${namaGudang}</td>
                         <td class="p-3 font-mono text-xs font-bold text-primary">${item.origin_invoice}</td>
                         <td class="p-3 font-medium text-sm">${item.karyawan}</td>
                         <td class="p-3 font-bold text-slate-800 text-sm">${item.produk}</td>
@@ -134,7 +158,8 @@ function exportExcel() {
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     const reason = document.getElementById('reason').value;
+    const warehouseId = document.getElementById('warehouse_id').value;
     
-    const url = `logic.php?action=export_excel&start_date=${start}&end_date=${end}&reason=${reason}`;
+    const url = `logic.php?action=export_excel&start_date=${start}&end_date=${end}&reason=${reason}&warehouse_id=${warehouseId}`;
     window.location.href = url; 
 }
