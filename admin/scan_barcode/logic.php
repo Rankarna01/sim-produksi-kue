@@ -15,20 +15,35 @@ try {
             exit;
         }
 
-        // A. Cari Data Header Produksi (Berdasarkan Barcode ATAU Nomor Invoice)
+        // ================================================================
+        // PERBAIKAN KECERDASAN: 
+        // Mengubah "D0426-001-1" (Hasil Scan) menjadi "D0426-001" (Invoice)
+        // ================================================================
+        $invoice_no_to_search = $barcode; 
+        
+        // Cek apakah inputan mengandung strip '-' (Contoh: D0426-001-1)
+        // Kita hanya mau mengambil "D0426-001"-nya saja
+        $parts = explode('-', $barcode);
+        
+        // Kalau hasil pecahannya ada 3 bagian (D0426, 001, 1) berarti ini hasil SCAN ALAT!
+        if (count($parts) >= 3) {
+            // Gabungkan kembali bagian 1 dan 2 saja (D0426-001)
+            $invoice_no_to_search = $parts[0] . '-' . $parts[1]; 
+        }
+        // ================================================================
+
+        // A. Cari Data Header Produksi (HANYA BERDASARKAN INVOICE)
         $stmtHead = $pdo->prepare("
             SELECT p.id as prod_id, p.invoice_no, p.status, 
                    COALESCE(e.name, u.name) as karyawan, w.name as gudang
-            FROM production_details d
-            JOIN productions p ON d.production_id = p.id
+            FROM productions p
             JOIN users u ON p.user_id = u.id
             LEFT JOIN employees e ON p.employee_id = e.id
             JOIN warehouses w ON p.warehouse_id = w.id 
-            WHERE (d.barcode = ? OR p.invoice_no = ?)
+            WHERE p.invoice_no = ?
             LIMIT 1
         ");
-        // Eksekusi dengan 2 parameter yang sama untuk mengecek kedua kolom
-        $stmtHead->execute([$barcode, $barcode]);
+        $stmtHead->execute([$invoice_no_to_search]);
         $header = $stmtHead->fetch(PDO::FETCH_ASSOC);
 
         if (!$header) {
@@ -49,6 +64,11 @@ try {
 
         if ($header['status'] === 'expired') {
             echo json_encode(['status' => 'warning', 'message' => "Invoice ini sudah kedaluwarsa (Expired)."]);
+            exit;
+        }
+        
+        if ($header['status'] === 'dibatalkan') {
+            echo json_encode(['status' => 'error', 'message' => "Invoice ini telah DIBATALKAN oleh dapur. Data sudah tidak berlaku."]);
             exit;
         }
 
