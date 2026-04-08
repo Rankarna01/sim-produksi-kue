@@ -58,7 +58,7 @@ checkRole(['admin', 'produksi', 'owner', 'auditor']);
 
                 <div class="bg-surface p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
                     <form id="formFilter" class="flex flex-col md:flex-row gap-4 items-end">
-                        <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Tanggal Mulai</label>
                                 <input type="date" id="start_date" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm bg-white">
@@ -66,6 +66,12 @@ checkRole(['admin', 'produksi', 'owner', 'auditor']);
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Tanggal Akhir</label>
                                 <input type="date" id="end_date" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Lokasi Gudang</label>
+                                <select id="warehouse_id" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm bg-white">
+                                    <option value="">Semua Gudang</option>
+                                    </select>
                             </div>
                         </div>
                         <div class="w-full md:w-auto flex gap-2">

@@ -6,14 +6,27 @@ checkRole(['admin', 'produksi', 'owner', 'auditor']);
 $action = $_GET['action'] ?? '';
 
 try {
+    // FITUR BARU: Ambil data gudang untuk dropdown
+    if ($action === 'init_filter') {
+        $warehouses = $pdo->query("SELECT id, name FROM warehouses ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'warehouses' => $warehouses]);
+        exit;
+    }
+
     $status = $_GET['status'] ?? 'pending';
     $start_date = $_GET['start_date'] ?? '';
     $end_date = $_GET['end_date'] ?? '';
+    $warehouse_id = $_GET['warehouse_id'] ?? '';
     $is_print = $_GET['is_print'] ?? 'false';
     
-    // Logika normal kembali, karena masing-masing punya tab sendiri
-    $whereClause = "WHERE p.status = ?";
-    $params = [$status];
+    // Logika Tab Ditolak/Dibatalkan
+    if ($status === 'ditolak') {
+        $whereClause = "WHERE p.status IN ('ditolak', 'dibatalkan')";
+        $params = [];
+    } else {
+        $whereClause = "WHERE p.status = ?";
+        $params = [$status];
+    }
 
     // Jika yang login adalah role produksi, hanya tampilkan data miliknya
     if ($_SESSION['role'] === 'produksi') {
@@ -28,6 +41,12 @@ try {
     if (!empty($end_date)) {
         $whereClause .= " AND DATE(p.created_at) <= ?";
         $params[] = $end_date;
+    }
+    
+    // TAMBAHAN BARU: Filter Berdasarkan Gudang
+    if (!empty($warehouse_id)) {
+        $whereClause .= " AND p.warehouse_id = ?";
+        $params[] = $warehouse_id;
     }
 
     // ============================================

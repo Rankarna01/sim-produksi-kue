@@ -9,18 +9,35 @@ function getTodayLocal() {
     return `${year}-${month}-${day}`;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    await loadFilterGudang(); // Muat data gudang di dropdown
     const today = getTodayLocal();
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
     loadData(1); 
 });
 
+// FITUR BARU: Tarik data Gudang
+async function loadFilterGudang() {
+    try {
+        const response = await fetchAjax('logic.php?action=init_filter', 'GET');
+        if (response.status === 'success') {
+            const selectGudang = document.getElementById('warehouse_id');
+            let options = '<option value="">Semua Gudang</option>';
+            response.warehouses.forEach(w => {
+                options += `<option value="${w.id}">${w.name}</option>`;
+            });
+            if(selectGudang) selectGudang.innerHTML = options;
+        }
+    } catch (e) {
+        console.error("Gagal memuat filter gudang");
+    }
+}
+
 function switchTab(status) {
     currentStatus = status;
     currentPage = 1; 
     
-    // Tambahkan 'dibatalkan' ke dalam array tabs
     const tabs = ['pending', 'masuk_gudang', 'ditolak', 'dibatalkan', 'expired'];
     tabs.forEach(t => {
         const btn = document.getElementById(`tab-btn-${t}`);
@@ -54,6 +71,7 @@ function resetFilter() {
     const today = getTodayLocal();
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
+    document.getElementById('warehouse_id').value = '';
     loadData(1);
 }
 
@@ -68,8 +86,9 @@ async function loadData(page = 1) {
     
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
+    const warehouseId = document.getElementById('warehouse_id').value;
     
-    const url = `logic.php?action=read&status=${currentStatus}&start_date=${start}&end_date=${end}&page=${currentPage}`;
+    const url = `logic.php?action=read&status=${currentStatus}&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}&page=${currentPage}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response && response.status === 'success') {
@@ -150,8 +169,9 @@ async function cetakPDF() {
 
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
+    const warehouseId = document.getElementById('warehouse_id').value;
     
-    const url = `logic.php?action=read&status=${currentStatus}&start_date=${start}&end_date=${end}&is_print=true`;
+    const url = `logic.php?action=read&status=${currentStatus}&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}&is_print=true`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
@@ -160,8 +180,11 @@ async function cetakPDF() {
         else if(currentStatus === 'dibatalkan') labelStatus = 'DIBATALKAN (REFUND STOK)';
         else labelStatus = currentStatus.toUpperCase();
 
+        const warehouseSelect = document.getElementById('warehouse_id');
+        const warehouseName = warehouseId ? warehouseSelect.options[warehouseSelect.selectedIndex].text : 'Semua Gudang';
+
         document.getElementById('print-subtitle').innerText = `Status Data: ${labelStatus}`;
-        document.getElementById('print-periode').innerText = `Filter Tanggal: ${start || 'Awal'} s/d ${end || 'Akhir'}`;
+        document.getElementById('print-periode').innerText = `Filter Tanggal: ${start || 'Awal'} s/d ${end || 'Akhir'} | Lokasi: ${warehouseName.toUpperCase()}`;
 
         let htmlPrint = `<table>
                             <thead>
@@ -216,5 +239,6 @@ async function cetakPDF() {
 function exportExcel() {
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
-    window.location.href = `logic.php?action=export_excel&status=${currentStatus}&start_date=${start}&end_date=${end}`;
+    const warehouseId = document.getElementById('warehouse_id').value;
+    window.location.href = `logic.php?action=export_excel&status=${currentStatus}&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}`;
 }
