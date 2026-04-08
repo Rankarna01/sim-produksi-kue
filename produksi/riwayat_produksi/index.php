@@ -21,16 +21,24 @@ checkRole(['produksi']);
             </div>
 
             <div class="bg-surface p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                <form id="formFilter" class="flex flex-col sm:flex-row gap-4 items-end">
-                    <div class="flex-1 w-full">
+                <form id="formFilter" class="flex flex-col sm:flex-row gap-4 items-end flex-wrap">
+                    <div class="flex-1 w-full min-w-[150px]">
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Tanggal Mulai</label>
                         <input type="date" id="start_date" name="start_date" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none">
                     </div>
-                    <div class="flex-1 w-full">
+                    <div class="flex-1 w-full min-w-[150px]">
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Tanggal Akhir</label>
                         <input type="date" id="end_date" name="end_date" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none">
                     </div>
-                    <div class="flex-1 w-full">
+                    
+                    <div class="flex-1 w-full min-w-[150px]">
+                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Gudang Tujuan</label>
+                        <select id="warehouse_id" name="warehouse_id" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none">
+                            <option value="">Semua Gudang</option>
+                            </select>
+                    </div>
+
+                    <div class="flex-1 w-full min-w-[150px]">
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Status</label>
                         <select id="status" name="status" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none">
                             <option value="">Semua Status</option>
@@ -40,6 +48,7 @@ checkRole(['produksi']);
                             <option value="expired">Expired / Rusak</option>
                         </select>
                     </div>
+                    
                     <div class="w-full sm:w-auto flex gap-2">
                         <button type="submit" class="flex-1 bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
                             <i class="fa-solid fa-filter"></i> Filter

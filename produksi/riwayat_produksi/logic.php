@@ -6,6 +6,7 @@ checkRole(['produksi']);
 header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
 
+// Fungsi Konversi Satuan BOM (TIDAK ADA YANG DIUBAH - AMAN)
 function convertUnit($amount, $from_unit, $to_unit) {
     $from = strtolower(trim($from_unit));
     $to = strtolower(trim($to_unit));
@@ -25,6 +26,13 @@ function convertUnit($amount, $from_unit, $to_unit) {
 }
 
 try {
+    // FITUR BARU: Tarik data Master Gudang untuk Dropdown Filter
+    if ($action === 'init_filter') {
+        $warehouses = $pdo->query("SELECT id, name FROM warehouses ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'warehouses' => $warehouses]);
+        exit;
+    }
+
     // ====================================================================
     // ROUTE BACA DATA: Dikelompokkan per Invoice (1 Baris = 1 Invoice)
     // ====================================================================
@@ -32,13 +40,15 @@ try {
         $start_date = $_GET['start_date'] ?? '';
         $end_date = $_GET['end_date'] ?? '';
         $status = $_GET['status'] ?? '';
+        $warehouse_id = $_GET['warehouse_id'] ?? ''; // Filter Gudang
         
         $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
         $limit = 10; 
         $offset = ($page - 1) * $limit;
 
-        $whereClause = "WHERE 1=1";
-        $params = [];
+        // Hanya tampilkan data milik User Produksi yang sedang login
+        $whereClause = "WHERE p.user_id = ?";
+        $params = [$_SESSION['user_id']];
 
         if (!empty($start_date)) {
             $whereClause .= " AND DATE(p.created_at) >= ?";
@@ -52,6 +62,10 @@ try {
             $whereClause .= " AND p.status = ?";
             $params[] = $status;
         }
+        if (!empty($warehouse_id)) {
+            $whereClause .= " AND p.warehouse_id = ?";
+            $params[] = $warehouse_id;
+        }
 
         // Hitung total INVOICE (Bukan total produk)
         $countStmt = $pdo->prepare("SELECT COUNT(id) FROM productions p $whereClause");
@@ -61,12 +75,13 @@ try {
 
         // Gabungkan nama produk menjadi 1 string menggunakan GROUP_CONCAT
         $sql = "
-            SELECT p.id as prod_id, p.invoice_no, p.created_at, p.status, 
+            SELECT p.id as prod_id, p.invoice_no, p.created_at, p.status, w.name as gudang,
                    GROUP_CONCAT(CONCAT(pr.name, ' (', d.quantity, ')') SEPARATOR ', ') as product_list,
                    SUM(d.quantity) as total_qty
             FROM productions p
             JOIN production_details d ON p.id = d.production_id
             JOIN products pr ON d.product_id = pr.id
+            LEFT JOIN warehouses w ON p.warehouse_id = w.id
             $whereClause
             GROUP BY p.id
             ORDER BY p.created_at DESC
@@ -104,7 +119,7 @@ try {
     }
 
     // ====================================================================
-    // LOGIKA REVISI: Sekarang memproses ARRAY detail_id dan quantity
+    // LOGIKA REVISI: MURNI TIDAK DIUBAH SAMA SEKALI
     // ====================================================================
     if ($action === 'update_revisi') {
         $prod_id = $_POST['prod_id'];     
@@ -170,7 +185,7 @@ try {
     }
 
     // ====================================================================
-    // FITUR BATALKAN: Cukup butuh prod_id, batalkan 1 invoice penuh
+    // FITUR BATALKAN: MURNI TIDAK DIUBAH SAMA SEKALI
     // ====================================================================
     if ($action === 'cancel_produksi') {
         $prod_id = $_POST['prod_id'];

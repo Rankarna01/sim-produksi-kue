@@ -8,12 +8,29 @@ function getTodayLocal() {
     return `${year}-${month}-${day}`;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    await loadFilterGudang(); // Tarik dropdown gudang saat halaman dimuat
     const today = getTodayLocal();
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
     loadHistory(1);
 });
+
+async function loadFilterGudang() {
+    try {
+        const response = await fetchAjax('logic.php?action=init_filter', 'GET');
+        if (response.status === 'success') {
+            const selectGudang = document.getElementById('warehouse_id');
+            let options = '<option value="">Semua Gudang</option>';
+            response.warehouses.forEach(w => {
+                options += `<option value="${w.id}">${w.name}</option>`;
+            });
+            selectGudang.innerHTML = options;
+        }
+    } catch (e) {
+        console.error("Gagal memuat filter gudang");
+    }
+}
 
 document.getElementById('formFilter').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -27,6 +44,7 @@ function resetFilter() {
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
     document.getElementById('status').value = '';
+    document.getElementById('warehouse_id').value = '';
     
     loadHistory(1);
 }
@@ -39,8 +57,9 @@ async function loadHistory(page = 1) {
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     const status = document.getElementById('status').value;
+    const warehouseId = document.getElementById('warehouse_id').value;
     
-    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&page=${currentPage}`;
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouseId}&page=${currentPage}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
@@ -53,16 +72,15 @@ async function loadHistory(page = 1) {
                 const dateObj = new Date(item.created_at);
                 const tgl = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
                 const waktu = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                
+                // Tambahkan Label Nama Gudang Tujuan
+                const namaGudang = item.gudang ? `<div class="text-[10px] text-primary font-bold mt-1 uppercase">Tujuan: ${item.gudang}</div>` : '';
 
                 let statusBadge = '';
                 let actionButtons = '';
 
                 let btnPrint = `<button onclick="cetakUlangStruk(${item.prod_id})" title="Print Struk" class="bg-slate-800 hover:bg-slate-900 text-white w-9 h-9 rounded-lg flex items-center justify-center transition-colors shadow-md"><i class="fa-solid fa-print text-xs"></i></button>`;
-                
-                // btnBatal sekarang hanya mengirim prod_id (1 invoice penuh)
                 let btnBatal = `<button onclick="batalkanProduksi(${item.prod_id})" title="Batalkan 1 Invoice" class="bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-danger w-9 h-9 rounded-lg flex items-center justify-center transition-colors shadow-sm"><i class="fa-solid fa-trash text-xs"></i></button>`;
-                
-                // btnEdit mengirim prod_id untuk me-load rincian di modal
                 let btnEdit = `<button onclick="bukaEdit(${item.prod_id})" title="Revisi Data" class="bg-danger hover:bg-red-700 text-white w-9 h-9 rounded-lg flex items-center justify-center transition-colors shadow-md"><i class="fa-solid fa-pen text-xs"></i></button>`;
 
                 if (item.status === 'pending') {
@@ -74,12 +92,14 @@ async function loadHistory(page = 1) {
                 } else if (item.status === 'expired') {
                     statusBadge = `<span class="bg-slate-200 text-slate-600 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-ban"></i> Expired</span>`;
                     actionButtons = btnPrint; 
+                } else if (item.status === 'dibatalkan') {
+                    statusBadge = `<span class="bg-slate-200 text-slate-500 px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> Dibatalkan</span>`;
+                    actionButtons = btnPrint; // Kalau batal, tidak bisa diapa-apain lagi
                 } else {
                     statusBadge = `<span class="bg-success/10 text-success px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid fa-check-double"></i> Selesai</span>`;
                     actionButtons = btnPrint; 
                 }
 
-                // Ubah pemisah koma menjadi baris baru agar lebih rapi di tabel
                 let formattedProductList = item.product_list.replace(/, /g, '<br>');
 
                 html += `
@@ -88,6 +108,7 @@ async function loadHistory(page = 1) {
                         <td class="p-4">
                             <div class="font-semibold text-slate-700">${tgl}</div>
                             <div class="text-xs text-secondary">${waktu} WIB</div>
+                            ${namaGudang}
                         </td>
                         <td class="p-4 font-mono text-sm text-slate-600 font-bold">${item.invoice_no}</td>
                         <td class="p-4 text-sm text-slate-700 leading-relaxed">${formattedProductList}</td>
@@ -140,16 +161,13 @@ function renderPagination(totalPages, current) {
     container.innerHTML = html;
 }
 
-// FITUR BARU: MENGAMBIL SEMUA PRODUK DALAM 1 INVOICE UNTUK DIEDIT
 async function bukaEdit(prod_id) {
     document.getElementById('edit_prod_id').value = prod_id;
     const container = document.getElementById('edit-produk-list');
     
-    // Tampilkan loading di dalam modal
     container.innerHTML = '<div class="text-center py-8 text-secondary"><i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 block"></i> Memuat detail produk...</div>';
     openModal('modal-edit');
     
-    // Tarik rincian produk
     const res = await fetchAjax(`logic.php?action=get_details&prod_id=${prod_id}`, 'GET');
     
     if (res.status === 'success') {
@@ -191,7 +209,6 @@ document.getElementById('formEdit').addEventListener('submit', async function(e)
     }
 });
 
-// FITUR BARU: BATALKAN 1 INVOICE PENUH
 async function batalkanProduksi(prod_id) {
     const result = await Swal.fire({
         title: 'Batalkan Invoice Ini?',
