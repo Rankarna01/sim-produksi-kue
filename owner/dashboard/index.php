@@ -1,6 +1,6 @@
 <?php
 require_once '../../config/auth.php';
-checkRole(['owner', 'auditor']);
+checkPermission('view_dashboard');
 ?>
 <!DOCTYPE html>
 <html lang="id">

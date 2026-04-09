@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
-checkRole(['owner', 'auditor']);
+checkPermission('laporan_bom');
 
 $action = $_GET['action'] ?? '';
 

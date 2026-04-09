@@ -1,7 +1,26 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    // Muat daftar jabatan dulu baru muat tabel
+    await loadRolesForDropdown();
     loadUsers();
     loadEmployees();
 });
+
+// FUNGSI BARU: Muat opsi dropdown jabatan dari database
+async function loadRolesForDropdown() {
+    try {
+        const response = await fetchAjax('logic.php?action=get_roles', 'GET');
+        if (response.status === 'success') {
+            const selectRole = document.getElementById('role_input');
+            let options = '<option value="">-- Pilih Jabatan --</option>';
+            response.data.forEach(r => {
+                options += `<option value="${r.role_slug}">${r.role_name}</option>`;
+            });
+            if (selectRole) selectRole.innerHTML = options;
+        }
+    } catch (e) {
+        console.error("Gagal memuat list jabatan.");
+    }
+}
 
 // FUNGSI SWITCH TAB
 function switchTab(tabId) {
@@ -51,11 +70,23 @@ async function loadUsers() {
             html = '<tr><td colspan="5" class="p-8 text-center text-secondary">Belum ada data user.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
-                let roleBadge = '';
-                if(item.role === 'owner') roleBadge = `<span class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">Owner</span>`;
-                else if(item.role === 'produksi') roleBadge = `<span class="bg-accent/10 text-accent border border-accent/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">T. Produksi</span>`;
-                else if(item.role === 'admin') roleBadge = `<span class="bg-success/10 text-success border border-success/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">Admin</span>`;
-                else if(item.role === 'auditor') roleBadge = `<span class="bg-indigo-100 text-indigo-600 border border-indigo-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">Auditor</span>`;
+                
+                // Gunakan role_name dari DB, jika kosong pakai slugnya
+                const namaJabatan = item.role_name || item.role_slug; 
+                
+                // Beri warna khusus untuk role inti, sisanya abu-abu netral
+                let roleBadge = `<span class="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
+                
+                if(item.role_slug === 'owner') roleBadge = `<span class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
+                else if(item.role_slug === 'produksi') roleBadge = `<span class="bg-accent/10 text-accent border border-accent/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
+                else if(item.role_slug === 'admin') roleBadge = `<span class="bg-success/10 text-success border border-success/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
+                else if(item.role_slug === 'auditor') roleBadge = `<span class="bg-indigo-100 text-indigo-600 border border-indigo-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
+
+                // TOMBOL HAPUS HANYA UNTUK OWNER
+                let btnHapus = '';
+                if (currentUserRole === 'owner') {
+                    btnHapus = `<button onclick="deleteUser(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus Akun"><i class="fa-solid fa-trash text-xs"></i></button>`;
+                }
 
                 html += `
                     <tr class="hover:bg-slate-50 transition-colors">
@@ -65,8 +96,8 @@ async function loadUsers() {
                         <td class="p-4 text-center">${roleBadge}</td>
                         <td class="p-4 text-center btn-aksi">
                             <div class="flex items-center justify-center gap-2">
-                                <button onclick='editUser(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
-                                <button onclick="deleteUser(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                                <button onclick='editUser(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center" title="Edit Akun"><i class="fa-solid fa-pen text-xs"></i></button>
+                                ${btnHapus}
                             </div>
                         </td>
                     </tr>
@@ -80,7 +111,6 @@ async function loadUsers() {
 document.getElementById('formUser').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    // Tampilkan loading SweetAlert
     Swal.fire({ title: 'Menyimpan...', text: 'Mohon tunggu', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
 
     const formData = new FormData(this);
@@ -99,7 +129,10 @@ function editUser(item) {
     document.getElementById('user_id').value = item.id;
     document.getElementById('name').value = item.name;
     document.getElementById('username_input').value = item.username;
-    document.getElementById('role_input').value = item.role;
+    
+    // Set value role sesuai slug database
+    const roleSelect = document.getElementById('role_input');
+    if(roleSelect) roleSelect.value = item.role_slug;
     
     document.getElementById('password_input').value = '';
     document.getElementById('password_input').required = false;
@@ -110,7 +143,6 @@ function editUser(item) {
 }
 
 async function deleteUser(id) {
-    // Gunakan Konfirmasi Custom (SweetAlert)
     const result = await Swal.fire({
         title: 'Hapus Akun?',
         text: "Akun ini akan dihapus secara permanen dan tidak dapat login lagi!",
@@ -163,6 +195,12 @@ async function loadEmployees() {
                 const dateObj = new Date(item.created_at);
                 const tgl = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 
+                // TOMBOL HAPUS HANYA UNTUK OWNER
+                let btnHapus = '';
+                if (currentUserRole === 'owner') {
+                    btnHapus = `<button onclick="deleteEmployee(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus Karyawan"><i class="fa-solid fa-trash text-xs"></i></button>`;
+                }
+
                 html += `
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="p-4 text-center text-secondary">${index + 1}</td>
@@ -170,8 +208,8 @@ async function loadEmployees() {
                         <td class="p-4 text-secondary text-sm">${tgl}</td>
                         <td class="p-4 text-center btn-aksi">
                             <div class="flex items-center justify-center gap-2">
-                                <button onclick='editEmployee(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
-                                <button onclick="deleteEmployee(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                                <button onclick='editEmployee(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center" title="Edit Karyawan"><i class="fa-solid fa-pen text-xs"></i></button>
+                                ${btnHapus}
                             </div>
                         </td>
                     </tr>
@@ -207,7 +245,6 @@ function editEmployee(item) {
 }
 
 async function deleteEmployee(id) {
-    // Gunakan Konfirmasi Custom (SweetAlert)
     const result = await Swal.fire({
         title: 'Hapus Karyawan?',
         text: "Karyawan ini tidak akan bisa dipilih lagi di form Dapur!",

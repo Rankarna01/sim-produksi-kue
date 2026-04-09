@@ -1,6 +1,6 @@
 <?php
 require_once '../../config/auth.php';
-checkRole(['owner']);
+checkPermission('master_satuan');
 ?>
 <!DOCTYPE html>
 <html lang="id">

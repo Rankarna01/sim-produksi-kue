@@ -1,6 +1,6 @@
 <?php
 require_once '../../config/auth.php';
-checkRole(['owner', 'auditor']);
+checkPermission('laporan_produksi');
 ?>
 <!DOCTYPE html>
 <html lang="id">

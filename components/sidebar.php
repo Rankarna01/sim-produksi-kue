@@ -1,8 +1,6 @@
 <?php
 // Deteksi URL saat ini untuk state Active NavLink
 $current_uri = $_SERVER['REQUEST_URI'];
-
-// AMBIL ROLE DARI SESSION (Untuk membedakan Owner dan Auditor)
 $user_role = $_SESSION['role'] ?? 'owner'; 
 
 function getNavClass($path, $current_uri) {
@@ -33,58 +31,79 @@ function getNavClass($path, $current_uri) {
 
     <div class="px-5 py-4">
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest sidebar-text transition-all duration-300 opacity-100 whitespace-nowrap overflow-hidden">
-            <?= $user_role === 'owner' ? 'Menu Owner' : 'Panel Auditor' ?>
+            Menu Utama
         </p>
         <div class="hidden divider-dot w-full h-[2px] bg-slate-100 rounded-full mt-2"></div>
     </div>
 
     <nav id="sidebar-nav" class="flex-1 px-3 space-y-1.5 overflow-y-auto custom-scrollbar pb-6 overflow-x-hidden">
         
+        <?php if (hasPermission('view_dashboard')): ?>
         <a href="<?= BASE_URL ?>owner/dashboard/" title="Dashboard" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/dashboard/', $current_uri) ?>">
             <i class="fa-solid fa-chart-pie w-6 text-center text-lg shrink-0"></i> 
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Dashboard</span>
         </a>
+        <?php endif; ?>
 
-        <?php if ($user_role === 'owner'): ?>
-            <a href="<?= BASE_URL ?>owner/master_gudang/" title="Data Gudang" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_gudang/', $current_uri) ?>">
-                <i class="fa-solid fa-warehouse w-6 text-center text-lg shrink-0"></i> 
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Data Gudang</span>
-            </a>
+        <?php if (hasPermission('master_gudang')): ?>
+        <a href="<?= BASE_URL ?>owner/master_gudang/" title="Data Gudang" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_gudang/', $current_uri) ?>">
+            <i class="fa-solid fa-warehouse w-6 text-center text-lg shrink-0"></i> 
+            <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Data Gudang</span>
+        </a>
+        <?php endif; ?>
 
-            <a href="<?= BASE_URL ?>owner/master_produk/" title="Data Produk" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_produk/', $current_uri) ?>">
-                <i class="fa-solid fa-box w-6 text-center text-lg shrink-0"></i> 
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Data Produk</span>
-            </a>
-            
-            <a href="<?= BASE_URL ?>owner/master_kategori/" title="Kategori Produk" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_kategori/', $current_uri) ?>">
-                <i class="fa-solid fa-tags w-6 text-center text-lg shrink-0"></i> 
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Kategori Produk</span>
-            </a>
+        <?php if (hasPermission('master_produk')): ?>
+        <a href="<?= BASE_URL ?>owner/master_produk/" title="Data Produk" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_produk/', $current_uri) ?>">
+            <i class="fa-solid fa-box w-6 text-center text-lg shrink-0"></i> 
+            <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Data Produk</span>
+        </a>
+        <?php endif; ?>
+        
+        <?php if (hasPermission('master_kategori')): ?>
+        <a href="<?= BASE_URL ?>owner/master_kategori/" title="Kategori Produk" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_kategori/', $current_uri) ?>">
+            <i class="fa-solid fa-tags w-6 text-center text-lg shrink-0"></i> 
+            <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Kategori Produk</span>
+        </a>
+        <?php endif; ?>
 
-            <a href="<?= BASE_URL ?>owner/master_bahan/" title="Bahan Baku" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_bahan/', $current_uri) ?>">
-                <i class="fa-solid fa-wheat-awn w-6 text-center text-lg shrink-0"></i> 
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Bahan Baku</span>
-            </a>
+        <?php if (hasPermission('master_bahan')): ?>
+        <a href="<?= BASE_URL ?>owner/master_bahan/" title="Bahan Baku" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_bahan/', $current_uri) ?>">
+            <i class="fa-solid fa-wheat-awn w-6 text-center text-lg shrink-0"></i> 
+            <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Bahan Baku</span>
+        </a>
+        <?php endif; ?>
 
-            <a href="<?= BASE_URL ?>owner/stok_opname/" title="Stok Opname Bahan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/stok_opname/', $current_uri) ?>">
-                <i class="fa-solid fa-scale-balanced w-6 text-center text-lg shrink-0 text-emerald-600"></i> 
-                <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-emerald-700">Stok Opname</span>
-            </a>
-            
-            <a href="<?= BASE_URL ?>owner/master_satuan/" title="Master Satuan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_satuan/', $current_uri) ?>">
-                <i class="fa-solid fa-weight-scale w-6 text-center text-lg shrink-0"></i> 
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Master Satuan</span>
-            </a>
-            
-            <a href="<?= BASE_URL ?>owner/master_resep/" title="Resep (BOM)" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_resep/', $current_uri) ?>">
-                <i class="fa-solid fa-list-check w-6 text-center text-lg shrink-0"></i> 
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Resep (BOM)</span>
-            </a>
-            
-            <a href="<?= BASE_URL ?>owner/master_user/" title="Manajemen User" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_user/', $current_uri) ?>">
-                <i class="fa-solid fa-users-gear w-6 text-center text-lg shrink-0"></i> 
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Manajemen User</span>
-            </a>
+        <?php if (hasPermission('stok_opname')): ?>
+        <a href="<?= BASE_URL ?>owner/stok_opname/" title="Stok Opname Bahan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/stok_opname/', $current_uri) ?>">
+            <i class="fa-solid fa-scale-balanced w-6 text-center text-lg shrink-0 text-emerald-600"></i> 
+            <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-emerald-700">Stok Opname</span>
+        </a>
+        <?php endif; ?>
+        
+        <?php if (hasPermission('master_satuan')): ?>
+        <a href="<?= BASE_URL ?>owner/master_satuan/" title="Master Satuan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_satuan/', $current_uri) ?>">
+            <i class="fa-solid fa-weight-scale w-6 text-center text-lg shrink-0"></i> 
+            <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Master Satuan</span>
+        </a>
+        <?php endif; ?>
+        
+        <?php if (hasPermission('master_resep')): ?>
+        <a href="<?= BASE_URL ?>owner/master_resep/" title="Resep (BOM)" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_resep/', $current_uri) ?>">
+            <i class="fa-solid fa-list-check w-6 text-center text-lg shrink-0"></i> 
+            <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Resep (BOM)</span>
+        </a>
+        <?php endif; ?>
+        
+      <?php if (hasPermission('master_user')): ?>
+        <a href="<?= BASE_URL ?>owner/manajemen_role/" title="Manajemen Role & Akses" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/manajemen_role/', $current_uri) ?>">
+            <i class="fa-solid fa-shield-halved w-6 text-center text-lg shrink-0 text-indigo-600"></i> 
+            <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-indigo-700">Manajemen Role</span>
+        </a>
+
+        <a href="<?= BASE_URL ?>owner/master_user/" title="Manajemen Akun User" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_user/', $current_uri) ?>">
+            <i class="fa-solid fa-users-gear w-6 text-center text-lg shrink-0"></i> 
+            <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Manajemen User</span>
+        </a>
         <?php endif; ?>
         
         <div class="px-2 py-2 mt-4 border-t border-slate-100">
@@ -92,45 +111,61 @@ function getNavClass($path, $current_uri) {
             <div class="hidden divider-dot w-full h-[2px] bg-slate-100 rounded-full mt-2"></div>
         </div>
        
+        <?php if (hasPermission('laporan_produksi')): ?>
         <a href="<?= BASE_URL ?>owner/laporan_produksi/" title="Laporan Produksi" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_produksi/', $current_uri) ?>">
             <i class="fa-solid fa-chart-line w-6 text-center text-lg shrink-0"></i> 
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Laporan Produksi</span>
         </a>
+        <?php endif; ?>
 
+        <?php if (hasPermission('laporan_keluar')): ?>
         <a href="<?= BASE_URL ?>owner/laporan_keluar/" title="Laporan Produk Keluar" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_keluar/', $current_uri) ?>">
             <i class="fa-solid fa-box-open w-6 text-center text-lg shrink-0 text-danger"></i> 
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Lap. Produk Keluar</span>
         </a>
+        <?php endif; ?>
 
+        <?php if (hasPermission('audit_logs')): ?>
         <a href="<?= BASE_URL ?>owner/audit_logs/" title="Audit Logs (Lacak)" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/audit_logs/', $current_uri) ?>">
             <i class="fa-solid fa-shoe-prints w-6 text-center text-lg shrink-0 text-indigo-500"></i> 
             <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-indigo-600">Audit Logs (Lacak)</span>
         </a>
+        <?php endif; ?>
 
+        <?php if (hasPermission('analisa_produk')): ?>
         <a href="<?= BASE_URL ?>owner/analisa_produk/" title="Analisa Performa" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/analisa_produk/', $current_uri) ?>">
             <i class="fa-solid fa-chart-simple w-6 text-center text-lg shrink-0 text-amber-500"></i> 
             <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-amber-600">Analisa Performa</span>
         </a>
+        <?php endif; ?>
 
+        <?php if (hasPermission('laporan_bahan')): ?>
         <a href="<?= BASE_URL ?>owner/laporan_bahan/" title="Laporan Bahan Baku" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_bahan/', $current_uri) ?>">
             <i class="fa-solid fa-wheat-awn-circle-exclamation w-6 text-center text-lg shrink-0"></i> 
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Laporan Bahan Baku</span>
         </a>
+        <?php endif; ?>
 
+        <?php if (hasPermission('laporan_produk_jadi')): ?>
         <a href="<?= BASE_URL ?>owner/laporan_produk/" title="Laporan Produk Jadi" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_produk/', $current_uri) ?>">
             <i class="fa-solid fa-boxes-stacked w-6 text-center text-lg shrink-0"></i> 
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Laporan Produk Jadi</span>
         </a>
+        <?php endif; ?>
         
+        <?php if (hasPermission('laporan_bom')): ?>
         <a href="<?= BASE_URL ?>owner/laporan_bom/" title="Laporan Resep (BOM)" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_bom/', $current_uri) ?>">
             <i class="fa-solid fa-clipboard-list w-6 text-center text-lg shrink-0"></i> 
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Laporan Resep (BOM)</span>
         </a>
+        <?php endif; ?>
 
+        <?php if (hasPermission('laporan_opname')): ?>
          <a href="<?= BASE_URL ?>owner/laporan_opname/" title="Laporan Opname" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_opname/', $current_uri) ?>">
             <i class="fa-solid fa-clipboard-check w-6 text-center text-lg shrink-0 text-emerald-500"></i> 
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-emerald-600">Laporan Opname</span>
         </a>
+        <?php endif; ?>
 
     </nav>
 </aside>
@@ -186,11 +221,8 @@ function getNavClass($path, $current_uri) {
         }
     }
 
-    // TERAPKAN SAAT HALAMAN DIBUKA
     document.addEventListener("DOMContentLoaded", () => {
         applySidebarState();
-
-        // 1. KEMBALIKAN POSISI SCROLL SIDEBAR
         const sidebarNav = document.getElementById('sidebar-nav');
         const savedScrollPos = localStorage.getItem('sidebar_scroll_pos');
         if (sidebarNav && savedScrollPos) {
@@ -198,7 +230,6 @@ function getNavClass($path, $current_uri) {
         }
     });
 
-    // 2. SIMPAN POSISI SCROLL SEBELUM PINDAH HALAMAN
     window.addEventListener('beforeunload', () => {
         const sidebarNav = document.getElementById('sidebar-nav');
         if (sidebarNav) {
@@ -209,7 +240,6 @@ function getNavClass($path, $current_uri) {
     function toggleSidebar() {
         const sidebar = document.getElementById('main-sidebar');
         const overlay = document.getElementById('sidebar-overlay');
-
         sidebar.classList.toggle('-translate-x-full');
 
         if (sidebar.classList.contains('-translate-x-full')) {
@@ -226,9 +256,7 @@ function getNavClass($path, $current_uri) {
     }
 
     function closeSidebarMobile() {
-        if (window.innerWidth < 768) {
-            toggleSidebar();
-        }
+        if (window.innerWidth < 768) toggleSidebar();
     }
 
     function toggleDesktopSidebar() {

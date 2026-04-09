@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
-checkRole(['owner']);
+checkPermission('master_user');
 
 header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
@@ -10,9 +10,24 @@ try {
     // ==========================================
     // BAGIAN 1: MANAJEMEN AKUN LOGIN (USERS)
     // ==========================================
+    
+    // FITUR BARU: Tarik data daftar Roles/Jabatan untuk Dropdown Modal
+    if ($action === 'get_roles') {
+        $stmt = $pdo->query("SELECT role_slug, role_name FROM roles ORDER BY role_name ASC");
+        echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        exit;
+    }
+
     if ($action === 'read_users') {
-        $stmt = $pdo->query("SELECT id, name, username, role FROM users ORDER BY id DESC");
-        echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll()]);
+        // PERBAIKAN: Join ke tabel roles agar mendapatkan role_name yang mudah dibaca
+        $sql = "
+            SELECT u.id, u.name, u.username, u.role as role_slug, r.role_name 
+            FROM users u 
+            LEFT JOIN roles r ON u.role = r.role_slug 
+            ORDER BY u.id DESC
+        ";
+        $stmt = $pdo->query($sql);
+        echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
     }
 
@@ -23,8 +38,8 @@ try {
         $password = $_POST['password'] ?? '';
         $role = $_POST['role'];
 
-        if (empty($name) || empty($username)) {
-            echo json_encode(['status' => 'error', 'message' => 'Nama dan Username wajib diisi!']); exit;
+        if (empty($name) || empty($username) || empty($role)) {
+            echo json_encode(['status' => 'error', 'message' => 'Nama, Username, dan Jabatan wajib diisi!']); exit;
         }
 
         if (empty($id)) {
@@ -65,6 +80,11 @@ try {
     }
 
     if ($action === 'delete_user') {
+        // PROTEKSI BACKEND: Cek apakah yang menghapus adalah owner asli
+        if ($_SESSION['role'] !== 'owner') {
+            echo json_encode(['status' => 'error', 'message' => 'Akses Ditolak! Hanya Owner Utama yang dapat menghapus akun.']); exit;
+        }
+
         $id = $_POST['id'] ?? '';
         if ($id == $_SESSION['user_id']) {
             echo json_encode(['status' => 'error', 'message' => 'Anda tidak bisa menghapus akun yang sedang Anda gunakan!']); exit;
@@ -106,9 +126,13 @@ try {
     }
 
     if ($action === 'delete_employee') {
+        // PROTEKSI BACKEND
+        if ($_SESSION['role'] !== 'owner') {
+            echo json_encode(['status' => 'error', 'message' => 'Akses Ditolak! Hanya Owner Utama yang dapat menghapus data karyawan.']); exit;
+        }
+
         $id = $_POST['id'] ?? '';
         
-        // Pengecekan agar tidak terjadi error relasi database jika karyawan sudah pernah dipakai
         $cek_p = $pdo->prepare("SELECT id FROM productions WHERE employee_id = ? LIMIT 1");
         $cek_p->execute([$id]);
         if($cek_p->rowCount() > 0) {

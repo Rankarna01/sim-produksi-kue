@@ -1,6 +1,7 @@
 <?php
 require_once '../../config/auth.php';
-checkRole(['owner']);
+// Gunakan checkPermission agar menyesuaikan dengan sistem RBAC baru
+checkPermission('master_user');
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -20,7 +21,6 @@ checkRole(['owner']);
             th, td { border: 1px solid #e2e8f0 !important; padding: 10px !important; color: #000 !important; }
             /* Header Laporan Khusus Cetak */
             #print-header-user, #print-header-karyawan { display: block !important; text-align: center; margin-bottom: 20px; }
-            /* Paksa semua tab terlihat jika sedang mode print, lalu dikontrol JS */
         }
     </style>
 </head>
@@ -154,12 +154,10 @@ checkRole(['owner']);
                         <p class="text-[10px] text-secondary mt-1" id="password_help">Wajib diisi untuk akun baru.</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Hak Akses (Role) <span class="text-danger">*</span></label>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">Hak Akses (Jabatan) <span class="text-danger">*</span></label>
                         <select id="role_input" name="role" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all bg-slate-50 focus:bg-surface">
-                            <option value="produksi">Terminal Produksi (Sistem Dapur)</option>
-                            <option value="admin">Admin Gudang (Scanner)</option>
-                            <option value="owner">Owner / Pemilik</option>
-                        </select>
+                            <option value="">-- Pilih Jabatan --</option>
+                            </select>
                     </div>
                     <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
                         <button type="button" onclick="closeModal('modal-user')" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
@@ -199,6 +197,8 @@ checkRole(['owner']);
         </div>
     </div>
 
+    <script>const currentUserRole = "<?= $_SESSION['role'] ?>";</script>
+    
     <?php include '../../components/footer.php'; ?>
     <script src="ajax.js?v=<?= time() ?>"></script>
 </body>

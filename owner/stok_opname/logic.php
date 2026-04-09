@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
-checkRole(['owner']);
+checkPermission('stok_opname');
 
 header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';

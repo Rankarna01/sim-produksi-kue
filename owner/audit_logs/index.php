@@ -1,6 +1,6 @@
 <?php
 require_once '../../config/auth.php';
-checkRole(['owner', 'auditor']);
+checkPermission('audit_logs');
 ?>
 <!DOCTYPE html>
 <html lang="id">

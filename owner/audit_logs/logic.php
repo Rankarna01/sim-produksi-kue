@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
-checkRole(['owner', 'auditor']);
+checkPermission('audit_logs');
 
 header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';

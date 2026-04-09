@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
-checkRole(['owner']);
+checkPermission('master_produk');
 
 // Hapus header JSON agar download_template bisa berjalan berupa File
 // header('Content-Type: application/json'); <-- HAPUS / KOMENTARI BARIS INI JIKA ADA

@@ -39,19 +39,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = $user['role'];
 
-            $redirect_url = '/sim-produksi-kue/'; 
+            // Deteksi Localhost atau cPanel agar routing dinamis
+            $is_localhost = (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
+            $redirect_url = $is_localhost ? '/sim-produksi-kue/' : '/';
             
             // ==========================================
-            // PERBAIKAN: Routing untuk masing-masing role
+            // PERBAIKAN: Routing Dinamis RBAC
             // ==========================================
-            if ($user['role'] === 'owner') {
-                $redirect_url .= 'owner/dashboard/';
-            } elseif ($user['role'] === 'produksi') {
+            if ($user['role'] === 'produksi') {
                 $redirect_url .= 'produksi/input_produksi/';
             } elseif ($user['role'] === 'admin') {
                 $redirect_url .= 'admin/scan_barcode/';
-            } elseif ($user['role'] === 'auditor') {
-                $redirect_url .= 'owner/dashboard/'; // Auditor dilempar ke Dashboard Owner
+            } else {
+                // SEMUA ROLE LAIN (Owner, Auditor, Supervisor, Kasir, dll) 
+                // akan otomatis diarahkan ke pintu utama ini.
+                $redirect_url .= 'owner/dashboard/'; 
             }
 
             echo json_encode(['status' => 'success', 'redirect' => $redirect_url]);
