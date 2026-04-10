@@ -20,9 +20,13 @@ checkPermission('master_satuan');
                     <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Master Satuan</h2>
                     <p class="text-sm text-secondary mt-1">Kelola data satuan ukur untuk bahan baku dan produk.</p>
                 </div>
+
+                <?php if (hasPermission('edit_master_satuan')): ?>
                 <button onclick="openModal('modal-satuan'); resetForm();" class="bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Tambah Satuan
                 </button>
+                <?php endif; ?>
+
             </div>
 
             <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden max-w-3xl">
@@ -73,6 +77,11 @@ checkPermission('master_satuan');
             </div>
         </div>
     </div>
+
+    <script>
+        const canEdit = <?= hasPermission('edit_master_satuan') ? 'true' : 'false' ?>;
+        const canDelete = <?= hasPermission('hapus_master_satuan') ? 'true' : 'false' ?>;
+    </script>
 
     <?php include '../../components/footer.php'; ?>
     <script src="ajax.js?v=<?= time() ?>"></script>

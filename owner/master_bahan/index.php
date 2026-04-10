@@ -21,12 +21,14 @@ checkPermission('master_bahan');
                     <p class="text-sm text-secondary mt-1">Kelola stok awal dan batas minimum bahan mentah dapur.</p>
                 </div>
                 <div class="flex gap-2 w-full sm:w-auto">
+                    <?php if (hasPermission('edit_master_bahan')): ?>
                     <button onclick="openModal('modal-import'); document.getElementById('formImport').reset();" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
                         <i class="fa-solid fa-file-import"></i> Import CSV
                     </button>
                     <button onclick="openModal('modal-bahan'); resetForm();" class="flex-1 sm:flex-none bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
                         <i class="fa-solid fa-plus"></i> Tambah Bahan
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -66,7 +68,6 @@ checkPermission('master_bahan');
             <div class="p-6 overflow-y-auto">
                 <form id="formBahan" class="space-y-4">
                     <input type="hidden" id="material_id" name="id">
-                    
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Kode Bahan <span class="text-danger">*</span></label>
                         <input type="text" id="code" name="code" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface uppercase" placeholder="Contoh: TPG-01">
@@ -75,7 +76,6 @@ checkPermission('master_bahan');
                         <label class="block text-sm font-medium text-slate-700 mb-1">Nama Bahan Baku <span class="text-danger">*</span></label>
                         <input type="text" id="name" name="name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface" placeholder="Contoh: Tepung Terigu Segitiga Biru">
                     </div>
-                    
                     <div class="grid grid-cols-3 gap-4">
                         <div class="col-span-1">
                             <label class="block text-sm font-medium text-slate-700 mb-1">Satuan <span class="text-danger">*</span></label>
@@ -92,7 +92,6 @@ checkPermission('master_bahan');
                             <input type="number" step="0.01" id="min_stock" name="min_stock" value="0" min="0" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface">
                         </div>
                     </div>
-                    
                     <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
                         <button type="button" onclick="closeModal('modal-bahan')" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
                         <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-surface bg-primary hover:opacity-90 rounded-xl transition-all flex items-center gap-2 shadow-sm">
@@ -113,7 +112,6 @@ checkPermission('master_bahan');
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
-            
             <div class="p-6">
                 <div class="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800">
                     <p class="font-bold mb-1">Panduan Import:</p>
@@ -123,19 +121,16 @@ checkPermission('master_bahan');
                         <li>Jika Kode Bahan sudah ada di sistem, maka sistem akan <strong>memperbarui</strong> datanya (Update).</li>
                     </ol>
                 </div>
-
                 <div class="mb-6">
                     <button onclick="downloadTemplate()" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2">
                         <i class="fa-solid fa-download"></i> Download Template CSV
                     </button>
                 </div>
-
                 <form id="formImport" enctype="multipart/form-data">
                     <div class="mb-6">
                         <label class="block text-sm font-bold text-slate-700 mb-2">Upload File CSV <span class="text-danger">*</span></label>
                         <input type="file" id="file_csv" name="file_csv" accept=".csv" required class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 transition-all border-2 border-slate-200 rounded-xl p-1 cursor-pointer">
                     </div>
-                    
                     <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
                         <button type="button" onclick="closeModal('modal-import')" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
                         <button type="submit" id="btn-import" class="px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm flex items-center gap-2">
@@ -146,6 +141,11 @@ checkPermission('master_bahan');
             </div>
         </div>
     </div>
+
+    <script>
+        const canEdit = <?= hasPermission('edit_master_bahan') ? 'true' : 'false' ?>;
+        const canDelete = <?= hasPermission('hapus_master_bahan') ? 'true' : 'false' ?>;
+    </script>
 
     <?php include '../../components/footer.php'; ?>
     <script src="ajax.js?v=<?= time() ?>"></script>

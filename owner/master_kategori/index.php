@@ -20,9 +20,13 @@ checkPermission('master_kategori');
                     <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Kategori Produk</h2>
                     <p class="text-sm text-secondary mt-1">Kelola daftar kategori untuk mengelompokkan produk jualan.</p>
                 </div>
+                
+                <?php if (hasPermission('edit_master_kategori')): ?>
                 <button onclick="openModal('modal-kategori'); resetForm();" class="bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Tambah Kategori
                 </button>
+                <?php endif; ?>
+                
             </div>
 
             <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden max-w-4xl">
@@ -73,6 +77,11 @@ checkPermission('master_kategori');
             </div>
         </div>
     </div>
+
+    <script>
+        const canEdit = <?= hasPermission('edit_master_kategori') ? 'true' : 'false' ?>;
+        const canDelete = <?= hasPermission('hapus_master_kategori') ? 'true' : 'false' ?>;
+    </script>
 
     <?php include '../../components/footer.php'; ?>
     <script src="ajax.js?v=<?= time() ?>"></script>

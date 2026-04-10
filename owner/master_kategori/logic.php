@@ -14,6 +14,9 @@ try {
             break;
 
         case 'save':
+            // SUNTIKAN: Gembok Hak Edit
+            checkPermission('edit_master_kategori');
+
             $id = $_POST['id'] ?? '';
             $name = trim($_POST['name']);
 
@@ -50,6 +53,9 @@ try {
             break;
 
         case 'delete':
+            // SUNTIKAN: Gembok Hak Hapus
+            checkPermission('hapus_master_kategori');
+
             $id = $_POST['id'] ?? '';
             
             // Opsional: Kamu bisa mengecek apakah kategori ini sedang dipakai di tabel products

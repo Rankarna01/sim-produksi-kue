@@ -20,9 +20,12 @@ checkPermission('master_gudang');
                     <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Data Gudang</h2>
                     <p class="text-sm text-secondary mt-1">Kelola lokasi penyimpanan bahan baku dan produk jadi.</p>
                 </div>
+                
+                <?php if(hasPermission('edit_master_gudang')): ?>
                 <button onclick="openModal('modal-gudang'); resetForm();" class="bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Tambah Gudang
                 </button>
+                <?php endif; ?>
             </div>
 
             <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -78,6 +81,11 @@ checkPermission('master_gudang');
             </div>
         </div>
     </div>
+
+    <script>
+        const canEdit = <?= hasPermission('edit_master_gudang') ? 'true' : 'false' ?>;
+        const canDelete = <?= hasPermission('hapus_master_gudang') ? 'true' : 'false' ?>;
+    </script>
 
     <?php include '../../components/footer.php'; ?>
     <script src="ajax.js?v=<?php echo time(); ?>"></script>

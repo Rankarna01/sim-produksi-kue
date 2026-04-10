@@ -16,6 +16,9 @@ try {
             break;
 
         case 'save':
+            // SUNTIKAN: Gembok Hak Edit
+            checkPermission('edit_master_satuan');
+
             $id = $_POST['id'] ?? '';
             // Kapitalisasi huruf pertama agar rapi (cth: gram -> Gram)
             $name = ucfirst(strtolower(trim($_POST['name'])));
@@ -53,6 +56,9 @@ try {
             break;
 
         case 'delete':
+            // SUNTIKAN: Gembok Hak Hapus
+            checkPermission('hapus_master_satuan');
+
             $id = $_POST['id'] ?? '';
             
             // Opsional: Bisa ditambah logika cek apakah satuan ini sedang dipakai di tabel materials/bom

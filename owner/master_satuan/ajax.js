@@ -20,21 +20,29 @@ async function loadData() {
             html = '<tr><td colspan="3" class="p-8 text-center text-secondary">Belum ada data satuan.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
+                
+                // SUNTIKAN: Tombol aksi dinamis RBAC
+                let btnAksi = '';
+                if (canEdit) {
+                    btnAksi += `<button onclick='editData(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>&nbsp;`;
+                }
+                if (canDelete) {
+                    btnAksi += `<button onclick="deleteData(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Hapus"><i class="fa-solid fa-trash text-xs"></i></button>`;
+                }
+                if (btnAksi === '') {
+                    btnAksi = '<span class="text-[10px] font-bold text-slate-400">Akses Dibatasi</span>';
+                }
+
                 html += `
                     <tr class="hover:bg-slate-50 transition-colors">
-    <td class="p-4 text-center text-secondary">${index + 1}</td>
-    <td class="p-4 font-bold text-slate-800">${item.name}</td>
-    <td class="p-4 text-center">
-        <div class="flex items-center justify-center gap-2">
-            <button onclick='editData(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center" title="Edit">
-                <i class="fa-solid fa-pen text-xs"></i>
-            </button>
-            <button onclick="deleteData(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus">
-                <i class="fa-solid fa-trash text-xs"></i>
-            </button>
-        </div>
-    </td>
-</tr>
+                        <td class="p-4 text-center text-secondary">${index + 1}</td>
+                        <td class="p-4 font-bold text-slate-800">${item.name}</td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                ${btnAksi}
+                            </div>
+                        </td>
+                    </tr>
                 `;
             });
         }
@@ -63,21 +71,6 @@ function editData(item) {
     document.getElementById('modal-title').innerText = 'Edit Satuan';
     openModal('modal-satuan');
 }
-
-// async function deleteData(id) {
-//     if (confirm('Yakin ingin menghapus satuan ini?')) {
-//         const formData = new FormData();
-//         formData.append('id', id);
-        
-//         const response = await fetchAjax('logic.php?action=delete', 'POST', formData);
-//         if (response.status === 'success') {
-//             loadData();
-//         } else {
-//             alert('Gagal menghapus: ' + response.message);
-//         }
-//     }
-// }
-
 
 async function deleteData(id) {
     // Memanggil customConfirm yang sudah kita buat di head.php

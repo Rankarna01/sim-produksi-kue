@@ -59,8 +59,8 @@ function openModalAdd() {
     document.getElementById('role_slug').readOnly = false;
     document.getElementById('role_slug').classList.remove('bg-slate-100', 'cursor-not-allowed', 'text-slate-400');
     
-    // Uncheck semua checkbox
-    document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = false);
+    // PERBAIKAN 1: Uncheck SEMUA jenis checkbox (Induk, Edit, Hapus)
+    document.querySelectorAll('input[type="checkbox"][name="permissions[]"]').forEach(cb => cb.checked = false);
     
     document.getElementById('modal-title').innerHTML = '<i class="fa-solid fa-shield-halved text-primary mr-2"></i> Tambah Jabatan Baru';
     openModal('modal-role');
@@ -90,10 +90,10 @@ async function openModalEdit(slug) {
             slugInput.classList.remove('bg-slate-100', 'cursor-not-allowed', 'text-slate-400');
         }
 
-        // Reset checkbox lalu centang sesuai data DB
-        document.querySelectorAll('.perm-checkbox').forEach(cb => cb.checked = false);
+        // PERBAIKAN 2: Reset semua checkbox lalu centang sesuai data DB (termasuk Edit/Hapus)
+        document.querySelectorAll('input[type="checkbox"][name="permissions[]"]').forEach(cb => cb.checked = false);
         response.permissions.forEach(perm => {
-            const cb = document.querySelector(`.perm-checkbox[value="${perm}"]`);
+            const cb = document.querySelector(`input[type="checkbox"][value="${perm}"]`);
             if (cb) cb.checked = true;
         });
 
@@ -121,9 +121,9 @@ async function saveData() {
         return;
     }
 
-    // Ambil data checkbox yang tercentang
+    // PERBAIKAN 3: Ambil SEMUA data checkbox yang tercentang (Induk, Edit, dan Hapus)
     const permissions = [];
-    document.querySelectorAll('.perm-checkbox:checked').forEach(cb => {
+    document.querySelectorAll('input[type="checkbox"][name="permissions[]"]:checked').forEach(cb => {
         permissions.push(cb.value);
     });
 

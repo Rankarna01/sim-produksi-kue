@@ -12,7 +12,7 @@ checkPermission('master_user');
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        /* Style khusus untuk checkbox agar terlihat seperti Card */
+        /* Style khusus untuk checkbox utama agar terlihat seperti Card */
         .perm-card { transition: all 0.2s; }
         .perm-checkbox:checked + .perm-card {
             background-color: #eff6ff; /* blue-50 */
@@ -20,6 +20,18 @@ checkPermission('master_user');
         }
         .perm-checkbox:checked + .perm-card .perm-icon {
             color: #2563eb; /* blue-600 */
+        }
+
+        /* Style untuk sub-checkbox (Edit/Hapus) */
+        .sub-perm-checkbox:checked + .sub-perm-label {
+            background-color: #fef3c7; /* amber-50 */
+            color: #d97706; /* amber-600 */
+            border-color: #f59e0b; /* amber-500 */
+        }
+        .sub-perm-checkbox-danger:checked + .sub-perm-label {
+            background-color: #fef2f2; /* red-50 */
+            color: #dc2626; /* red-600 */
+            border-color: #ef4444; /* red-500 */
         }
     </style>
 </head>
@@ -64,7 +76,7 @@ checkPermission('master_user');
 
     <div id="modal-role" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-role')"></div>
-        <div class="relative bg-surface w-full max-w-3xl rounded-3xl shadow-xl z-10 flex flex-col max-h-[90vh] overflow-hidden">
+        <div class="relative bg-surface w-full max-w-4xl rounded-3xl shadow-xl z-10 flex flex-col max-h-[90vh] overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl shrink-0">
                 <h3 class="text-lg font-bold text-slate-800" id="modal-title"><i class="fa-solid fa-shield-halved text-primary mr-2"></i> Tambah Jabatan Baru</h3>
                 <button onclick="closeModal('modal-role')" class="text-secondary hover:text-danger transition-colors">
@@ -97,12 +109,12 @@ checkPermission('master_user');
                         
                         <div>
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-database mr-1"></i> Data Master & Pengaturan</p>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                <?= renderCheckbox('master_gudang', 'Data Gudang', 'fa-warehouse') ?>
-                                <?= renderCheckbox('master_produk', 'Data Produk', 'fa-box') ?>
-                                <?= renderCheckbox('master_kategori', 'Kategori Produk', 'fa-tags') ?>
-                                <?= renderCheckbox('master_bahan', 'Data Bahan Baku', 'fa-wheat-awn') ?>
-                                <?= renderCheckbox('master_satuan', 'Master Satuan', 'fa-weight-scale') ?>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                <?= renderCheckboxGroup('master_gudang', 'Data Gudang', 'fa-warehouse') ?>
+                                <?= renderCheckboxGroup('master_produk', 'Data Produk', 'fa-box') ?>
+                                <?= renderCheckboxGroup('master_kategori', 'Kategori Produk', 'fa-tags') ?>
+                                <?= renderCheckboxGroup('master_bahan', 'Data Bahan Baku', 'fa-wheat-awn') ?>
+                                <?= renderCheckboxGroup('master_satuan', 'Master Satuan', 'fa-weight-scale') ?>
                                 <?= renderCheckbox('master_resep', 'Data Resep (BOM)', 'fa-list-check') ?>
                                 <?= renderCheckbox('master_user', 'Manajemen User & Role', 'fa-users-gear') ?>
                             </div>
@@ -110,7 +122,7 @@ checkPermission('master_user');
 
                         <div>
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-industry mr-1"></i> Operasional & Transaksi</p>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                 <?= renderCheckbox('view_dashboard', 'Akses Dashboard', 'fa-chart-pie') ?>
                                 <?= renderCheckbox('stok_opname', 'Stok Opname', 'fa-scale-balanced') ?>
                             </div>
@@ -118,7 +130,7 @@ checkPermission('master_user');
 
                         <div>
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-file-lines mr-1"></i> Laporan & Analitik</p>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                 <?= renderCheckbox('laporan_produksi', 'Laporan Produksi', 'fa-chart-line') ?>
                                 <?= renderCheckbox('laporan_keluar', 'Laporan Produk Keluar', 'fa-box-open') ?>
                                 <?= renderCheckbox('audit_logs', 'Audit Logs (Lacak)', 'fa-shoe-prints') ?>
@@ -145,20 +157,60 @@ checkPermission('master_user');
 
     <?php include '../../components/footer.php'; ?>
     <script src="ajax.js?v=<?= time() ?>"></script>
+    <script>
+        // Script kecil agar jika induknya di-uncheck, anak-anaknya juga ikut di-uncheck otomatis
+        document.addEventListener('change', function(e) {
+            if(e.target.classList.contains('master-perm')) {
+                if(!e.target.checked) {
+                    const parentCard = e.target.closest('.group-card');
+                    if(parentCard) {
+                        parentCard.querySelectorAll('.sub-perm-checkbox, .sub-perm-checkbox-danger').forEach(sub => {
+                            sub.checked = false;
+                        });
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
 
 <?php
-// Fungsi Helper untuk render Checkbox biar kodenya gak kepanjangan
+// Fungsi Helper LAMA (Hanya akses halaman)
 function renderCheckbox($value, $label, $icon) {
     return '
-    <label class="cursor-pointer relative">
+    <label class="cursor-pointer relative block">
         <input type="checkbox" name="permissions[]" value="'.$value.'" class="perm-checkbox peer absolute opacity-0 w-0 h-0">
-        <div class="perm-card flex items-center gap-3 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 bg-white">
+        <div class="perm-card flex items-center gap-3 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 bg-white shadow-sm h-full">
             <div class="w-5 text-center text-slate-400 perm-icon transition-colors"><i class="fa-solid '.$icon.'"></i></div>
             <div class="text-xs font-bold text-slate-700 select-none">'.$label.'</div>
         </div>
     </label>
+    ';
+}
+
+// Fungsi Helper BARU (Akses Halaman + Opsi Edit & Hapus)
+function renderCheckboxGroup($value, $label, $icon) {
+    return '
+    <div class="border border-slate-200 rounded-xl bg-white shadow-sm group-card flex flex-col h-full overflow-hidden">
+        <label class="cursor-pointer relative flex-1">
+            <input type="checkbox" name="permissions[]" value="'.$value.'" class="perm-checkbox master-perm peer absolute opacity-0 w-0 h-0">
+            <div class="perm-card flex items-center gap-3 p-3 transition-colors h-full">
+                <div class="w-5 text-center text-slate-400 perm-icon transition-colors"><i class="fa-solid '.$icon.'"></i></div>
+                <div class="text-xs font-bold text-slate-700 select-none">'.$label.'</div>
+            </div>
+        </label>
+        <div class="bg-slate-50 border-t border-slate-100 p-2 flex gap-2">
+            <label class="cursor-pointer flex-1 text-center">
+                <input type="checkbox" name="permissions[]" value="edit_'.$value.'" class="sub-perm-checkbox peer absolute opacity-0 w-0 h-0">
+                <div class="sub-perm-label text-[10px] font-bold text-slate-500 border border-slate-200 bg-white py-1 rounded transition-colors select-none">Edit</div>
+            </label>
+            <label class="cursor-pointer flex-1 text-center">
+                <input type="checkbox" name="permissions[]" value="hapus_'.$value.'" class="sub-perm-checkbox-danger peer absolute opacity-0 w-0 h-0">
+                <div class="sub-perm-label text-[10px] font-bold text-slate-500 border border-slate-200 bg-white py-1 rounded transition-colors select-none">Hapus</div>
+            </label>
+        </div>
+    </div>
     ';
 }
 ?>

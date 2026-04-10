@@ -21,12 +21,14 @@ checkPermission('master_produk');
                     <p class="text-sm text-secondary mt-1">Kelola daftar kue dan roti yang diproduksi.</p>
                 </div>
                 <div class="flex gap-2 w-full sm:w-auto">
+                    <?php if(hasPermission('edit_master_produk')): ?>
                     <button onclick="openModal('modal-import')" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
                         <i class="fa-solid fa-file-csv"></i> Import CSV
                     </button>
                     <button onclick="openModal('modal-produk'); resetForm();" class="flex-1 sm:flex-none bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
                         <i class="fa-solid fa-plus"></i> Tambah Produk
                     </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -140,6 +142,11 @@ checkPermission('master_produk');
             </div>
         </div>
     </div>
+
+    <script>
+        const canEdit = <?= hasPermission('edit_master_produk') ? 'true' : 'false' ?>;
+        const canDelete = <?= hasPermission('hapus_master_produk') ? 'true' : 'false' ?>;
+    </script>
 
     <?php include '../../components/footer.php'; ?>
     <script src="ajax.js?v=<?php echo time(); ?>"></script>

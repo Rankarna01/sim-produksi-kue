@@ -15,6 +15,9 @@ try {
             break;
 
         case 'save':
+            // SUNTIKAN 2A: GEMBOK TAMBAH & EDIT DATA
+            checkPermission('edit_master_gudang');
+
             $id = $_POST['id'] ?? '';
             $code = strtoupper(trim($_POST['code']));
             $name = trim($_POST['name']);
@@ -52,6 +55,9 @@ try {
             break;
 
         case 'delete':
+            // SUNTIKAN 2B: GEMBOK HAPUS DATA
+            checkPermission('hapus_master_gudang');
+
             $id = $_POST['id'] ?? '';
             $stmt = $pdo->prepare("DELETE FROM warehouses WHERE id = ?");
             $stmt->execute([$id]);

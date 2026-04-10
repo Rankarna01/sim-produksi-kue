@@ -3,14 +3,10 @@ require_once '../../config/auth.php';
 require_once '../../config/database.php';
 checkPermission('master_produk');
 
-// Hapus header JSON agar download_template bisa berjalan berupa File
-// header('Content-Type: application/json'); <-- HAPUS / KOMENTARI BARIS INI JIKA ADA
-
 $action = $_GET['action'] ?? '';
 
 try {
     switch ($action) {
-        // --- FITUR BARU: DOWNLOAD TEMPLATE CSV ---
         case 'download_template':
             header('Content-Type: text/csv; charset=utf-8');
             header('Content-Disposition: attachment; filename=Template_Import_Produk.csv');
@@ -25,9 +21,11 @@ try {
             fclose($output);
             exit;
 
-        // --- FITUR BARU: IMPORT DATA DARI CSV ---
         case 'import':
-            header('Content-Type: application/json'); // Set header JSON khusus di sini
+            header('Content-Type: application/json');
+            // SUNTIKAN 2A: GEMBOK IMPORT
+            checkPermission('edit_master_produk');
+
             if (!isset($_FILES['file_import']['tmp_name']) || empty($_FILES['file_import']['tmp_name'])) {
                 echo json_encode(['status' => 'error', 'message' => 'File CSV tidak ditemukan!']);
                 exit;
@@ -39,12 +37,11 @@ try {
             $gagal = 0;
             $row = 0;
 
-            // Mulai Transaksi agar aman
             $pdo->beginTransaction();
 
             while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
                 $row++;
-                if ($row == 1) continue; // Lewati baris ke-1 (Header/Judul Kolom)
+                if ($row == 1) continue; // Lewati baris ke-1
 
                 $code = strtoupper(trim($data[0] ?? ''));
                 $name = trim($data[1] ?? '');
@@ -53,20 +50,18 @@ try {
 
                 if (empty($code) || empty($name)) {
                     $gagal++;
-                    continue; // Jika kode/nama kosong, lewati baris ini
+                    continue; 
                 }
 
-                // Cek apakah kode produk sudah ada
                 $cek = $pdo->prepare("SELECT id FROM products WHERE code = ?");
                 $cek->execute([$code]);
                 
                 if ($cek->rowCount() == 0) {
-                    // Jika belum ada, SIMPAN DATA BARU
                     $stmt = $pdo->prepare("INSERT INTO products (code, name, category, price) VALUES (?, ?, ?, ?)");
                     $stmt->execute([$code, $name, $category, $price]);
                     $sukses++;
                 } else {
-                    $gagal++; // Hitung sebagai gagal jika kode sudah duplikat/ada
+                    $gagal++; 
                 }
             }
             fclose($handle);
@@ -78,8 +73,6 @@ try {
             ]);
             break;
 
-        // ---------------- FITUR LAMA DI BAWAH INI ----------------
-
         case 'read':
             header('Content-Type: application/json');
             $stmt = $pdo->query("SELECT * FROM products ORDER BY id DESC");
@@ -89,6 +82,9 @@ try {
 
         case 'save':
             header('Content-Type: application/json');
+            // SUNTIKAN 2B: GEMBOK EDIT/TAMBAH
+            checkPermission('edit_master_produk');
+
             $id = $_POST['id'] ?? '';
             $code = strtoupper(trim($_POST['code']));
             $name = trim($_POST['name']);
@@ -125,6 +121,9 @@ try {
 
         case 'delete':
             header('Content-Type: application/json');
+            // SUNTIKAN 2C: GEMBOK HAPUS
+            checkPermission('hapus_master_produk');
+
             $id = $_POST['id'] ?? '';
             if (empty($id)) {
                 echo json_encode(['status' => 'error', 'message' => 'ID tidak valid!']);
