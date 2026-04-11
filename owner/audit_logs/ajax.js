@@ -1,85 +1,93 @@
-document.getElementById('formSearch').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const inv = document.getElementById('search_invoice').value.trim();
-    
-    showLoading();
-    const response = await fetchAjax(`logic.php?action=track_invoice&inv=${inv}`, 'GET');
-    hideLoading();
-
-    const container = document.getElementById('timeline-container');
-    const eventsDiv = document.getElementById('timeline-events');
-
-    if (response.status === 'success') {
-        // Tampilkan Container
-        container.classList.remove('hidden');
-        
-        // Isi Header
-        document.getElementById('info-inv').innerText = response.invoice_no;
-        
-        // Format Status Akhir
-        let st = response.current_status;
-        let stHtml = '';
-        if (st === 'pending') stHtml = '<span class="text-yellow-300"><i class="fa-solid fa-clock"></i> Pending (Antrean)</span>';
-        else if (st === 'masuk_gudang') stHtml = '<span class="text-green-400"><i class="fa-solid fa-check-double"></i> Masuk Gudang</span>';
-        else if (st === 'ditolak') stHtml = '<span class="text-red-400"><i class="fa-solid fa-triangle-exclamation"></i> Ditolak (Revisi)</span>';
-        else if (st === 'expired') stHtml = '<span class="text-slate-400"><i class="fa-solid fa-ban"></i> Expired (Habis)</span>';
-        document.getElementById('info-status').innerHTML = stHtml;
-
-        // Render Events
-        eventsDiv.innerHTML = '';
-        
-        response.events.forEach((evt, index) => {
-            const dateObj = new Date(evt.time);
-            const tgl = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-            const waktu = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-            // Tentukan warna dan icon berdasarkan tipe event
-            let dotColor = 'bg-slate-300';
-            let icon = '<i class="fa-solid fa-circle text-xs"></i>';
-            let bgLight = 'bg-slate-50';
-
-            if (evt.type === 'start') {
-                dotColor = 'bg-indigo-500';
-                icon = '<i class="fa-solid fa-fire-burner text-white text-[10px]"></i>';
-                bgLight = 'bg-indigo-50 border-indigo-100';
-            } else if (evt.type === 'expired' || evt.type === 'rusak' || evt.type === 'rejected') {
-                dotColor = 'bg-danger';
-                icon = '<i class="fa-solid fa-xmark text-white text-[10px]"></i>';
-                bgLight = 'bg-red-50 border-red-100';
-            } else {
-                // Tipe lainnya (Lainnya, Konsumsi)
-                dotColor = 'bg-orange-500';
-                icon = '<i class="fa-solid fa-arrow-right-from-bracket text-white text-[10px]"></i>';
-                bgLight = 'bg-orange-50 border-orange-100';
-            }
-
-            // Animasi masuk (Fade In)
-            const delay = index * 100;
-
-            const html = `
-                <div class="relative pl-6 sm:pl-8 animate-fade-in" style="animation-fill-mode: both; animation-delay: ${delay}ms;">
-                    <div class="absolute w-6 h-6 rounded-full ${dotColor} -left-[13px] top-1.5 border-4 border-white flex items-center justify-center shadow-sm">
-                        ${icon}
-                    </div>
-                    
-                    <div class="p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm ${bgLight}">
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 gap-1">
-                            <h4 class="text-base font-bold text-slate-800">${evt.title}</h4>
-                            <span class="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded shadow-sm flex items-center gap-1 w-max">
-                                <i class="fa-regular fa-clock"></i> ${tgl} - ${waktu} WIB
-                            </span>
-                        </div>
-                        <p class="text-sm text-slate-600 leading-relaxed">
-                            ${evt.description}
-                        </p>
-                    </div>
-                </div>
-            `;
-            eventsDiv.insertAdjacentHTML('beforeend', html);
-        });
-
-    } else {
-        alert(response.message);
-        container.classList.add('hidden');
-    }
+document.addEventListener("DOMContentLoaded", () => {
+    loadLogs(1);
 });
+
+function toggleCustomDate() {
+    const period = document.getElementById('filter-period').value;
+    const container = document.getElementById('custom-date-container');
+    container.classList.toggle('hidden', period !== 'custom');
+}
+
+async function loadLogs(page = 1) {
+    const tbody = document.getElementById('table-logs');
+    const period = document.getElementById('filter-period').value;
+    const start = document.getElementById('start-date').value;
+    const end = document.getElementById('end-date').value;
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5" class="p-10 text-center">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl text-primary mb-2"></i>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Sinkronisasi Data...</p>
+            </td>
+        </tr>`;
+
+    try {
+        const response = await fetchAjax(`logic.php?action=read&page=${page}&period=${period}&start=${start}&end=${end}`, 'GET');
+
+        if (response.status === 'success') {
+            renderTable(response.data, page);
+            renderPagination(response.total_pages, response.current_page);
+        } else {
+            showError(response.message);
+        }
+    } catch (err) {
+        showError("Terjadi kesalahan pada server atau kolom database tidak ditemukan.");
+    }
+}
+
+function renderTable(data, page) {
+    const tbody = document.getElementById('table-logs');
+    let html = '';
+
+    if (data.length === 0) {
+        html = '<tr><td colspan="5" class="p-8 text-center text-secondary italic">Belum ada aktivitas terekam.</td></tr>';
+    } else {
+        data.forEach((item, index) => {
+            const no = (page - 1) * 15 + index + 1;
+            const d = new Date(item.waktu);
+            const tgl = d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+
+            let menuColor = 'bg-slate-100 text-slate-600 border-slate-200';
+            if (item.menu === 'PRODUKSI') menuColor = 'bg-indigo-50 text-indigo-600 border-indigo-100';
+            else if (item.menu === 'OPNAME') menuColor = 'bg-emerald-50 text-emerald-600 border-emerald-100';
+            else if (item.menu === 'PRODUK KELUAR') menuColor = 'bg-red-50 text-red-600 border-red-100';
+
+            html += `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 text-center text-slate-400 font-mono text-xs">${no}</td>
+                    <td class="p-4 text-xs font-bold text-slate-500">${tgl}</td>
+                    <td class="p-4">
+                        <div class="font-bold text-slate-800 text-sm">${item.pegawai || 'SYSTEM'}</div>
+                        <div class="text-[10px] text-primary font-bold uppercase tracking-tighter">@${item.role || 'bot'}</div>
+                    </td>
+                    <td class="p-4">
+                        <span class="${menuColor} px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border">${item.menu}</span>
+                    </td>
+                    <td class="p-4">
+                        <div class="text-xs text-slate-700 font-medium italic border-l-2 border-slate-200 pl-3">
+                            ${item.tindakan}
+                        </div>
+                    </td>
+                </tr>`;
+        });
+    }
+    tbody.innerHTML = html;
+}
+
+function renderPagination(total, cur) {
+    const container = document.getElementById('pagination');
+    let h = '';
+    if (total <= 1) { container.innerHTML = ''; return; }
+    
+    for (let i = 1; i <= total; i++) {
+        const active = i === cur ? 'bg-primary text-white border-primary' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100';
+        h += `<button onclick="loadLogs(${i})" class="w-8 h-8 rounded-lg font-bold text-xs shadow-sm border ${active}">${i}</button>`;
+    }
+    container.innerHTML = h;
+}
+
+function showError(msg) {
+    const tbody = document.getElementById('table-logs');
+    tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-danger font-bold"><i class="fa-solid fa-triangle-exclamation mb-2 text-2xl block"></i> ERROR: ${msg}</td></tr>`;
+}

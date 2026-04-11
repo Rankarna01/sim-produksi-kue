@@ -9,7 +9,9 @@ function getNavClass($path, $current_uri) {
     }
     return 'text-secondary hover:bg-slate-50 hover:text-primary font-medium'; 
 }
+
 ?>
+
 
 <aside id="main-sidebar" class="w-64 shrink-0 bg-surface border-r border-slate-200 flex-col shadow-sm fixed inset-y-0 left-0 z-[70] transform -translate-x-full md:relative md:translate-x-0 transition-all duration-300 flex">
 
@@ -104,6 +106,12 @@ function getNavClass($path, $current_uri) {
             <i class="fa-solid fa-users-gear w-6 text-center text-lg shrink-0"></i> 
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Manajemen User</span>
         </a>
+        <?php if (hasPermission('otorisasi')): ?>
+<a href="<?= BASE_URL ?>owner/otorisasi/" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/otorisasi/', $current_uri) ?>">
+    <i class="fa-solid fa-key w-6 text-center text-lg shrink-0 text-amber-500"></i> 
+    <span class="text-sm font-bold sidebar-text whitespace-nowrap">Otorisasi Akses</span>
+</a>
+<?php endif; ?>
         <?php endif; ?>
         
         <div class="px-2 py-2 mt-4 border-t border-slate-100">
@@ -128,7 +136,7 @@ function getNavClass($path, $current_uri) {
         <?php if (hasPermission('audit_logs')): ?>
         <a href="<?= BASE_URL ?>owner/audit_logs/" title="Audit Logs (Lacak)" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/audit_logs/', $current_uri) ?>">
             <i class="fa-solid fa-shoe-prints w-6 text-center text-lg shrink-0 text-indigo-500"></i> 
-            <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-indigo-600">Audit Logs (Lacak)</span>
+            <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-indigo-600">Monitoring Aktivitas</span>
         </a>
         <?php endif; ?>
 
