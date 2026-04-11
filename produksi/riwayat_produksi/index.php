@@ -6,6 +6,11 @@ checkRole(['produksi']);
 <html lang="id">
 <head>
     <?php include '../../components/head.php'; ?>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
 </head>
 <body class="text-slate-800 antialiased h-screen flex overflow-hidden">
 
@@ -103,9 +108,8 @@ checkRole(['produksi']);
                 
                 <form id="formEdit" class="flex flex-col flex-1 overflow-hidden">
                     <input type="hidden" id="edit_prod_id" name="prod_id">
-                    
                     <div id="edit-produk-list" class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3 mb-6">
-                        </div>
+                    </div>
                     
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
                         <button type="button" onclick="closeModal('modal-edit')" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
@@ -118,12 +122,43 @@ checkRole(['produksi']);
         </div>
     </div>
 
+    <div id="modal-pin-supervisor" class="fixed inset-0 z-[100] flex items-center justify-center hidden px-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closePinModal()"></div>
+        <div class="relative bg-[#0095ff] w-full max-w-[320px] rounded-2xl shadow-2xl z-10 overflow-hidden transform transition-all">
+            <div class="p-4 flex justify-between items-center text-white border-b border-white/10">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span class="font-bold text-xs uppercase tracking-widest">Otorisasi PIN</span>
+                </div>
+                <button onclick="closePinModal()" class="hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="p-6 text-center">
+                <h3 class="text-white font-bold text-xl mb-6 uppercase tracking-wider">PIN Supervisor</h3>
+                
+                <div class="bg-white/10 rounded-xl py-4 mb-6">
+                    <input type="password" id="pin-display" readonly class="bg-transparent text-white text-center text-3xl font-black tracking-[0.5em] outline-none w-full border-none pointer-events-none" placeholder="******">
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <?php for($i=1; $i<=9; $i++): ?>
+                        <button onclick="pressPin('<?= $i ?>')" class="py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xl transition-all active:scale-90"><?= $i ?></button>
+                    <?php endfor; ?>
+                    <button onclick="clearPin()" class="py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xl transition-all"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button onclick="pressPin('0')" class="py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xl active:scale-90">0</button>
+                    <button onclick="backspacePin()" class="py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xl"><i class="fa-solid fa-delete-left"></i></button>
+                </div>
+
+                <button onclick="confirmCancelWithPin()" id="btn-verify-pin" class="w-full mt-6 bg-white text-[#0095ff] font-black py-4 rounded-xl hover:bg-slate-100 transition-all shadow-lg active:scale-95">
+                    BUKA AKSES
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <input type="hidden" id="temp_prod_id">
+
     <?php include '../../components/footer.php'; ?>
-    <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    </style>
     <script src="ajax.js?v=<?= time() ?>"></script>
 </body>
 </html>

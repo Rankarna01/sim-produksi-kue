@@ -117,6 +117,7 @@ checkPermission('master_user');
                                 <?= renderCheckboxGroup('master_satuan', 'Master Satuan', 'fa-weight-scale') ?>
                                 <?= renderCheckbox('master_resep', 'Data Resep (BOM)', 'fa-list-check') ?>
                                 <?= renderCheckbox('master_user', 'Manajemen User & Role', 'fa-users-gear') ?>
+                                <?= renderCheckboxGroup('master_stok_pusat', 'Master Stok Gudang (Pilar)', 'fa-cubes-stacked') ?>
                             </div>
                         </div>
 
@@ -125,6 +126,7 @@ checkPermission('master_user');
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                 <?= renderCheckbox('view_dashboard', 'Akses Dashboard', 'fa-chart-pie') ?>
                                 <?= renderCheckbox('stok_opname', 'Stok Opname', 'fa-scale-balanced') ?>
+                                <?= renderCheckbox('otorisasi', 'Otorisasi Akses PIN', 'fa-key') ?>
                             </div>
                         </div>
 

@@ -1,25 +1,58 @@
 <?php
 require_once '../../config/auth.php';
 checkPermission('stok_opname');
+
+// Inisialisasi status kunci (Default: Terkunci)
+$is_unlocked = isset($_SESSION['opname_unlocked']) && $_SESSION['opname_unlocked'] === true;
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <?php include '../../components/head.php'; ?>
+    <style>
+        /* Style khusus Input PIN agar kotak-kotak rapi */
+        .pin-input {
+            width: 45px; height: 55px; text-align: center; font-size: 24px; font-weight: 900;
+            border: 2px solid #e2e8f0; border-radius: 12px; background: #f8fafc; transition: all 0.3s;
+        }
+        .pin-input:focus { border-color: #4f46e5; background: white; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); outline: none; }
+    </style>
 </head>
 <body class="text-slate-800 antialiased h-screen flex overflow-hidden bg-background">
 
     <?php include '../../components/sidebar.php'; ?>
 
-    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <?php include '../../components/header.php'; ?>
         
+        <div id="lock-screen" class="absolute inset-0 z-[60] bg-slate-50/80 backdrop-blur-md flex items-center justify-center p-4 <?= $is_unlocked ? 'hidden' : '' ?>">
+            <div class="bg-white w-full max-w-md rounded-[40px] shadow-2xl p-10 text-center border border-slate-100">
+                <div class="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fa-solid fa-lock text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-black text-slate-800 mb-2">Butuh Persetujuan Admin</h3>
+                <p class="text-sm text-slate-500 mb-8 leading-relaxed">Masukkan Kode Otorisasi dari Administrator untuk melanjutkan.</p>
+                
+                <div class="flex justify-center gap-2 mb-8" id="pin-container">
+                    <input type="text" maxlength="1" class="pin-input" autofocus>
+                    <input type="text" maxlength="1" class="pin-input">
+                    <input type="text" maxlength="1" class="pin-input">
+                    <input type="text" maxlength="1" class="pin-input">
+                    <input type="text" maxlength="1" class="pin-input">
+                    <input type="text" maxlength="1" class="pin-input">
+                </div>
+
+                <button onclick="verifyPin()" id="btn-unlock" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-unlock-keyhole"></i> Buka Akses
+                </button>
+            </div>
+        </div>
+
         <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8 w-full">
-            
             <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Stok Opname Bahan</h2>
-                    <p class="text-sm text-secondary mt-1">Sesuaikan stok fisik di dapur dengan stok yang tercatat di sistem komputer.</p>
+                    <p class="text-sm text-secondary mt-1">Sesuaikan stok fisik dapur dengan catatan sistem komputer.</p>
                 </div>
                 <div class="flex gap-2 w-full sm:w-auto">
                     <button onclick="openModal('modal-opname'); resetForm();" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2">
@@ -54,7 +87,6 @@ checkPermission('stok_opname');
                     </table>
                 </div>
             </div>
-
         </main>
     </div>
 
@@ -63,50 +95,37 @@ checkPermission('stok_opname');
         <div class="relative bg-surface w-full max-w-2xl rounded-3xl shadow-xl z-10 transform transition-all flex flex-col max-h-[95vh] overflow-hidden">
             <div class="p-5 border-b border-emerald-100 flex justify-between items-center bg-emerald-50 rounded-t-3xl shrink-0">
                 <h3 class="text-lg font-bold text-emerald-900"><i class="fa-solid fa-clipboard-list mr-2"></i> Dokumen Stok Opname</h3>
-                <button onclick="closeModal('modal-opname')" class="text-emerald-400 hover:text-danger transition-colors">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+                <button onclick="closeModal('modal-opname')" class="text-emerald-400 hover:text-danger transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
                 <form id="formOpname" class="space-y-6">
-                    
                     <div class="relative">
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Cari & Tambah Bahan <span class="text-danger">*</span></label>
                         <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-                            </div>
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><i class="fa-solid fa-magnifying-glass text-slate-400"></i></div>
                             <input type="text" id="search_material" placeholder="Ketik nama atau kode bahan baku..." class="w-full pl-11 pr-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 outline-none text-sm font-medium bg-slate-50 focus:bg-white transition-colors" autocomplete="off">
                         </div>
-                        <ul id="suggest_box" class="absolute z-20 w-full bg-white border border-slate-200 shadow-xl rounded-xl mt-1 hidden max-h-48 overflow-y-auto custom-scrollbar divide-y divide-slate-50">
-                        </ul>
+                        <ul id="suggest_box" class="absolute z-20 w-full bg-white border border-slate-200 shadow-xl rounded-xl mt-1 hidden max-h-48 overflow-y-auto custom-scrollbar divide-y divide-slate-50"></ul>
                     </div>
-
                     <div class="bg-slate-50 rounded-xl border border-slate-200 p-4">
                         <div class="flex justify-between items-center mb-3 border-b border-slate-200 pb-2">
                             <h4 class="text-sm font-bold text-slate-700">Daftar Bahan Diopname</h4>
                             <span id="item_count" class="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs font-bold">0 Item</span>
                         </div>
-                        
                         <div id="opname_list" class="space-y-3">
                             <div id="empty_state" class="text-center py-6 text-secondary text-sm font-medium">
                                 <i class="fa-solid fa-box-open text-3xl mb-2 text-slate-300 block"></i>
                                 Belum ada bahan baku yang dipilih.<br>Silakan cari dan pilih pada kolom di atas.
                             </div>
-                            </div>
+                        </div>
                     </div>
-
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Catatan Penyesuaian (Opsional)</label>
                         <input type="text" id="reason" name="reason" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-emerald-500 outline-none text-sm font-medium placeholder:text-slate-300" placeholder="Contoh: Audit stok bulanan / Pembuangan bahan rusak">
                     </div>
-                    
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-6">
                         <button type="button" onclick="closeModal('modal-opname')" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
-                        <button type="submit" id="btn-save" class="px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm flex items-center gap-2">
-                            <i class="fa-solid fa-save"></i> Post Opname
-                        </button>
+                        <button type="submit" id="btn-save" class="px-5 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm flex items-center gap-2"><i class="fa-solid fa-save"></i> Post Opname</button>
                     </div>
                 </form>
             </div>

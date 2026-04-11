@@ -26,54 +26,35 @@ function convertUnit($amount, $from_unit, $to_unit) {
 }
 
 try {
-    // FITUR BARU: Tarik data Master Gudang untuk Dropdown Filter
     if ($action === 'init_filter') {
         $warehouses = $pdo->query("SELECT id, name FROM warehouses ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['status' => 'success', 'warehouses' => $warehouses]);
         exit;
     }
 
-    // ====================================================================
-    // ROUTE BACA DATA: Dikelompokkan per Invoice (1 Baris = 1 Invoice)
-    // ====================================================================
     if ($action === 'read') {
         $start_date = $_GET['start_date'] ?? '';
         $end_date = $_GET['end_date'] ?? '';
         $status = $_GET['status'] ?? '';
-        $warehouse_id = $_GET['warehouse_id'] ?? ''; // Filter Gudang
+        $warehouse_id = $_GET['warehouse_id'] ?? ''; 
         
         $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
         $limit = 10; 
         $offset = ($page - 1) * $limit;
 
-        // Hanya tampilkan data milik User Produksi yang sedang login
         $whereClause = "WHERE p.user_id = ?";
         $params = [$_SESSION['user_id']];
 
-        if (!empty($start_date)) {
-            $whereClause .= " AND DATE(p.created_at) >= ?";
-            $params[] = $start_date;
-        }
-        if (!empty($end_date)) {
-            $whereClause .= " AND DATE(p.created_at) <= ?";
-            $params[] = $end_date;
-        }
-        if (!empty($status)) {
-            $whereClause .= " AND p.status = ?";
-            $params[] = $status;
-        }
-        if (!empty($warehouse_id)) {
-            $whereClause .= " AND p.warehouse_id = ?";
-            $params[] = $warehouse_id;
-        }
+        if (!empty($start_date)) { $whereClause .= " AND DATE(p.created_at) >= ?"; $params[] = $start_date; }
+        if (!empty($end_date)) { $whereClause .= " AND DATE(p.created_at) <= ?"; $params[] = $end_date; }
+        if (!empty($status)) { $whereClause .= " AND p.status = ?"; $params[] = $status; }
+        if (!empty($warehouse_id)) { $whereClause .= " AND p.warehouse_id = ?"; $params[] = $warehouse_id; }
 
-        // Hitung total INVOICE (Bukan total produk)
         $countStmt = $pdo->prepare("SELECT COUNT(id) FROM productions p $whereClause");
         $countStmt->execute($params);
         $total_data = $countStmt->fetchColumn();
         $total_pages = ceil($total_data / $limit);
 
-        // Gabungkan nama produk menjadi 1 string menggunakan GROUP_CONCAT
         $sql = "
             SELECT p.id as prod_id, p.invoice_no, p.created_at, p.status, w.name as gudang,
                    GROUP_CONCAT(CONCAT(pr.name, ' (', d.quantity, ')') SEPARATOR ', ') as product_list,
@@ -102,9 +83,6 @@ try {
         exit;
     }
 
-    // ====================================================================
-    // FITUR BARU: AMBIL DETAIL INVOICE UNTUK MODAL EDIT MULTI-PRODUK
-    // ====================================================================
     if ($action === 'get_details') {
         $prod_id = $_GET['prod_id'];
         $stmt = $pdo->prepare("
@@ -118,33 +96,23 @@ try {
         exit;
     }
 
-    // ====================================================================
-    // LOGIKA REVISI: MURNI TIDAK DIUBAH SAMA SEKALI
-    // ====================================================================
     if ($action === 'update_revisi') {
         $prod_id = $_POST['prod_id'];     
-        $detail_ids = $_POST['detail_id']; // Array []
-        $new_qtys = $_POST['quantity'];   // Array []
+        $detail_ids = $_POST['detail_id']; 
+        $new_qtys = $_POST['quantity'];   
 
         $pdo->beginTransaction();
-
         for ($i = 0; $i < count($detail_ids); $i++) {
             $detail_id = $detail_ids[$i];
             $new_qty = (int)$new_qtys[$i];
+            if ($new_qty <= 0) { $pdo->rollBack(); echo json_encode(['status' => 'error', 'message' => 'Jumlah produk tidak boleh 0!']); exit; }
 
-            if ($new_qty <= 0) {
-                $pdo->rollBack();
-                echo json_encode(['status' => 'error', 'message' => 'Jumlah produk tidak boleh 0!']); exit;
-            }
-
-            // Ambil data lama
             $stmt = $pdo->prepare("SELECT product_id, quantity FROM production_details WHERE id = ?");
             $stmt->execute([$detail_id]);
             $oldData = $stmt->fetch();
             $product_id = $oldData['product_id'];
             $old_qty = $oldData['quantity'];
 
-            // Cek BOM dan Sesuaikan Stok
             $bom_stmt = $pdo->prepare("SELECT material_id, quantity_needed, unit_used FROM bom WHERE product_id = ?");
             $bom_stmt->execute([$product_id]);
             $bom_list = $bom_stmt->fetchAll();
@@ -159,36 +127,38 @@ try {
                 $new_needed_in_gudang = convertUnit($qty_needed_per_item * $new_qty, $bom['unit_used'], $material['unit']);
 
                 $difference = $new_needed_in_gudang - $old_needed_in_gudang;
-
-                if ($difference > 0 && floatval($material['stock']) < $difference) {
-                    $pdo->rollBack();
-                    echo json_encode(['status' => 'error', 'message' => "Stok {$material['name']} tidak cukup untuk merevisi jumlah produk!"]);
-                    exit;
-                }
+                if ($difference > 0 && floatval($material['stock']) < $difference) { $pdo->rollBack(); echo json_encode(['status' => 'error', 'message' => "Stok {$material['name']} tidak cukup!"]); exit; }
 
                 $upd_stok = $pdo->prepare("UPDATE materials SET stock = stock - ? WHERE id = ?");
                 $upd_stok->execute([$difference, $bom['material_id']]);
             }
-
-            // Update baris detail ini
             $upd_det = $pdo->prepare("UPDATE production_details SET quantity = ? WHERE id = ?");
             $upd_det->execute([$new_qty, $detail_id]);
         }
 
-        // Set status kembali ke pending
         $upd_prod = $pdo->prepare("UPDATE productions SET status = 'pending' WHERE id = ?");
         $upd_prod->execute([$prod_id]);
-
         $pdo->commit();
-        echo json_encode(['status' => 'success', 'message' => 'Revisi berhasil disimpan! Silakan minta Admin Gudang untuk scan ulang struk lama Anda.']);
+        echo json_encode(['status' => 'success', 'message' => 'Revisi berhasil disimpan!']);
         exit;
     }
 
     // ====================================================================
-    // FITUR BATALKAN: MURNI TIDAK DIUBAH SAMA SEKALI
+    // FITUR BATALKAN: MENAMBAHKAN PENGECEKAN PIN SUPERVISOR
     // ====================================================================
     if ($action === 'cancel_produksi') {
         $prod_id = $_POST['prod_id'];
+        $pin = $_POST['pin'] ?? '';
+
+        // 1. Verifikasi PIN Supervisor (Table supervisor_pins)
+        $stmtPin = $pdo->prepare("SELECT pin_code FROM supervisor_pins WHERE pin_type = 'delete_production' LIMIT 1");
+        $stmtPin->execute();
+        $valid_pin = $stmtPin->fetchColumn();
+
+        if ($pin !== $valid_pin) {
+            echo json_encode(['status' => 'error', 'message' => 'PIN Supervisor Salah! Akses Ditolak.']);
+            exit;
+        }
 
         $pdo->beginTransaction();
 
@@ -196,14 +166,8 @@ try {
         $stmtCek->execute([$prod_id]);
         $currentStatus = $stmtCek->fetchColumn();
 
-        if ($currentStatus === 'dibatalkan') {
-            $pdo->rollBack();
-            echo json_encode(['status' => 'error', 'message' => 'Data ini sudah dibatalkan sebelumnya!']); exit;
-        }
-        if ($currentStatus === 'masuk_gudang') {
-            $pdo->rollBack();
-            echo json_encode(['status' => 'error', 'message' => 'Tidak bisa dibatalkan karena produk sudah masuk gudang!']); exit;
-        }
+        if ($currentStatus === 'dibatalkan') { $pdo->rollBack(); echo json_encode(['status' => 'error', 'message' => 'Sudah dibatalkan!']); exit; }
+        if ($currentStatus === 'masuk_gudang') { $pdo->rollBack(); echo json_encode(['status' => 'error', 'message' => 'Tidak bisa dibatalkan karena sudah masuk gudang!']); exit; }
 
         $stmtDet = $pdo->prepare("SELECT product_id, quantity FROM production_details WHERE production_id = ?");
         $stmtDet->execute([$prod_id]);
@@ -218,10 +182,8 @@ try {
                 $stok_stmt = $pdo->prepare("SELECT stock, unit FROM materials WHERE id = ? FOR UPDATE");
                 $stok_stmt->execute([$bom['material_id']]);
                 $material = $stok_stmt->fetch();
-
                 $qty_needed_per_item = floatval($bom['quantity_needed']);
                 $refund_amount = convertUnit($qty_needed_per_item * $detail['quantity'], $bom['unit_used'], $material['unit']);
-
                 $upd_stok = $pdo->prepare("UPDATE materials SET stock = stock + ? WHERE id = ?");
                 $upd_stok->execute([$refund_amount, $bom['material_id']]);
             }
@@ -231,7 +193,7 @@ try {
         $upd_prod->execute([$prod_id]);
 
         $pdo->commit();
-        echo json_encode(['status' => 'success', 'message' => 'Produksi berhasil dibatalkan. Seluruh stok bahan baku untuk invoice ini telah dikembalikan.']);
+        echo json_encode(['status' => 'success', 'message' => 'Produksi dibatalkan. Stok bahan baku telah dikembalikan!']);
         exit;
     }
 

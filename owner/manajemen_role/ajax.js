@@ -14,7 +14,7 @@ async function loadData() {
             html = '<tr><td colspan="5" class="p-8 text-center text-secondary">Belum ada data jabatan.</td></tr>';
         } else {
             // Daftar jabatan inti yang tidak boleh dihapus/ubah slugnya
-            const coreRoles = ['owner', 'admin', 'produksi', 'auditor'];
+            const coreRoles = ['owner', 'admin', 'produksi', 'auditor', 'gudang_pilar'];
 
             response.data.forEach((item, index) => {
                 const isCore = coreRoles.includes(item.role_slug);
