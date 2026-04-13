@@ -1,7 +1,13 @@
 <?php
 require_once '../../config/auth.php';
+require_once '../../config/database.php'; // Tambahkan ini untuk akses DB
+
 // Gunakan permission master_user atau buat permission baru khusus master_role
 checkPermission('master_user'); 
+
+// --- SUNTIKAN: AMBIL DATA DAPUR DINAMIS ---
+$stmtKitchens = $pdo->query("SELECT * FROM kitchens ORDER BY id ASC");
+$kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -108,8 +114,22 @@ checkPermission('master_user');
                     <div class="space-y-6">
                         
                         <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-store mr-1"></i> Akses Dapur & Cabang</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                <?php 
+                                // Looping data dapur dari database
+                                foreach($kitchens as $k): 
+                                ?>
+                                    <?= renderCheckbox('akses_dapur_' . $k['id'], 'Akses ' . htmlspecialchars($k['name']), 'fa-shop') ?>
+                                <?php endforeach; ?>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2 italic">* Centang dapur mana saja yang boleh dilihat/dikelola oleh jabatan ini.</p>
+                        </div>
+
+                        <div>
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-database mr-1"></i> Data Master & Pengaturan</p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                <?= renderCheckboxGroup('manajemen_dapur', 'Manajemen Dapur', 'fa-store') ?>
                                 <?= renderCheckboxGroup('master_gudang', 'Data Gudang', 'fa-warehouse') ?>
                                 <?= renderCheckboxGroup('master_produk', 'Data Produk', 'fa-box') ?>
                                 <?= renderCheckboxGroup('master_kategori', 'Kategori Produk', 'fa-tags') ?>

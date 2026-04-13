@@ -14,9 +14,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT id, name, username, password, role FROM users WHERE username = ?");
+    // PERBAIKAN 1: Gunakan SELECT * agar kolom baru seperti 'kitchen_id' otomatis terbaca
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
     $stmt->execute([$username]);
-    $user = $stmt->fetch();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
         $login_success = false;
@@ -25,10 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (password_verify($password, $user['password'])) {
             $login_success = true;
         } 
-        // 2. Trik Transisi: Jika password di database belum di-hash (masih teks biasa spt "123456")
+        // 2. Trik Transisi: Jika password masih teks biasa
         else if ($password === $user['password']) {
             $login_success = true;
-            // Otomatis ubah password jadul tersebut menjadi Hash Bcrypt agar aman
+            // Otomatis ubah password menjadi Hash Bcrypt
             $newHash = password_hash($password, PASSWORD_DEFAULT);
             $update = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
             $update->execute([$newHash, $user['id']]);
@@ -38,22 +39,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['name'] = $user['name'];
             $_SESSION['role'] = $user['role'];
+            
+            // PERBAIKAN 2: Simpan ID Dapur ke session jika akun tersebut dihubungkan ke Dapur
+            if (isset($user['kitchen_id'])) {
+                $_SESSION['kitchen_id'] = $user['kitchen_id'];
+            }
 
             // Deteksi Localhost atau cPanel agar routing dinamis
             $is_localhost = (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
-            $redirect_url = $is_localhost ? '/sim-produksi-kue/' : '/';
+            $base = $is_localhost ? '/sim-produksi-kue/' : '/';
             
             // ==========================================
-            // PERBAIKAN: Routing Dinamis RBAC
+            // PERBAIKAN 3: Routing Dinamis Berdasarkan Role
             // ==========================================
             if ($user['role'] === 'produksi') {
-                $redirect_url .= 'produksi/input_produksi/';
-            } elseif ($user['role'] === 'admin') {
-                $redirect_url .= 'admin/scan_barcode/';
-            } else {
-                // SEMUA ROLE LAIN (Owner, Auditor, Supervisor, Kasir, dll) 
-                // akan otomatis diarahkan ke pintu utama ini.
-                $redirect_url .= 'owner/dashboard/'; 
+                $redirect_url = $base . 'produksi/input_produksi/';
+            } 
+            elseif ($user['role'] === 'admin') {
+                $redirect_url = $base . 'admin/scan_barcode/';
+            } 
+            elseif ($user['role'] === 'gudang_pilar') {
+                // SEKAT BARU: Diarahkan ke folder khusus gudang pilar
+                $redirect_url = $base . 'gudang/dashboard/';
+            } 
+            elseif ($user['role'] === 'owner' || $user['role'] === 'auditor') {
+                // Role eksekutif yang memantau dashboard owner
+                $redirect_url = $base . 'owner/dashboard/'; 
+            } 
+            else {
+                // PERBAIKAN 4: Default fallback untuk Role Dinamis (Role kustom buatan Owner)
+                // Kita arahkan ke layout utama RotiKu (owner/dashboard). 
+                // Sistem RBAC akan otomatis hanya menampilkan menu yang dicentang untuk role tersebut.
+                $redirect_url = $base . 'owner/dashboard/'; 
             }
 
             echo json_encode(['status' => 'success', 'redirect' => $redirect_url]);

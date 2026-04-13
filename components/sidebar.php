@@ -12,7 +12,6 @@ function getNavClass($path, $current_uri) {
 
 ?>
 
-
 <aside id="main-sidebar" class="w-64 shrink-0 bg-surface border-r border-slate-200 flex-col shadow-sm fixed inset-y-0 left-0 z-[70] transform -translate-x-full md:relative md:translate-x-0 transition-all duration-300 flex">
 
     <button onclick="toggleDesktopSidebar()" class="hidden md:flex absolute -right-3 top-8 bg-white border border-slate-200 shadow-md text-secondary hover:text-primary rounded-full w-7 h-7 items-center justify-center z-50 transition-transform duration-300 group" id="desktop-toggler" title="Perkecil Sidebar">
@@ -47,6 +46,13 @@ function getNavClass($path, $current_uri) {
         </a>
         <?php endif; ?>
 
+        <?php if (hasPermission('manajemen_dapur')): ?>
+        <a href="<?= BASE_URL ?>owner/manajemen_dapur/" title="Manajemen Dapur" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/manajemen_dapur/', $current_uri) ?>">
+            <i class="fa-solid fa-store w-6 text-center text-lg shrink-0"></i> 
+            <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Manajemen Dapur</span>
+        </a>
+        <?php endif; ?>
+
         <?php if (hasPermission('master_gudang')): ?>
         <a href="<?= BASE_URL ?>owner/master_gudang/" title="Data Gudang" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_gudang/', $current_uri) ?>">
             <i class="fa-solid fa-warehouse w-6 text-center text-lg shrink-0"></i> 
@@ -75,13 +81,6 @@ function getNavClass($path, $current_uri) {
         </a>
         <?php endif; ?>
 
-        <?php if (hasPermission('stok_opname')): ?>
-        <a href="<?= BASE_URL ?>owner/stok_opname/" title="Stok Opname Bahan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/stok_opname/', $current_uri) ?>">
-            <i class="fa-solid fa-scale-balanced w-6 text-center text-lg shrink-0 text-emerald-600"></i> 
-            <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-emerald-700">Stok Opname</span>
-        </a>
-        <?php endif; ?>
-        
         <?php if (hasPermission('master_satuan')): ?>
         <a href="<?= BASE_URL ?>owner/master_satuan/" title="Master Satuan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_satuan/', $current_uri) ?>">
             <i class="fa-solid fa-weight-scale w-6 text-center text-lg shrink-0"></i> 
@@ -107,11 +106,18 @@ function getNavClass($path, $current_uri) {
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Manajemen User</span>
         </a>
         <?php if (hasPermission('otorisasi')): ?>
-<a href="<?= BASE_URL ?>owner/otorisasi/" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/otorisasi/', $current_uri) ?>">
-    <i class="fa-solid fa-key w-6 text-center text-lg shrink-0 text-amber-500"></i> 
-    <span class="text-sm font-bold sidebar-text whitespace-nowrap">Otorisasi Akses</span>
-</a>
-<?php endif; ?>
+        <a href="<?= BASE_URL ?>owner/otorisasi/" title="Otorisasi Akses PIN" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/otorisasi/', $current_uri) ?>">
+            <i class="fa-solid fa-key w-6 text-center text-lg shrink-0 text-amber-500"></i> 
+            <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-amber-600">Otorisasi Akses</span>
+        </a>
+        <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (hasPermission('stok_opname')): ?>
+        <a href="<?= BASE_URL ?>owner/stok_opname/" title="Stok Opname Bahan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/stok_opname/', $current_uri) ?>">
+            <i class="fa-solid fa-scale-balanced w-6 text-center text-lg shrink-0 text-emerald-600"></i> 
+            <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-emerald-700">Stok Opname</span>
+        </a>
         <?php endif; ?>
         
         <div class="px-2 py-2 mt-4 border-t border-slate-100">

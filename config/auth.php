@@ -34,12 +34,20 @@ function addLog($action, $menu, $description) {
 function getUserPermissions() {
     global $pdo;
     if (!isset($_SESSION['role'])) return [];
+    
     try {
         $role_slug = $_SESSION['role'];
+        // Kita tarik data murni dari database per role_slug
         $stmt = $pdo->prepare("SELECT permission_name FROM role_permissions WHERE role_slug = ?");
         $stmt->execute([$role_slug]);
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
-    } catch (PDOException $e) { return []; }
+        $permissions = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        // Simpan ke session agar tidak query terus menerus, tapi fresh
+        $_SESSION['permissions'] = $permissions; 
+        return $permissions;
+    } catch (PDOException $e) {
+        return [];
+    }
 }
 
 function checkRole($allowed_roles = []) {
