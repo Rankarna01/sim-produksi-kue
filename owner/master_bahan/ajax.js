@@ -1,19 +1,18 @@
 document.addEventListener("DOMContentLoaded", () => {
     loadUnits(); 
-    loadData();
+    loadSemuaData(); 
 });
+
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
 async function loadUnits() {
     const select = document.getElementById('unit');
     const response = await fetchAjax('logic.php?action=get_units', 'GET');
     if (response.status === 'success') {
         let options = '<option value="">-- Pilih --</option>';
-        response.data.forEach(u => {
-            options += `<option value="${u.name}">${u.name}</option>`;
-        });
+        response.data.forEach(u => { options += `<option value="${u.name}">${u.name}</option>`; });
         select.innerHTML = options;
-    } else {
-        select.innerHTML = '<option value="">Gagal muat</option>';
     }
 }
 
@@ -28,11 +27,20 @@ function formatDesimal(angka) {
     return num % 1 !== 0 ? num.toFixed(2) : num;
 }
 
+function loadSemuaData() {
+    loadData();
+    loadRequests('semua');
+}
+
 async function loadData() {
     const tbody = document.getElementById('table-body');
+    const filterElement = document.getElementById('filter-dapur');
+    // Jika tidak ada dropdown (mungkin tidak ter-render), set default
+    const warehouse_id = filterElement ? filterElement.value : 1;
+    
     tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
     
-    const response = await fetchAjax('logic.php?action=read', 'GET');
+    const response = await fetchAjax(`logic.php?action=read&warehouse_id=${warehouse_id}`, 'GET');
     
     if (response.status === 'success') {
         let html = '';
@@ -52,7 +60,6 @@ async function loadData() {
                     warningIcon = `<i class="fa-solid fa-triangle-exclamation text-danger ml-2" title="Stok Menipis!"></i>`;
                 }
 
-                // SUNTIKAN: Tombol aksi dinamis RBAC
                 let btnAksi = '';
                 if (canEdit) {
                     btnAksi += `<button onclick='editData(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>&nbsp;`;
@@ -85,17 +92,40 @@ async function loadData() {
     }
 }
 
-document.getElementById('formBahan').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const response = await fetchAjax('logic.php?action=save', 'POST', formData);
+async function loadRequests(status) {
+    const tbody = document.getElementById('table-requests');
+    const filterElement = document.getElementById('filter-dapur');
+    const warehouse_id = filterElement ? filterElement.value : 1;
+    
+    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat riwayat...</td></tr>';
+    
+    const response = await fetchAjax(`logic.php?action=read_requests&warehouse_id=${warehouse_id}&status=${status}`, 'GET');
+    
     if (response.status === 'success') {
-        closeModal('modal-bahan');
-        loadData(); 
-    } else {
-        alert('Gagal: ' + response.message);
+        let html = '';
+        if (response.data.length === 0) {
+            html = `<tr><td colspan="5" class="p-8 text-center text-secondary italic">Tidak ada pengajuan.</td></tr>`;
+        } else {
+            response.data.forEach((item, index) => {
+                let badge = '';
+                if(item.status === 'menunggu') badge = '<span class="bg-amber-100 text-amber-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Menunggu</span>';
+                else if(item.status === 'diproses') badge = '<span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Diproses</span>';
+                else badge = '<span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Ditolak</span>';
+
+                html += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-4 text-center text-secondary">${index + 1}</td>
+                        <td class="p-4 text-xs font-mono text-slate-500">${item.created_at}</td>
+                        <td class="p-4 font-bold text-slate-700">${item.material_name}</td>
+                        <td class="p-4 text-center font-black text-primary">${parseFloat(item.qty_requested)} <span class="text-[10px] text-slate-500 font-normal">${item.unit}</span></td>
+                        <td class="p-4 text-center">${badge}</td>
+                    </tr>
+                `;
+            });
+        }
+        tbody.innerHTML = html;
     }
-});
+}
 
 function editData(item) {
     document.getElementById('material_id').value = item.id;
@@ -108,43 +138,66 @@ function editData(item) {
     openModal('modal-bahan');
 }
 
+document.getElementById('formBahan').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const response = await fetchAjax('logic.php?action=save', 'POST', formData);
+    if (response.status === 'success') {
+        closeModal('modal-bahan');
+        loadData(); 
+    } else {
+        alert('Gagal: ' + response.message);
+    }
+});
+
 function deleteData(id) {
-    customConfirm('Yakin ingin menghapus bahan baku ini? Pastikan bahan ini belum terpakai di resep manapun.', async () => {
+    customConfirm('Yakin ingin menghapus bahan baku ini?', async () => {
         const formData = new FormData();
         formData.append('id', id);
         const response = await fetchAjax('logic.php?action=delete', 'POST', formData);
         if (response.status === 'success') {
             loadData();
-            alert('Berhasil menghapus bahan baku!'); 
+            alert('Berhasil menghapus!'); 
         } else {
             alert('Gagal menghapus: ' + response.message); 
         }
     });
 }
 
-function downloadTemplate() {
-    window.location.href = 'logic.php?action=download_template';
+async function loadPilarStock() {
+    const select = document.getElementById('pilar_material_id');
+    select.innerHTML = '<option value="">-- Memuat --</option>';
+    const response = await fetchAjax('logic.php?action=read_pilar', 'GET');
+    
+    if (response.status === 'success') {
+        let options = '<option value="">-- Pilih Bahan di Pilar --</option>';
+        response.data.forEach(item => {
+            options += `<option value="${item.id}">${item.material_name} (Tersedia: ${item.total_stock} ${item.unit})</option>`;
+        });
+        select.innerHTML = options;
+    }
 }
 
-document.getElementById('formImport').addEventListener('submit', async function(e) {
+function openModalRequest() {
+    const filterElement = document.getElementById('filter-dapur');
+    const currentWarehouse = filterElement ? filterElement.value : 1;
+    document.getElementById('req_warehouse_id').value = currentWarehouse;
+    document.getElementById('formRequest').reset();
+    
+    loadPilarStock();
+    openModal('modal-request');
+}
+
+document.getElementById('formRequest').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const btnImport = document.getElementById('btn-import');
-    btnImport.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...';
-    btnImport.disabled = true;
     const formData = new FormData(this);
-    try {
-        const response = await fetchAjax('logic.php?action=import_csv', 'POST', formData);
-        if (response.status === 'success') {
-            alert(response.message);
-            closeModal('modal-import');
-            loadData();
-        } else {
-            alert('Gagal Import: ' + response.message);
-        }
-    } catch (error) {
-        alert('Terjadi kesalahan saat mengunggah file.');
-    } finally {
-        btnImport.innerHTML = '<i class="fa-solid fa-upload"></i> Proses Import';
-        btnImport.disabled = false;
+    
+    const response = await fetchAjax('logic.php?action=submit_request', 'POST', formData);
+    if (response.status === 'success') {
+        Swal.fire('Berhasil!', response.message, 'success');
+        closeModal('modal-request');
+        loadSemuaData(); 
+    } else {
+        Swal.fire('Gagal!', response.message, 'error');
     }
 });
