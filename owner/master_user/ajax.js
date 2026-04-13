@@ -1,11 +1,9 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    // Muat daftar jabatan dulu baru muat tabel
     await loadRolesForDropdown();
     loadUsers();
     loadEmployees();
 });
 
-// FUNGSI BARU: Muat opsi dropdown jabatan dari database
 async function loadRolesForDropdown() {
     try {
         const response = await fetchAjax('logic.php?action=get_roles', 'GET');
@@ -22,7 +20,6 @@ async function loadRolesForDropdown() {
     }
 }
 
-// FUNGSI SWITCH TAB
 function switchTab(tabId) {
     document.getElementById('tab-akun').classList.add('hidden');
     document.getElementById('tab-karyawan').classList.add('hidden');
@@ -34,22 +31,14 @@ function switchTab(tabId) {
     document.getElementById(`btn-${tabId}`).className = "pb-3 text-sm font-bold border-b-2 border-primary text-primary transition-colors";
 }
 
-// FUNGSI CETAK LAPORAN 
 function cetakLaporan(activeTabId) {
     document.querySelectorAll('.printable-area').forEach(el => el.classList.add('hidden'));
     document.getElementById(activeTabId).classList.remove('hidden');
-    
     window.print();
-    
-    setTimeout(() => {
-        switchTab(activeTabId);
-    }, 500);
+    setTimeout(() => { switchTab(activeTabId); }, 500);
 }
 
-
-// ==============================================================
-// LOGIKA TAB 1: AKUN LOGIN SISTEM (USERS)
-// ==============================================================
+// --- AKUN LOGIN ---
 function resetFormUser() {
     document.getElementById('formUser').reset();
     document.getElementById('user_id').value = '';
@@ -70,11 +59,7 @@ async function loadUsers() {
             html = '<tr><td colspan="5" class="p-8 text-center text-secondary">Belum ada data user.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
-                
-                // Gunakan role_name dari DB, jika kosong pakai slugnya
                 const namaJabatan = item.role_name || item.role_slug; 
-                
-                // Beri warna khusus untuk role inti, sisanya abu-abu netral
                 let roleBadge = `<span class="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
                 
                 if(item.role_slug === 'owner') roleBadge = `<span class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
@@ -82,7 +67,6 @@ async function loadUsers() {
                 else if(item.role_slug === 'admin') roleBadge = `<span class="bg-success/10 text-success border border-success/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
                 else if(item.role_slug === 'auditor') roleBadge = `<span class="bg-indigo-100 text-indigo-600 border border-indigo-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
 
-                // TOMBOL HAPUS HANYA UNTUK OWNER
                 let btnHapus = '';
                 if (currentUserRole === 'owner') {
                     btnHapus = `<button onclick="deleteUser(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus Akun"><i class="fa-solid fa-trash text-xs"></i></button>`;
@@ -110,7 +94,6 @@ async function loadUsers() {
 
 document.getElementById('formUser').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
     Swal.fire({ title: 'Menyimpan...', text: 'Mohon tunggu', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
 
     const formData = new FormData(this);
@@ -130,7 +113,6 @@ function editUser(item) {
     document.getElementById('name').value = item.name;
     document.getElementById('username_input').value = item.username;
     
-    // Set value role sesuai slug database
     const roleSelect = document.getElementById('role_input');
     if(roleSelect) roleSelect.value = item.role_slug;
     
@@ -145,18 +127,16 @@ function editUser(item) {
 async function deleteUser(id) {
     const result = await Swal.fire({
         title: 'Hapus Akun?',
-        text: "Akun ini akan dihapus secara permanen dan tidak dapat login lagi!",
+        text: "Akun ini akan dihapus secara permanen!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#EF4444',
         cancelButtonColor: '#94A3B8',
-        confirmButtonText: 'Ya, Hapus!',
-        cancelButtonText: 'Batal'
+        confirmButtonText: 'Ya, Hapus!'
     });
 
     if (result.isConfirmed) {
-        Swal.fire({ title: 'Menghapus...', text: 'Mohon tunggu', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
-        
+        Swal.fire({ title: 'Menghapus...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
         const formData = new FormData();
         formData.append('id', id);
         const response = await fetchAjax('logic.php?action=delete_user', 'POST', formData);
@@ -171,31 +151,30 @@ async function deleteUser(id) {
 }
 
 
-// ==============================================================
-// LOGIKA TAB 2: DAFTAR KARYAWAN (EMPLOYEES)
-// ==============================================================
+// --- KARYAWAN DAPUR ---
 function resetFormKaryawan() {
     document.getElementById('formKaryawan').reset();
     document.getElementById('emp_id').value = '';
+    document.getElementById('emp_pin').required = true;
+    document.getElementById('pin_help').innerText = 'Wajib 4 angka sebagai gembok produksi.';
     document.getElementById('modal-title-karyawan').innerText = 'Tambah Karyawan Dapur';
 }
 
 async function loadEmployees() {
     const tbody = document.getElementById('table-karyawan');
-    tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
     
     const response = await fetchAjax('logic.php?action=read_employees', 'GET');
     
     if (response.status === 'success') {
         let html = '';
         if (response.data.length === 0) {
-            html = '<tr><td colspan="4" class="p-8 text-center text-secondary">Belum ada daftar karyawan. Silakan tambah.</td></tr>';
+            html = '<tr><td colspan="5" class="p-8 text-center text-secondary">Belum ada daftar karyawan. Silakan tambah.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 const dateObj = new Date(item.created_at);
                 const tgl = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 
-                // TOMBOL HAPUS HANYA UNTUK OWNER
                 let btnHapus = '';
                 if (currentUserRole === 'owner') {
                     btnHapus = `<button onclick="deleteEmployee(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus Karyawan"><i class="fa-solid fa-trash text-xs"></i></button>`;
@@ -205,6 +184,7 @@ async function loadEmployees() {
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="p-4 text-center text-secondary">${index + 1}</td>
                         <td class="p-4 font-black text-indigo-900 text-lg">${item.name}</td>
+                        <td class="p-4 font-bold text-slate-500 text-xs uppercase tracking-widest"><i class="fa-solid fa-store mr-1"></i> ${item.kitchen_name || 'Belum Diatur'}</td>
                         <td class="p-4 text-secondary text-sm">${tgl}</td>
                         <td class="p-4 text-center btn-aksi">
                             <div class="flex items-center justify-center gap-2">
@@ -222,7 +202,6 @@ async function loadEmployees() {
 
 document.getElementById('formKaryawan').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
     Swal.fire({ title: 'Menyimpan...', text: 'Mohon tunggu', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
 
     const formData = new FormData(this);
@@ -240,6 +219,12 @@ document.getElementById('formKaryawan').addEventListener('submit', async functio
 function editEmployee(item) {
     document.getElementById('emp_id').value = item.id;
     document.getElementById('emp_name').value = item.name;
+    document.getElementById('emp_kitchen').value = item.kitchen_id;
+    
+    document.getElementById('emp_pin').value = '';
+    document.getElementById('emp_pin').required = false; // Optional saat edit
+    document.getElementById('pin_help').innerText = 'Kosongkan jika tidak ingin mengubah PIN.';
+    
     document.getElementById('modal-title-karyawan').innerText = 'Edit Nama Karyawan';
     openModal('modal-karyawan');
 }
@@ -252,13 +237,11 @@ async function deleteEmployee(id) {
         showCancelButton: true,
         confirmButtonColor: '#EF4444',
         cancelButtonColor: '#94A3B8',
-        confirmButtonText: 'Ya, Hapus!',
-        cancelButtonText: 'Batal'
+        confirmButtonText: 'Ya, Hapus!'
     });
 
     if (result.isConfirmed) {
-        Swal.fire({ title: 'Menghapus...', text: 'Mohon tunggu', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
-        
+        Swal.fire({ title: 'Menghapus...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
         const formData = new FormData();
         formData.append('id', id);
         const response = await fetchAjax('logic.php?action=delete_employee', 'POST', formData);

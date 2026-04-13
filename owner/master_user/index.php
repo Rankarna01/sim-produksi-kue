@@ -1,25 +1,25 @@
 <?php
 require_once '../../config/auth.php';
-// Gunakan checkPermission agar menyesuaikan dengan sistem RBAC baru
+require_once '../../config/database.php'; // Tarik database untuk list dapur
 checkPermission('master_user');
+
+// AMBIL DATA DAPUR UNTUK DROPDOWN KARYAWAN
+$stmtKitchens = $pdo->query("SELECT * FROM kitchens ORDER BY id ASC");
+$kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <?php include '../../components/head.php'; ?>
     <style>
-        /* CSS KHUSUS MODE CETAK (PRINT TO PDF) */
         @media print {
             @page { margin: 1cm; }
             body { background-color: white !important; }
-            /* Sembunyikan Elemen yang tidak perlu dicetak */
             #main-sidebar, header, .no-print, .btn-aksi, .tab-buttons { display: none !important; }
             main { padding: 0 !important; margin: 0 !important; overflow: visible !important; }
             .bg-surface { border: none !important; box-shadow: none !important; }
-            /* Rapikan Tabel */
             table { border-collapse: collapse !important; width: 100% !important; }
             th, td { border: 1px solid #e2e8f0 !important; padding: 10px !important; color: #000 !important; }
-            /* Header Laporan Khusus Cetak */
             #print-header-user, #print-header-karyawan { display: block !important; text-align: center; margin-bottom: 20px; }
         }
     </style>
@@ -32,7 +32,7 @@ checkPermission('master_user');
         <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
             <div class="mb-6 no-print">
                 <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Manajemen Akses & Karyawan</h2>
-                <p class="text-sm text-secondary mt-1">Kelola akun Login Aplikasi dan daftar nama Karyawan Dapur.</p>
+                <p class="text-sm text-secondary mt-1">Kelola akun Login Aplikasi dan daftar nama Karyawan Dapur (beserta PIN Otorisasi).</p>
             </div>
 
             <div class="flex border-b border-slate-200 mb-6 gap-6 tab-buttons no-print">
@@ -45,7 +45,6 @@ checkPermission('master_user');
             </div>
 
             <div id="tab-akun" class="block printable-area">
-                
                 <div id="print-header-user" class="hidden">
                     <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">DAFTAR AKUN LOGIN SISTEM</h1>
                     <p style="font-size: 14px; color: #666;">Dicetak pada: <?= date('d/m/Y H:i') ?></p>
@@ -84,7 +83,6 @@ checkPermission('master_user');
             </div>
 
             <div id="tab-karyawan" class="hidden printable-area">
-                
                 <div id="print-header-karyawan" class="hidden">
                     <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">DAFTAR KARYAWAN PRODUKSI (DAPUR)</h1>
                     <p style="font-size: 14px; color: #666;">Dicetak pada: <?= date('d/m/Y H:i') ?></p>
@@ -105,20 +103,21 @@ checkPermission('master_user');
                 <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="mb-4 p-4 bg-blue-50/50 border-b border-blue-100 text-xs text-blue-800 flex items-start gap-3 no-print">
                         <i class="fa-solid fa-circle-info text-blue-600 text-lg mt-0.5"></i>
-                        <p>Nama-nama yang terdaftar di sini <strong>tidak bisa digunakan untuk login</strong>, melainkan hanya akan muncul sebagai pilihan di dropdown "Petugas" saat penginputan produksi dan pencatatan barang expired di Dapur.</p>
+                        <p>Nama-nama yang terdaftar di sini <strong>tidak bisa digunakan untuk login</strong>, melainkan hanya akan muncul sebagai pilihan di dropdown "Petugas" saat penginputan produksi. Karyawan wajib memasukkan <strong>PIN Rahasia 4 Angka</strong> untuk menyelesaikan produksi.</p>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse min-w-[400px]">
+                        <table class="w-full text-left border-collapse min-w-[500px]">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-200 text-sm text-secondary uppercase tracking-wider">
                                     <th class="p-4 font-semibold text-center w-16">No</th>
                                     <th class="p-4 font-semibold">Nama Lengkap Karyawan</th>
+                                    <th class="p-4 font-semibold">Lokasi Dapur (Terkunci)</th>
                                     <th class="p-4 font-semibold">Tgl Didaftarkan</th>
                                     <th class="p-4 font-semibold text-center w-28 btn-aksi">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="table-karyawan" class="text-sm divide-y divide-slate-100">
-                                <tr><td colspan="4" class="p-8 text-center text-secondary">Memuat data...</td></tr>
+                                <tr><td colspan="5" class="p-8 text-center text-secondary">Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -157,7 +156,7 @@ checkPermission('master_user');
                         <label class="block text-sm font-semibold text-slate-700 mb-1">Hak Akses (Jabatan) <span class="text-danger">*</span></label>
                         <select id="role_input" name="role" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary outline-none transition-all bg-slate-50 focus:bg-surface">
                             <option value="">-- Pilih Jabatan --</option>
-                            </select>
+                        </select>
                     </div>
                     <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
                         <button type="button" onclick="closeModal('modal-user')" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
@@ -183,8 +182,22 @@ checkPermission('master_user');
                 <form id="formKaryawan" class="space-y-4">
                     <input type="hidden" id="emp_id" name="id">
                     <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Nama Lengkap Karyawan <span class="text-danger">*</span></label>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Nama Lengkap <span class="text-danger">*</span></label>
                         <input type="text" id="emp_name" name="name" placeholder="Cth: Budi Santoso" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition-all font-semibold text-slate-800">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Lokasi Penempatan Dapur <span class="text-danger">*</span></label>
+                        <select id="emp_kitchen" name="kitchen_id" required class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition-all font-semibold text-slate-800">
+                            <option value="">-- Pilih Dapur --</option>
+                            <?php foreach($kitchens as $k): ?>
+                                <option value="<?= $k['id'] ?>"><?= htmlspecialchars($k['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">PIN Otorisasi (4 Angka) <span class="text-danger">*</span></label>
+                        <input type="password" id="emp_pin" name="pin" placeholder="Cth: 1234" maxlength="4" pattern="\d{4}" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-indigo-500 outline-none transition-all font-bold text-slate-800 text-center tracking-[1em]">
+                        <p class="text-[10px] text-slate-500 mt-1 font-bold" id="pin_help">Wajib 4 angka sebagai gembok produksi.</p>
                     </div>
                     <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
                         <button type="button" onclick="closeModal('modal-karyawan')" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
