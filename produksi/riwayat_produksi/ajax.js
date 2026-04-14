@@ -1,5 +1,5 @@
 let currentPage = 1;
-let currentPin = ""; // Menampung PIN sementara
+let currentPin = ""; 
 
 function getTodayLocal() {
     const now = new Date();
@@ -28,20 +28,28 @@ function clearPin() { currentPin = ""; document.getElementById('pin-display').va
 function backspacePin() { currentPin = currentPin.slice(0, -1); document.getElementById('pin-display').value = currentPin; }
 function closePinModal() { document.getElementById('modal-pin-supervisor').classList.add('hidden'); }
 
-// --- LOGIKA FILTER & HISTORY (SAMA DENGAN SEBELUMNYA) ---
+// --- LOGIKA FILTER (DIUPDATE UNTUK MENAMPILKAN DAPUR) ---
 async function loadFilterGudang() {
     try {
         const response = await fetchAjax('logic.php?action=init_filter', 'GET');
         if (response.status === 'success') {
-            const selectGudang = document.getElementById('warehouse_id');
-            let options = '<option value="">Semua Gudang</option>';
-            response.warehouses.forEach(w => { options += `<option value="${w.id}">${w.name}</option>`; });
-            selectGudang.innerHTML = options;
+            
+            const selectStore = document.getElementById('warehouse_id');
+            let optStore = '<option value="">Semua Store</option>';
+            response.warehouses.forEach(w => { optStore += `<option value="${w.id}">${w.name}</option>`; });
+            selectStore.innerHTML = optStore;
+
+            const selectKitchen = document.getElementById('kitchen_id');
+            let optKitchen = '<option value="">Semua Dapur</option>';
+            response.kitchens.forEach(k => { optKitchen += `<option value="${k.id}">${k.name}</option>`; });
+            selectKitchen.innerHTML = optKitchen;
+
         }
-    } catch (e) { console.error("Gagal memuat filter gudang"); }
+    } catch (e) { console.error("Gagal memuat filter"); }
 }
 
 document.getElementById('formFilter').addEventListener('submit', function(e) { e.preventDefault(); loadHistory(1); });
+
 function resetFilter() {
     document.getElementById('formFilter').reset();
     const today = getTodayLocal();
@@ -53,26 +61,32 @@ function resetFilter() {
 async function loadHistory(page = 1) {
     currentPage = page;
     const tbody = document.getElementById('table-history');
-    tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
     
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     const status = document.getElementById('status').value;
     const warehouseId = document.getElementById('warehouse_id').value;
-    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouseId}&page=${currentPage}`;
+    const kitchenId = document.getElementById('kitchen_id').value;
+    
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouseId}&kitchen_id=${kitchenId}&page=${currentPage}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
         let html = '';
         if (response.data.length === 0) {
-            html = '<tr><td colspan="7" class="p-8 text-center text-secondary font-medium">Tidak ada data ditemukan pada filter ini.</td></tr>';
+            html = '<tr><td colspan="8" class="p-8 text-center text-secondary font-medium">Tidak ada data ditemukan pada filter ini.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 const no = (currentPage - 1) * 10 + index + 1;
                 const dateObj = new Date(item.created_at);
                 const tgl = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
                 const waktu = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                const namaGudang = item.gudang ? `<div class="text-[10px] text-primary font-bold mt-1 uppercase">Tujuan: ${item.gudang}</div>` : '';
+                const namaStore = item.gudang ? `<div class="text-[10px] text-primary font-bold mt-1 uppercase"><i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> Ke: Store ${item.gudang}</div>` : '';
+                
+                // Info Asal Dapur
+                const namaKaryawan = item.pembuat || 'Unknown';
+                const namaDapur = item.asal_dapur || 'Dapur Belum Diatur';
 
                 let statusBadge = '';
                 let actionButtons = '';
@@ -87,7 +101,6 @@ async function loadHistory(page = 1) {
                     statusBadge = `<span class="bg-danger/10 text-danger px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> Ditolak</span>`;
                     actionButtons = btnPrint + btnEdit + btnBatal;
                 } else {
-                    // Masuk Gudang, Dibatalkan, Expired
                     let icon = item.status === 'masuk_gudang' ? 'fa-check-double' : (item.status === 'expired' ? 'fa-ban' : 'fa-trash-can');
                     let color = item.status === 'masuk_gudang' ? 'text-success' : 'text-slate-500';
                     statusBadge = `<span class="bg-slate-100 ${color} px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1"><i class="fa-solid ${icon}"></i> ${item.status.replace('_', ' ')}</span>`;
@@ -97,8 +110,12 @@ async function loadHistory(page = 1) {
                 html += `
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="p-4 text-center text-secondary">${no}</td>
-                        <td class="p-4"><div class="font-semibold text-slate-700">${tgl}</div><div class="text-xs text-secondary">${waktu} WIB</div>${namaGudang}</td>
+                        <td class="p-4"><div class="font-semibold text-slate-700">${tgl}</div><div class="text-xs text-secondary">${waktu} WIB</div>${namaStore}</td>
                         <td class="p-4 font-mono text-sm text-slate-600 font-bold">${item.invoice_no}</td>
+                        <td class="p-4">
+                            <div class="font-bold text-indigo-900">${namaKaryawan}</div>
+                            <div class="text-[10px] uppercase font-bold text-slate-400 tracking-widest"><i class="fa-solid fa-store mr-1"></i> ${namaDapur}</div>
+                        </td>
                         <td class="p-4 text-sm text-slate-700 leading-relaxed">${item.product_list.replace(/, /g, '<br>')}</td>
                         <td class="p-4 text-center font-black text-primary text-xl">${item.total_qty}</td>
                         <td class="p-4 text-center">${statusBadge}</td>
@@ -111,7 +128,6 @@ async function loadHistory(page = 1) {
     }
 }
 
-// --- LOGIKA MODAL EDIT/REVISI (SAMA DENGAN SEBELUMNYA) ---
 async function bukaEdit(prod_id) {
     document.getElementById('edit_prod_id').value = prod_id;
     const container = document.getElementById('edit-produk-list');
@@ -134,7 +150,6 @@ document.getElementById('formEdit').addEventListener('submit', async function(e)
     else { Swal.fire('Gagal!', response.message, 'error'); }
 });
 
-// --- LOGIKA BATALKAN DENGAN PIN ---
 function triggerBatalkan(id) {
     document.getElementById('temp_prod_id').value = id;
     clearPin();

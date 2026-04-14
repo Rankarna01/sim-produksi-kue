@@ -27,29 +27,36 @@ checkRole(['produksi']);
 
             <div class="bg-surface p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
                 <form id="formFilter" class="flex flex-col sm:flex-row gap-4 items-end flex-wrap">
-                    <div class="flex-1 w-full min-w-[150px]">
+                    <div class="flex-1 w-full min-w-[140px]">
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Tanggal Mulai</label>
                         <input type="date" id="start_date" name="start_date" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none">
                     </div>
-                    <div class="flex-1 w-full min-w-[150px]">
+                    <div class="flex-1 w-full min-w-[140px]">
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Tanggal Akhir</label>
                         <input type="date" id="end_date" name="end_date" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none">
                     </div>
                     
-                    <div class="flex-1 w-full min-w-[150px]">
-                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Gudang Tujuan</label>
-                        <select id="warehouse_id" name="warehouse_id" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none">
-                            <option value="">Semua Gudang</option>
-                            </select>
+                    <div class="flex-1 w-full min-w-[140px]">
+                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Asal Dapur</label>
+                        <select id="kitchen_id" name="kitchen_id" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none">
+                            <option value="">Semua Dapur</option>
+                        </select>
                     </div>
 
-                    <div class="flex-1 w-full min-w-[150px]">
+                    <div class="flex-1 w-full min-w-[140px]">
+                        <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Store Tujuan</label>
+                        <select id="warehouse_id" name="warehouse_id" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none">
+                            <option value="">Semua Store</option>
+                        </select>
+                    </div>
+
+                    <div class="flex-1 w-full min-w-[140px]">
                         <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Status</label>
                         <select id="status" name="status" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:border-primary outline-none">
                             <option value="">Semua Status</option>
                             <option value="pending">Pending (Antrean)</option>
                             <option value="ditolak">Ditolak (Butuh Revisi)</option>
-                            <option value="masuk_gudang">Selesai (Masuk Gudang)</option>
+                            <option value="masuk_gudang">Selesai (Masuk Store)</option>
                             <option value="expired">Expired / Rusak</option>
                         </select>
                     </div>
@@ -67,12 +74,13 @@ checkRole(['produksi']);
 
             <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[800px]">
+                    <table class="w-full text-left border-collapse min-w-[900px]">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200 text-sm text-secondary uppercase tracking-wider">
                                 <th class="p-4 font-semibold w-16 text-center">No</th>
                                 <th class="p-4 font-semibold">Tanggal & Waktu</th>
                                 <th class="p-4 font-semibold">No. Invoice</th>
+                                <th class="p-4 font-semibold">Asal Dapur</th>
                                 <th class="p-4 font-semibold">Daftar Produk (Qty)</th>
                                 <th class="p-4 font-semibold text-center">Total Pcs</th>
                                 <th class="p-4 font-semibold text-center">Status</th>
@@ -80,7 +88,7 @@ checkRole(['produksi']);
                             </tr>
                         </thead>
                         <tbody id="table-history" class="text-sm divide-y divide-slate-100">
-                            <tr><td colspan="7" class="p-8 text-center text-secondary">Memuat data...</td></tr>
+                            <tr><td colspan="8" class="p-8 text-center text-secondary">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>
