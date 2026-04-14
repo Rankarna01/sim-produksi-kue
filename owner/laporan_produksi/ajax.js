@@ -33,14 +33,21 @@ function switchTab(tabId) {
     document.getElementById('print-tab-name').innerText = tabName;
 }
 
+// Inisiasi Filter Dropdown Dapur & Store
 async function initFilterGudang() {
     const response = await fetchAjax('logic.php?action=init_filter', 'GET');
     if (response.status === 'success') {
-        let opt = '<option value="">Semua Gudang</option>';
+        let optStore = '<option value="">Semua Store</option>';
         response.warehouses.forEach(w => {
-            opt += `<option value="${w.id}">${w.name}</option>`;
+            optStore += `<option value="${w.id}">${w.name}</option>`;
         });
-        document.getElementById('warehouse_filter').innerHTML = opt;
+        document.getElementById('warehouse_filter').innerHTML = optStore;
+
+        let optKitchen = '<option value="">Semua Dapur</option>';
+        response.kitchens.forEach(k => {
+            optKitchen += `<option value="${k.id}">${k.name}</option>`;
+        });
+        document.getElementById('kitchen_filter').innerHTML = optKitchen;
     }
 }
 
@@ -57,6 +64,7 @@ function resetFilter() {
     document.getElementById('end_date').value = today;
     document.getElementById('status').value = '';
     document.getElementById('warehouse_filter').value = '';
+    document.getElementById('kitchen_filter').value = '';
     document.getElementById('quick_filter').value = 'this_month';
     loadLaporan(1);
 }
@@ -103,9 +111,6 @@ function formatNumber(num) {
     return new Intl.NumberFormat('id-ID').format(num);
 }
 
-// ===========================================================================
-// FUNGSI LOAD DATA KE LAYAR WEB
-// ===========================================================================
 async function loadLaporan(page = 1) {
     currentPage = page;
     const tbodyDetail = document.getElementById('table-laporan');
@@ -113,25 +118,26 @@ async function loadLaporan(page = 1) {
     const tbodyKaryawan = document.getElementById('table-rekap-karyawan');
     const bahanGrid = document.getElementById('bahan-grid'); 
     
-    tbodyDetail.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
+    tbodyDetail.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
     tbodyRekap.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-secondary">Memuat rekap...</td></tr>';
-    tbodyKaryawan.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-secondary">Memuat rekap...</td></tr>';
+    tbodyKaryawan.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-secondary">Memuat rekap...</td></tr>';
     bahanGrid.innerHTML = '<div class="col-span-full p-8 text-center text-secondary">Memuat rincian bahan...</div>';
     
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     const status = document.getElementById('status').value;
     const warehouse = document.getElementById('warehouse_filter').value;
+    const kitchen = document.getElementById('kitchen_filter').value;
     
     let statusText = status === '' ? 'Semua' : (status === 'masuk_gudang' ? 'Selesai' : status);
     document.getElementById('print-periode').innerText = `Periode: ${start || 'Awal'} s/d ${end || 'Akhir'} | Status: ${statusText.toUpperCase()}`;
 
-    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}&page=${currentPage}`;
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}&kitchen_id=${kitchen}&page=${currentPage}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
         
-        // Isi Infobox di layar Web (Pisah antara Ditolak dan Expired)
+        // Isi Infobox di layar Web
         document.getElementById('sum-total').innerHTML = `${formatNumber(response.summary.total)} <span class="text-sm font-semibold text-slate-500">Pcs</span>`;
         document.getElementById('sum-masuk').innerHTML = `${formatNumber(response.summary.masuk)} <span class="text-sm font-semibold text-success/70">Pcs</span>`;
         document.getElementById('sum-ditolak').innerHTML = `${formatNumber(response.summary.ditolak)} <span class="text-sm font-semibold text-danger/70">Pcs</span>`;
@@ -154,16 +160,17 @@ async function loadLaporan(page = 1) {
         }
         tbodyRekap.innerHTML = htmlRekap;
 
-        // Tab Rekap Karyawan
+        // Tab Rekap Karyawan (Ditambah Asal Dapur)
         let htmlKaryawan = '';
         if (response.rekap_karyawan.length === 0) {
-            htmlKaryawan = '<tr><td colspan="4" class="p-8 text-center text-secondary font-medium">Tidak ada data.</td></tr>';
+            htmlKaryawan = '<tr><td colspan="5" class="p-8 text-center text-secondary font-medium">Tidak ada data.</td></tr>';
         } else {
             response.rekap_karyawan.forEach((item, index) => {
                 htmlKaryawan += `
                     <tr class="hover:bg-indigo-50/30 transition-colors border-b border-indigo-50">
                         <td class="p-4 text-center text-indigo-300 font-bold">${index + 1}</td>
                         <td class="p-4 font-bold text-indigo-900">${item.karyawan}</td>
+                        <td class="p-4 text-slate-500 text-xs font-bold uppercase tracking-widest">${item.asal_dapur || '-'}</td>
                         <td class="p-4 font-semibold text-slate-700">${item.produk}</td>
                         <td class="p-4 text-center font-black text-indigo-600">${formatNumber(item.total_qty)}</td>
                     </tr>
@@ -202,10 +209,10 @@ async function loadLaporan(page = 1) {
         }
         bahanGrid.innerHTML = htmlBahan;
 
-        // Tab Detail Histori
+        // Tab Detail Histori (Ditambah Asal Dapur)
         let htmlDetail = '';
         if (response.data.length === 0) {
-            htmlDetail = '<tr><td colspan="8" class="p-8 text-center text-secondary font-medium">Tidak ada data histori.</td></tr>';
+            htmlDetail = '<tr><td colspan="9" class="p-8 text-center text-secondary font-medium">Tidak ada data histori.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 const no = (currentPage - 1) * 10 + index + 1;
@@ -232,6 +239,7 @@ async function loadLaporan(page = 1) {
                             <div class="text-[10px] text-slate-500">${waktu} WIB</div>
                         </td>
                         <td class="p-3 font-mono text-xs font-bold text-primary">${item.invoice_no}</td>
+                        <td class="p-3 text-xs font-bold uppercase tracking-widest text-slate-500">${item.asal_dapur || '-'}</td>
                         <td class="p-3 font-medium text-sm">${item.karyawan}</td>
                         <td class="p-3 font-bold text-slate-800 text-sm">${item.produk}</td>
                         <td class="p-3 text-center font-black text-slate-800 text-base">${formatNumber(item.quantity)}</td>
@@ -284,22 +292,22 @@ async function cetakPDF() {
     const end = document.getElementById('end_date').value;
     const status = document.getElementById('status').value;
     const warehouse = document.getElementById('warehouse_filter').value;
+    const kitchen = document.getElementById('kitchen_filter').value;
     
-    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}&is_print=true`;
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}&kitchen_id=${kitchen}&is_print=true`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
         const wrapper = document.getElementById('print-table-wrapper');
         let htmlPrint = '';
 
-        // Masukkan data ke 4 kotak Print
         document.getElementById('print-sum-total').innerText = `${formatNumber(response.summary.total)} Pcs`;
         document.getElementById('print-sum-masuk').innerText = `${formatNumber(response.summary.masuk)} Pcs`;
         document.getElementById('print-sum-ditolak').innerText = `${formatNumber(response.summary.ditolak)} Pcs`;
         document.getElementById('print-sum-expired').innerText = `${formatNumber(response.summary.expired)} Pcs`;
 
         if (activeTabId === 'btn-tab-detail') {
-            htmlPrint = `<table><thead><tr><th>No</th><th>Waktu Produksi</th><th>No. Invoice</th><th>Karyawan (Dapur)</th><th>Produk</th><th>Qty</th><th>Status</th><th>Gudang</th></tr></thead><tbody>`;
+            htmlPrint = `<table><thead><tr><th>No</th><th>Waktu Produksi</th><th>No. Invoice</th><th>Asal Dapur</th><th>Karyawan</th><th>Produk</th><th>Qty</th><th>Status</th><th>Store Tujuan</th></tr></thead><tbody>`;
             response.data.forEach((item, index) => {
                 const d = new Date(item.created_at);
                 const tgl = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -309,6 +317,7 @@ async function cetakPDF() {
                     <td style="text-align:center;">${index + 1}</td>
                     <td>${tgl}</td>
                     <td>${item.invoice_no}</td>
+                    <td>${item.asal_dapur || '-'}</td>
                     <td>${item.karyawan}</td>
                     <td>${item.produk}</td>
                     <td style="text-align:center; font-weight:bold;">${formatNumber(item.quantity)}</td>
@@ -326,9 +335,9 @@ async function cetakPDF() {
             htmlPrint += `</tbody></table>`;
         }
         else if (activeTabId === 'btn-tab-rekap-karyawan') {
-            htmlPrint = `<table><thead><tr><th>No</th><th>Nama Karyawan</th><th>Produk</th><th>Total (Pcs)</th></tr></thead><tbody>`;
+            htmlPrint = `<table><thead><tr><th>No</th><th>Nama Karyawan</th><th>Asal Dapur</th><th>Produk</th><th>Total (Pcs)</th></tr></thead><tbody>`;
             response.rekap_karyawan.forEach((item, index) => {
-                htmlPrint += `<tr><td style="text-align:center;">${index + 1}</td><td>${item.karyawan}</td><td>${item.produk}</td><td style="text-align:center; font-weight:bold;">${formatNumber(item.total_qty)}</td></tr>`;
+                htmlPrint += `<tr><td style="text-align:center;">${index + 1}</td><td>${item.karyawan}</td><td>${item.asal_dapur || '-'}</td><td>${item.produk}</td><td style="text-align:center; font-weight:bold;">${formatNumber(item.total_qty)}</td></tr>`;
             });
             htmlPrint += `</tbody></table>`;
         }
@@ -360,5 +369,6 @@ function exportExcel() {
     const end = document.getElementById('end_date').value;
     const status = document.getElementById('status').value;
     const warehouse = document.getElementById('warehouse_filter').value;
-    window.location.href = `logic.php?action=export_excel&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}`; 
+    const kitchen = document.getElementById('kitchen_filter').value;
+    window.location.href = `logic.php?action=export_excel&start_date=${start}&end_date=${end}&status=${status}&warehouse_id=${warehouse}&kitchen_id=${kitchen}`; 
 }

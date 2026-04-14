@@ -60,7 +60,8 @@ checkPermission('laporan_produksi');
                 </div>
 
                 <div id="form-filter-section" class="bg-surface p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                    <form id="formFilter" class="flex flex-col lg:flex-row gap-4 items-end">
+                    <form id="formFilter" class="flex flex-col gap-4 items-end">
+                        
                         <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Pilih Cepat</label>
@@ -82,33 +83,40 @@ checkPermission('laporan_produksi');
                             </div>
                         </div>
 
-                        <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 lg:mt-0 lg:w-auto">
+                        <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Status</label>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Asal Dapur</label>
+                                <select id="kitchen_filter" name="kitchen_filter" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm font-medium text-slate-700 bg-white">
+                                    <option value="">Semua Dapur</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Store Tujuan</label>
+                                <select id="warehouse_filter" name="warehouse_filter" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm font-medium text-slate-700 bg-white">
+                                    <option value="">Semua Store</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Status Produksi</label>
                                 <select id="status" name="status" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm font-medium text-slate-700 bg-white">
                                     <option value="">Semua Status</option>
                                     <option value="pending">Pending (Antrean)</option>
                                     <option value="ditolak">Ditolak (Revisi)</option>
-                                    <option value="masuk_gudang">Selesai (Masuk Gudang)</option>
+                                    <option value="masuk_gudang">Selesai (Masuk Store)</option>
                                     <option value="expired">Expired / Rusak</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Gudang</label>
-                                <select id="warehouse_filter" name="warehouse_filter" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm font-medium text-slate-700 bg-white">
-                                    <option value="">Semua Gudang</option>
                                 </select>
                             </div>
                         </div>
 
-                        <div class="flex gap-2 w-full lg:w-auto mt-4 lg:mt-0">
-                            <button type="submit" class="flex-1 lg:flex-none bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-filter"></i> Filter
+                        <div class="flex gap-2 w-full lg:w-auto justify-end">
+                            <button type="submit" class="flex-1 lg:flex-none bg-primary hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-filter"></i> Filter Data
                             </button>
                             <button type="button" onclick="resetFilter()" class="flex-1 lg:flex-none bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center">
                                 Reset
                             </button>
                         </div>
+
                     </form>
                 </div>
 
@@ -123,7 +131,7 @@ checkPermission('laporan_produksi');
                     <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 p-5 flex items-center gap-4 relative overflow-hidden">
                         <div class="w-14 h-14 rounded-full bg-success/10 text-success flex items-center justify-center text-2xl z-10"><i class="fa-solid fa-check-double"></i></div>
                         <div class="z-10">
-                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sukses (Masuk Gudang)</p>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sukses (Masuk Store)</p>
                             <h3 class="text-2xl font-black text-success" id="sum-masuk">0 <span class="text-sm font-semibold text-success/70">Pcs</span></h3>
                         </div>
                     </div>
@@ -160,17 +168,18 @@ checkPermission('laporan_produksi');
 
                 <div id="tab-detail" class="tab-content bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse min-w-[900px]">
+                        <table class="w-full text-left border-collapse min-w-[1000px]">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-200 text-xs text-secondary uppercase tracking-wider">
                                     <th class="p-3 font-bold w-12 text-center">No</th>
                                     <th class="p-3 font-bold">Waktu Produksi</th>
                                     <th class="p-3 font-bold">No. Invoice</th>
-                                    <th class="p-3 font-bold">Karyawan (Dapur)</th>
+                                    <th class="p-3 font-bold">Asal Dapur</th>
+                                    <th class="p-3 font-bold">Karyawan</th>
                                     <th class="p-3 font-bold">Produk</th>
                                     <th class="p-3 font-bold text-center">Qty (Pcs)</th>
                                     <th class="p-3 font-bold text-center">Status</th>
-                                    <th class="p-3 font-bold">Gudang</th>
+                                    <th class="p-3 font-bold">Store Tujuan</th>
                                 </tr>
                             </thead>
                             <tbody id="table-laporan" class="text-sm divide-y divide-slate-100"></tbody>
@@ -200,11 +209,12 @@ checkPermission('laporan_produksi');
 
                 <div id="tab-rekap-karyawan" class="tab-content hidden bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse min-w-[600px]">
+                        <table class="w-full text-left border-collapse min-w-[700px]">
                             <thead>
                                 <tr class="bg-indigo-50 border-b border-indigo-100 text-xs text-indigo-700 uppercase tracking-wider">
                                     <th class="p-4 font-bold w-12 text-center">No</th>
                                     <th class="p-4 font-bold">Nama Karyawan</th>
+                                    <th class="p-4 font-bold">Asal Dapur</th>
                                     <th class="p-4 font-bold">Roti/Kue Yang Dibuat</th>
                                     <th class="p-4 font-bold text-center">Total (Pcs)</th>
                                 </tr>
@@ -229,7 +239,7 @@ checkPermission('laporan_produksi');
                         <h3 id="print-sum-total">0 Pcs</h3>
                     </div>
                     <div class="print-card" style="border-color: #10B981; color: #10B981;">
-                        <p style="color: #10B981;">Sukses (Gudang)</p>
+                        <p style="color: #10B981;">Sukses (Store Tujuan)</p>
                         <h3 id="print-sum-masuk" style="color: #10B981;">0 Pcs</h3>
                     </div>
                     <div class="print-card" style="border-color: #EF4444; color: #EF4444;">
@@ -242,8 +252,7 @@ checkPermission('laporan_produksi');
                     </div>
                 </div>
 
-                <div id="print-table-wrapper">
-                    </div>
+                <div id="print-table-wrapper"></div>
             </div>
 
         </main>
