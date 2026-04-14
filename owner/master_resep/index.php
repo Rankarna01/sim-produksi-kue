@@ -59,15 +59,15 @@ checkPermission('master_resep');
                     <input type="hidden" id="bom_product_id" name="product_id">
                     
                     <div class="flex-1 min-w-[200px]">
-                        <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Pilih Bahan Baku</label>
-                        <select id="material_id" name="material_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary outline-none text-sm">
+                        <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Pilih Bahan Baku Induk</label>
+                        <select id="pilar_material_id" name="material_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary outline-none text-sm">
                             <option value="">-- Memuat Bahan --</option>
                         </select>
                     </div>
                     
                     <div class="w-24">
                         <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wide">Jumlah</label>
-                        <input type="number" step="0.01" id="quantity" name="quantity_needed" required min="0.01" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary outline-none text-sm" placeholder="100">
+                        <input type="number" step="any" id="quantity" name="quantity_needed" required min="0.001" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary outline-none text-sm" placeholder="Contoh: 1.5">
                     </div>
 
                     <div class="w-28">
@@ -87,8 +87,8 @@ checkPermission('master_resep');
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-50 border-b border-slate-200 text-secondary">
                             <tr>
-                                <th class="py-2 px-4 font-medium">Nama Bahan</th>
-                                <th class="py-2 px-4 font-medium text-right">Takaran</th>
+                                <th class="py-2 px-4 font-medium">Nama Bahan Induk</th>
+                                <th class="py-2 px-4 font-medium text-right">Takaran per Pcs</th>
                                 <th class="py-2 px-4 font-medium text-center w-16">Aksi</th>
                             </tr>
                         </thead>
