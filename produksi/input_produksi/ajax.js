@@ -10,12 +10,16 @@ async function initForm() {
     if (res.status === 'success') {
         masterProducts = res.products;
 
-        let optWarehouse = '<option value="">-- Pilih Gudang Tujuan --</option>';
-        res.warehouses.forEach(w => optWarehouse += `<option value="${w.id}">${w.name}</option>`);
+        let optWarehouse = '<option value="">-- Pilih Store Tujuan --</option>';
+        res.warehouses.forEach(w => optWarehouse += `<option value="${w.id}">Store: ${w.name}</option>`);
         document.getElementById('warehouse_id').innerHTML = optWarehouse;
 
         let optEmployee = '<option value="">-- Pilih Nama Anda --</option>';
-        res.employees.forEach(e => optEmployee += `<option value="${e.id}">${e.name}</option>`);
+        res.employees.forEach(e => {
+            // PERBAIKAN: Menampilkan nama dapur di dropdown karyawan
+            const dapurInfo = e.kitchen_name ? e.kitchen_name : "Belum diatur";
+            optEmployee += `<option value="${e.id}">${e.emp_name} - ${dapurInfo}</option>`;
+        });
         document.getElementById('employee_id').innerHTML = optEmployee;
 
         addProductRow();
@@ -38,9 +42,6 @@ function renderDropdownList(wrapper, productList) {
                 const textInput = wrapper.querySelector('.search-input');
                 const hiddenInput = wrapper.querySelector('.hidden-id');
                 
-                // =======================================================
-                // CEK DUPLIKAT: Pastikan produk belum ada di baris lain
-                // =======================================================
                 const allHidden = document.querySelectorAll('.hidden-id');
                 let isDuplicate = false;
                 allHidden.forEach(inp => {
@@ -54,9 +55,8 @@ function renderDropdownList(wrapper, productList) {
                     textInput.value = '';
                     hiddenInput.value = '';
                     ul.classList.add('hidden');
-                    return; // Hentikan proses
+                    return; 
                 }
-                // =======================================================
 
                 textInput.value = `[${p.code}] ${p.name}`;
                 hiddenInput.value = p.id;
@@ -73,30 +73,24 @@ function renderDropdownList(wrapper, productList) {
 
 function addProductRow() {
     const container = document.getElementById('product-container');
-    
     const rowHTML = `
         <div class="product-row bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-start relative">
             <div class="flex-1 w-full relative dropdown-wrapper">
                 <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Cari & Pilih Produk <span class="text-danger">*</span></label>
-                
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <i class="fa-solid fa-box text-slate-300"></i>
                     </div>
                     <input type="text" class="search-input w-full pl-9 pr-3 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:bg-white bg-slate-50 outline-none transition-all text-sm font-semibold text-slate-700 placeholder:text-slate-400 placeholder:font-normal" placeholder="Ketik nama kue lalu klik pilihannya..." onfocus="showDropdown(this)" oninput="filterDropdown(this)" autocomplete="off" required>
-                    
                     <input type="hidden" name="product_id[]" class="hidden-id" required>
-                    
                     <ul class="custom-dropdown custom-scrollbar absolute z-[60] w-full bg-white border border-slate-200 shadow-xl rounded-xl mt-1 max-h-48 overflow-y-auto hidden">
                     </ul>
                 </div>
             </div>
-            
             <div class="w-full md:w-32">
                 <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Jumlah <span class="text-danger">*</span></label>
                 <input type="number" name="quantity[]" required min="1" class="w-full px-3 py-3 border-2 border-slate-200 rounded-xl focus:border-primary outline-none transition-all font-black text-primary text-center text-lg" placeholder="0">
             </div>
-            
             <div class="w-full md:w-auto md:self-end">
                 <button type="button" onclick="removeRow(this)" title="Hapus Baris" class="w-full md:w-12 h-[52px] bg-danger/10 hover:bg-danger text-danger hover:text-white rounded-xl flex items-center justify-center transition-colors">
                     <i class="fa-solid fa-trash"></i>
@@ -104,14 +98,12 @@ function addProductRow() {
             </div>
         </div>
     `;
-    
     container.insertAdjacentHTML('beforeend', rowHTML);
 }
 
 function showDropdown(inputElement) {
     const wrapper = inputElement.closest('.dropdown-wrapper');
     const ul = wrapper.querySelector('.custom-dropdown');
-    
     renderDropdownList(wrapper, masterProducts);
     ul.classList.remove('hidden');
 }
@@ -125,7 +117,6 @@ function filterDropdown(inputElement) {
     inputElement.classList.remove('border-success', 'bg-success/5');
     
     const keyword = inputElement.value.toLowerCase();
-    
     const filteredProducts = masterProducts.filter(p => 
         p.name.toLowerCase().includes(keyword) || 
         p.code.toLowerCase().includes(keyword)
@@ -162,21 +153,51 @@ document.getElementById('formProduksi').addEventListener('submit', async functio
             return;
         }
     }
-    
-    // Asumsi function showLoading() & hideLoading() sudah ada di main.js kamu
-    if(typeof showLoading === "function") showLoading();
-    
-    const formData = new FormData(this);
-    const response = await fetchAjax('logic.php?action=save', 'POST', formData);
-    
-    if(typeof hideLoading === "function") hideLoading();
 
-    if (response.status === 'success') {
-        document.getElementById('btnCetak').setAttribute('onclick', `cetakStruk(${response.production_id})`);
-        const modal = document.getElementById('modal-sukses');
-        modal.classList.remove('hidden');
-    } else {
-        alert(response.message);
+    const employeeSelect = document.getElementById('employee_id');
+    const employeeName = employeeSelect.options[employeeSelect.selectedIndex].text;
+    
+    const { value: pin } = await Swal.fire({
+        title: 'Otorisasi Keamanan',
+        html: `Masukkan <b>PIN Rahasia</b> untuk otorisasi produksi oleh:<br><span class="text-indigo-600 font-bold mt-2 inline-block">${employeeName}</span>`,
+        input: 'password',
+        inputPlaceholder: 'Ketik 4 Angka PIN...',
+        inputAttributes: {
+            maxlength: 4,
+            autocapitalize: 'off',
+            autocorrect: 'off'
+        },
+        showCancelButton: true,
+        confirmButtonColor: '#4F46E5', 
+        confirmButtonText: 'Otorisasi & Proses',
+        cancelButtonText: 'Batal',
+        inputValidator: (value) => {
+            if (!value) {
+                return 'PIN tidak boleh kosong!'
+            }
+            if (!/^\d{4}$/.test(value)) {
+                return 'PIN harus terdiri dari 4 Angka!'
+            }
+        }
+    });
+
+    if (pin) {
+        if(typeof showLoading === "function") showLoading();
+        
+        const formData = new FormData(this);
+        formData.append('pin', pin); 
+
+        const response = await fetchAjax('logic.php?action=save', 'POST', formData);
+        
+        if(typeof hideLoading === "function") hideLoading();
+
+        if (response.status === 'success') {
+            document.getElementById('btnCetak').setAttribute('onclick', `cetakStruk(${response.production_id})`);
+            const modal = document.getElementById('modal-sukses');
+            modal.classList.remove('hidden');
+        } else {
+            Swal.fire('Otorisasi Gagal!', response.message, 'error');
+        }
     }
 });
 

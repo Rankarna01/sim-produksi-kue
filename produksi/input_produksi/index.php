@@ -70,10 +70,10 @@ checkRole(['produksi']);
                             <div class="bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-100">
                                 <label class="block text-sm sm:text-base font-bold text-slate-700 mb-2 sm:mb-3">
                                     <span class="bg-primary text-white w-6 h-6 inline-flex items-center justify-center rounded-full text-xs mr-2 shadow-sm">3</span> 
-                                    Simpan ke Gudang <span class="text-danger">*</span>
+                                    Simpan ke Store Tujuan <span class="text-danger">*</span>
                                 </label>
                                 <select id="warehouse_id" name="warehouse_id" required class="w-full px-4 py-3 sm:py-4 border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-primary outline-none transition-all bg-white text-base font-medium cursor-pointer shadow-sm">
-                                    <option value="">-- Memuat Lokasi --</option>
+                                    <option value="">-- Memuat Lokasi Store --</option>
                                 </select>
                             </div>
 

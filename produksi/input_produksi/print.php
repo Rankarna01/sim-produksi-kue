@@ -5,10 +5,12 @@ $id = $_GET['id'] ?? 0;
 $stmtHead = $pdo->prepare("
     SELECT p.invoice_no, p.created_at, p.notes, 
            COALESCE(e.name, u.name) as karyawan,
-           w.name as gudang
+           w.name as gudang,
+           k.name as asal_dapur
     FROM productions p
     JOIN users u ON p.user_id = u.id
     LEFT JOIN employees e ON p.employee_id = e.id
+    LEFT JOIN kitchens k ON e.kitchen_id = k.id
     LEFT JOIN warehouses w ON p.warehouse_id = w.id
     WHERE p.id = ?
 ");
@@ -76,7 +78,7 @@ foreach ($details as $d) {
     
     <div class="text-center">
         <div class="title">ROTIKU PRODUKSI</div>
-        <div>Tiket Masuk Gudang</div>
+        <div>Tiket Masuk Store</div>
     </div>
     
     <div class="divider"></div>
@@ -85,7 +87,8 @@ foreach ($details as $d) {
         <tr><td style="width: 50px;">Tgl</td><td>: <?= date('d/m/Y H:i', strtotime($header['created_at'])) ?></td></tr>
         <tr><td>Inv</td><td>: <?= $header['invoice_no'] ?></td></tr>
         <tr><td>Oleh</td><td>: <?= $header['karyawan'] ?></td></tr>
-        <tr><td>Gudang</td><td>: <span class="text-bold"><?= strtoupper($header['gudang'] ?? '-') ?></span></td></tr>
+        <tr><td>Dapur</td><td>: <?= $header['asal_dapur'] ?? '-' ?></td></tr>
+        <tr><td>Ke Store</td><td>: <span class="text-bold"><?= strtoupper($header['gudang'] ?? '-') ?></span></td></tr>
     </table>
     
     <div class="divider"></div>
@@ -112,7 +115,7 @@ foreach ($details as $d) {
     
     <?php if (!empty($header['notes'])): ?>
     <div style="margin-top: 15px; font-size: 12px; border: 1px dashed #000; padding: 6px; border-radius: 4px;">
-        <strong>Catatan Dapur:</strong><br>
+        <strong>Catatan Produksi:</strong><br>
         <?= nl2br(htmlspecialchars($header['notes'])) ?>
     </div>
     <?php endif; ?>
@@ -134,13 +137,12 @@ foreach ($details as $d) {
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            // PERBAIKAN BARCODE: Dibuat lebih tinggi, garis lebih tebal, dan proporsional
             JsBarcode("#barcode", "<?= $barcode_str ?>", {
                 format: "CODE128",
                 displayValue: true,
-                fontSize: 18,        // Angka diperbesar
-                height: 70,          // Tinggi diperbesar agar lebih 'kotak'
-                width: 1.8,          // Garis dipertebal sedikit
+                fontSize: 18,        
+                height: 70,          
+                width: 1.8,          
                 textMargin: 6,       
                 margin: 5            
             });
