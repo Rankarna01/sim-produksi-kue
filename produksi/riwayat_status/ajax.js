@@ -10,27 +10,36 @@ function getTodayLocal() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-    await loadFilterGudang(); // Muat data gudang di dropdown
+    await loadFilterGudang(); 
     const today = getTodayLocal();
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
     loadData(1); 
 });
 
-// FITUR BARU: Tarik data Gudang
 async function loadFilterGudang() {
     try {
         const response = await fetchAjax('logic.php?action=init_filter', 'GET');
         if (response.status === 'success') {
-            const selectGudang = document.getElementById('warehouse_id');
-            let options = '<option value="">Semua Gudang</option>';
+            const selectStore = document.getElementById('warehouse_id');
+            let optStore = '<option value="">Semua Store</option>';
             response.warehouses.forEach(w => {
-                options += `<option value="${w.id}">${w.name}</option>`;
+                optStore += `<option value="${w.id}">${w.name}</option>`;
             });
-            if(selectGudang) selectGudang.innerHTML = options;
+            if(selectStore) selectStore.innerHTML = optStore;
+
+            // Jika dia bukan admin produksi (punya dropdown dapur)
+            const selectKitchen = document.getElementById('kitchen_id');
+            if(selectKitchen && selectKitchen.tagName === 'SELECT') {
+                let optKitchen = '<option value="">Semua Dapur</option>';
+                response.kitchens.forEach(k => {
+                    optKitchen += `<option value="${k.id}">${k.name}</option>`;
+                });
+                selectKitchen.innerHTML = optKitchen;
+            }
         }
     } catch (e) {
-        console.error("Gagal memuat filter gudang");
+        console.error("Gagal memuat filter data");
     }
 }
 
@@ -72,6 +81,8 @@ function resetFilter() {
     document.getElementById('start_date').value = today;
     document.getElementById('end_date').value = today;
     document.getElementById('warehouse_id').value = '';
+    const selectKitchen = document.getElementById('kitchen_id');
+    if(selectKitchen && selectKitchen.tagName === 'SELECT') selectKitchen.value = '';
     loadData(1);
 }
 
@@ -87,8 +98,9 @@ async function loadData(page = 1) {
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     const warehouseId = document.getElementById('warehouse_id').value;
+    const kitchenId = document.getElementById('kitchen_id').value;
     
-    const url = `logic.php?action=read&status=${currentStatus}&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}&page=${currentPage}`;
+    const url = `logic.php?action=read&status=${currentStatus}&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}&kitchen_id=${kitchenId}&page=${currentPage}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response && response.status === 'success') {
@@ -124,10 +136,13 @@ async function loadData(page = 1) {
                             <div class="text-xs text-secondary">${jam} WIB</div>
                         </td>
                         <td class="p-4 font-mono font-bold text-primary">${item.invoice_no}</td>
+                        <td class="p-4 text-xs font-bold uppercase tracking-widest text-slate-500">${item.asal_dapur || '-'}</td>
                         <td class="p-4 font-medium">${item.karyawan}</td>
                         <td class="p-4 font-bold text-slate-800">${item.produk}</td>
-                        <td class="p-4 text-center font-black text-lg text-slate-800">${formatNumber(item.quantity)}</td>
-                        <td class="p-4 text-center">${statusBadge}</td>
+                        <td class="p-4 text-center font-black text-lg text-slate-800">
+                            ${formatNumber(item.quantity)}<br>
+                            ${statusBadge}
+                        </td>
                     </tr>
                 `;
             });
@@ -170,18 +185,19 @@ async function cetakPDF() {
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     const warehouseId = document.getElementById('warehouse_id').value;
+    const kitchenId = document.getElementById('kitchen_id').value;
     
-    const url = `logic.php?action=read&status=${currentStatus}&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}&is_print=true`;
+    const url = `logic.php?action=read&status=${currentStatus}&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}&kitchen_id=${kitchenId}&is_print=true`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
         let labelStatus = '';
-        if(currentStatus === 'masuk_gudang') labelStatus = 'SELESAI (MASUK GUDANG)';
+        if(currentStatus === 'masuk_gudang') labelStatus = 'SELESAI (MASUK STORE)';
         else if(currentStatus === 'dibatalkan') labelStatus = 'DIBATALKAN (REFUND STOK)';
         else labelStatus = currentStatus.toUpperCase();
 
         const warehouseSelect = document.getElementById('warehouse_id');
-        const warehouseName = warehouseId ? warehouseSelect.options[warehouseSelect.selectedIndex].text : 'Semua Gudang';
+        const warehouseName = warehouseId ? warehouseSelect.options[warehouseSelect.selectedIndex].text : 'Semua Store';
 
         document.getElementById('print-subtitle').innerText = `Status Data: ${labelStatus}`;
         document.getElementById('print-periode').innerText = `Filter Tanggal: ${start || 'Awal'} s/d ${end || 'Akhir'} | Lokasi: ${warehouseName.toUpperCase()}`;
@@ -192,10 +208,10 @@ async function cetakPDF() {
                                     <th style="width:40px; text-align:center;">No</th>
                                     <th>Waktu</th>
                                     <th>No. Invoice</th>
-                                    <th>Dapur</th>
+                                    <th>Asal Dapur</th>
+                                    <th>Pembuat</th>
                                     <th>Produk</th>
                                     <th style="text-align:center;">Qty</th>
-                                    <th style="text-align:center;">Status</th>
                                 </tr>
                             </thead>
                             <tbody>`;
@@ -204,23 +220,15 @@ async function cetakPDF() {
              htmlPrint += `<tr><td colspan="7" style="text-align:center; padding:20px;">Tidak ada data.</td></tr>`;
         } else {
             response.data.forEach((item, i) => {
-                
-                let printStatus = '';
-                if(item.status === 'masuk_gudang') printStatus = 'Selesai';
-                else if(item.status === 'ditolak') printStatus = 'Ditolak';
-                else if(item.status === 'dibatalkan') printStatus = 'Dibatalkan';
-                else if(item.status === 'expired') printStatus = 'Expired';
-                else printStatus = 'Pending';
-
                 htmlPrint += `
                     <tr>
                         <td style="text-align:center;">${i + 1}</td>
                         <td>${item.created_at}</td>
                         <td>${item.invoice_no}</td>
+                        <td>${item.asal_dapur || '-'}</td>
                         <td>${item.karyawan}</td>
                         <td>${item.produk}</td>
                         <td style="text-align:center; font-weight:bold;">${formatNumber(item.quantity)}</td>
-                        <td style="text-align:center;">${printStatus}</td>
                     </tr>
                 `;
             });
@@ -240,5 +248,6 @@ function exportExcel() {
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     const warehouseId = document.getElementById('warehouse_id').value;
-    window.location.href = `logic.php?action=export_excel&status=${currentStatus}&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}`;
+    const kitchenId = document.getElementById('kitchen_id').value;
+    window.location.href = `logic.php?action=export_excel&status=${currentStatus}&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}&kitchen_id=${kitchenId}`;
 }

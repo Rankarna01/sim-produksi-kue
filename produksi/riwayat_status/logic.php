@@ -3,13 +3,24 @@ require_once '../../config/auth.php';
 require_once '../../config/database.php';
 checkRole(['admin', 'produksi', 'owner', 'auditor']);
 
+header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
+$user_id = $_SESSION['user_id'];
+$user_role = $_SESSION['role'];
+
+// 1. Cari tahu Admin Produksi ini dari dapur mana (jika dia role produksi)
+$userKitchenId = null;
+if ($user_role === 'produksi') {
+    $stmtUser = $pdo->prepare("SELECT kitchen_id FROM users WHERE id = ?");
+    $stmtUser->execute([$user_id]);
+    $userKitchenId = $stmtUser->fetchColumn();
+}
 
 try {
-    // FITUR BARU: Ambil data gudang untuk dropdown
     if ($action === 'init_filter') {
         $warehouses = $pdo->query("SELECT id, name FROM warehouses ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['status' => 'success', 'warehouses' => $warehouses]);
+        $kitchens = $pdo->query("SELECT id, name FROM kitchens ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'warehouses' => $warehouses, 'kitchens' => $kitchens]);
         exit;
     }
 
@@ -17,6 +28,7 @@ try {
     $start_date = $_GET['start_date'] ?? '';
     $end_date = $_GET['end_date'] ?? '';
     $warehouse_id = $_GET['warehouse_id'] ?? '';
+    $kitchen_id = $_GET['kitchen_id'] ?? ''; // Filter Baru: Dapur
     $is_print = $_GET['is_print'] ?? 'false';
     
     // Logika Tab Ditolak/Dibatalkan
@@ -28,10 +40,15 @@ try {
         $params = [$status];
     }
 
-    // Jika yang login adalah role produksi, hanya tampilkan data miliknya
-    if ($_SESSION['role'] === 'produksi') {
-        $whereClause .= " AND p.user_id = ?";
-        $params[] = $_SESSION['user_id'];
+    // PROTEKSI MULTI-TENANT: Jika Produksi, kunci datanya!
+    if ($userKitchenId) {
+        $whereClause .= " AND e.kitchen_id = ?";
+        $params[] = $userKitchenId;
+    } 
+    // Jika bukan produksi, tapi memfilter dapur
+    else if (!empty($kitchen_id)) {
+        $whereClause .= " AND e.kitchen_id = ?";
+        $params[] = $kitchen_id;
     }
 
     if (!empty($start_date)) {
@@ -42,8 +59,6 @@ try {
         $whereClause .= " AND DATE(p.created_at) <= ?";
         $params[] = $end_date;
     }
-    
-    // TAMBAHAN BARU: Filter Berdasarkan Gudang
     if (!empty($warehouse_id)) {
         $whereClause .= " AND p.warehouse_id = ?";
         $params[] = $warehouse_id;
@@ -54,13 +69,14 @@ try {
     // ============================================
     if ($action === 'export_excel') {
         $sql = "
-            SELECT p.created_at, p.invoice_no, COALESCE(e.name, u.name) as karyawan, 
+            SELECT p.created_at, p.invoice_no, COALESCE(e.name, u.name) as karyawan, k.name as asal_dapur, 
                    pr.name as produk, d.quantity, p.status 
             FROM productions p
             JOIN production_details d ON p.id = d.production_id
             JOIN products pr ON d.product_id = pr.id
             JOIN users u ON p.user_id = u.id
             LEFT JOIN employees e ON p.employee_id = e.id
+            LEFT JOIN kitchens k ON e.kitchen_id = k.id
             $whereClause
             ORDER BY p.created_at DESC
         ";
@@ -75,7 +91,7 @@ try {
         $output = fopen('php://output', 'w');
         fputs($output, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
 
-        fputcsv($output, ['No', 'Waktu', 'No. Invoice', 'Karyawan', 'Nama Produk', 'Jumlah (Pcs)', 'Status Aktual']);
+        fputcsv($output, ['No', 'Waktu', 'No. Invoice', 'Asal Dapur', 'Karyawan', 'Nama Produk', 'Jumlah (Pcs)', 'Status Aktual']);
         
         $no = 1;
         foreach ($data as $row) {
@@ -86,6 +102,7 @@ try {
                 $no++,
                 $row['created_at'],
                 $row['invoice_no'],
+                $row['asal_dapur'] ?? '-',
                 $row['karyawan'],
                 $row['produk'],
                 $row['quantity'],
@@ -104,22 +121,28 @@ try {
         $limit = 15; 
         $offset = ($page - 1) * $limit;
 
-        $countStmt = $pdo->prepare("SELECT COUNT(d.id) FROM productions p JOIN production_details d ON p.id = d.production_id $whereClause");
+        $countStmt = $pdo->prepare("
+            SELECT COUNT(d.id) 
+            FROM productions p 
+            JOIN production_details d ON p.id = d.production_id 
+            LEFT JOIN employees e ON p.employee_id = e.id
+            $whereClause
+        ");
         $countStmt->execute($params);
         $total_data = $countStmt->fetchColumn();
         $total_pages = ceil($total_data / $limit);
 
-        // Jika perintahnya untuk ngeprint PDF, lepaskan ikatan Limit agar semua data tampil
         $limitClause = ($is_print === 'true') ? "" : "LIMIT $limit OFFSET $offset";
         
         $sql = "
-            SELECT p.created_at, p.invoice_no, COALESCE(e.name, u.name) as karyawan, 
+            SELECT p.created_at, p.invoice_no, COALESCE(e.name, u.name) as karyawan, k.name as asal_dapur, 
                    pr.name as produk, d.quantity, p.status 
             FROM productions p
             JOIN production_details d ON p.id = d.production_id
             JOIN products pr ON d.product_id = pr.id
             JOIN users u ON p.user_id = u.id
             LEFT JOIN employees e ON p.employee_id = e.id
+            LEFT JOIN kitchens k ON e.kitchen_id = k.id
             $whereClause
             ORDER BY p.created_at DESC 
             $limitClause
@@ -128,7 +151,6 @@ try {
         $stmt->execute($params);
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        header('Content-Type: application/json');
         echo json_encode([
             'status' => 'success', 
             'data' => $data,
@@ -140,7 +162,6 @@ try {
     }
 
 } catch (PDOException $e) {
-    header('Content-Type: application/json');
     echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . $e->getMessage()]);
 }
 ?>

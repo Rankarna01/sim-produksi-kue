@@ -5,14 +5,15 @@ $out_id = $_GET['id'] ?? '';
 
 if (empty($out_id)) die("Data tidak valid.");
 
-// PERBAIKAN: Join dengan tabel productions untuk mendapatkan p.created_at (Tgl Produksi Awal)
 $stmtHead = $pdo->prepare("
     SELECT o.invoice_no as out_id, o.origin_invoice, o.created_at as tgl_keluar, o.reason, o.notes, 
            COALESCE(e.name, u.name) as karyawan,
-           p.created_at as tgl_produksi
+           p.created_at as tgl_produksi,
+           k.name as asal_dapur
     FROM product_outs o
     JOIN users u ON o.user_id = u.id
     LEFT JOIN employees e ON o.employee_id = e.id
+    LEFT JOIN kitchens k ON e.kitchen_id = k.id
     LEFT JOIN productions p ON o.origin_invoice = p.invoice_no
     WHERE o.invoice_no = ?
     LIMIT 1
@@ -76,7 +77,7 @@ $barcode_str = $header['out_id'];
     
     <div class="text-center">
         <div class="title">ROTIKU - PRODUK KELUAR</div>
-        <div>Bukti Penarikan Gudang</div>
+        <div>Bukti Penarikan Store</div>
     </div>
     
     <div class="divider"></div>
@@ -86,6 +87,7 @@ $barcode_str = $header['out_id'];
         <tr><td>Tgl Ditarik</td><td>: <?= date('d/m/y H:i', strtotime($header['tgl_keluar'])) ?></td></tr>
         <tr><td>ID Tarik</td><td>: <?= $header['out_id'] ?></td></tr>
         <tr><td>Inv Asal</td><td>: <?= $header['origin_invoice'] ?></td></tr>
+        <tr><td>Dapur</td><td>: <?= $header['asal_dapur'] ?? '-' ?></td></tr>
         <tr><td>Oleh</td><td>: <?= $header['karyawan'] ?></td></tr>
         <tr><td>Alasan</td><td>: <?= strtoupper($header['reason']) ?></td></tr>
     </table>
@@ -122,7 +124,7 @@ $barcode_str = $header['out_id'];
     <div class="divider" style="margin-top: 15px;"></div>
     
     <div class="text-center" style="font-size: 11px;">
-        Struk ini adalah bukti sah bahwa barang telah dikeluarkan dari sistem stok karena <?= strtolower($header['reason']) ?>.
+        Struk ini adalah bukti sah bahwa barang telah dikeluarkan dari sistem stok Store karena <?= strtolower($header['reason']) ?>.
     </div>
 
     <div class="barcode-container">

@@ -57,23 +57,35 @@ checkRole(['admin', 'produksi', 'owner', 'auditor']);
                 </div>
 
                 <div class="bg-surface p-5 rounded-2xl shadow-sm border border-slate-200 mb-6">
-                    <form id="formFilter" class="flex flex-col md:flex-row gap-4 items-end">
-                        <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Tanggal Mulai</label>
-                                <input type="date" id="start_date" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Tanggal Akhir</label>
-                                <input type="date" id="end_date" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Lokasi Gudang</label>
-                                <select id="warehouse_id" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm bg-white">
-                                    <option value="">Semua Gudang</option>
-                                    </select>
-                            </div>
+                    <form id="formFilter" class="flex flex-col md:flex-row gap-4 items-end flex-wrap">
+                        
+                        <div class="flex-1 w-full min-w-[150px]">
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Tanggal Mulai</label>
+                            <input type="date" id="start_date" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm bg-white">
                         </div>
+                        <div class="flex-1 w-full min-w-[150px]">
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Tanggal Akhir</label>
+                            <input type="date" id="end_date" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm bg-white">
+                        </div>
+                        
+                        <?php if($_SESSION['role'] !== 'produksi'): ?>
+                        <div class="flex-1 w-full min-w-[150px]">
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Asal Dapur</label>
+                            <select id="kitchen_id" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm bg-white">
+                                <option value="">Semua Dapur</option>
+                            </select>
+                        </div>
+                        <?php else: ?>
+                            <input type="hidden" id="kitchen_id" value="">
+                        <?php endif; ?>
+
+                        <div class="flex-1 w-full min-w-[150px]">
+                            <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Store Tujuan</label>
+                            <select id="warehouse_id" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none text-sm bg-white">
+                                <option value="">Semua Store</option>
+                            </select>
+                        </div>
+                        
                         <div class="w-full md:w-auto flex gap-2">
                             <button type="submit" class="flex-1 bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-sm">
                                 Filter
@@ -105,13 +117,14 @@ checkRole(['admin', 'produksi', 'owner', 'auditor']);
 
                 <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse min-w-[800px]">
+                        <table class="w-full text-left border-collapse min-w-[900px]">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-200 text-xs text-secondary uppercase tracking-wider">
                                     <th class="p-4 font-bold w-12 text-center">No</th>
                                     <th class="p-4 font-bold">Waktu</th>
                                     <th class="p-4 font-bold">No. Invoice</th>
-                                    <th class="p-4 font-bold">Pembuat (Dapur)</th>
+                                    <th class="p-4 font-bold">Asal Dapur</th>
+                                    <th class="p-4 font-bold">Pembuat</th>
                                     <th class="p-4 font-bold">Nama Produk</th>
                                     <th class="p-4 font-bold text-center">Qty</th>
                                 </tr>
@@ -137,6 +150,7 @@ checkRole(['admin', 'produksi', 'owner', 'auditor']);
         </main>
     </div>
 
+    <script>const currentUserRole = "<?= $_SESSION['role'] ?>";</script>
     <?php include '../../components/footer.php'; ?>
     <script src="ajax.js?v=<?= time() ?>"></script>
 </body>
