@@ -33,13 +33,14 @@ checkRole(['produksi']);
 
             <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[900px]">
+                    <table class="w-full text-left border-collapse min-w-[1000px]">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200 text-sm text-secondary uppercase tracking-wider">
                                 <th class="p-4 font-semibold text-center w-16">No</th>
                                 <th class="p-4 font-semibold">Waktu Tarik</th>
                                 <th class="p-4 font-semibold">ID Penarikan (OUT)</th>
                                 <th class="p-4 font-semibold">No. Invoice Asal</th>
+                                <th class="p-4 font-semibold">Asal Dapur</th>
                                 <th class="p-4 font-semibold">Produk</th>
                                 <th class="p-4 font-semibold text-center">Jumlah Tarik</th>
                                 <th class="p-4 font-semibold text-center">Alasan</th>
@@ -48,7 +49,7 @@ checkRole(['produksi']);
                             </tr>
                         </thead>
                         <tbody id="table-body" class="text-sm divide-y divide-slate-100">
-                            <tr><td colspan="9" class="p-8 text-center text-secondary">Memuat data...</td></tr>
+                            <tr><td colspan="10" class="p-8 text-center text-secondary">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -120,7 +121,7 @@ checkRole(['produksi']);
                         <div class="border border-slate-200 rounded-xl overflow-hidden">
                             <div class="bg-slate-100 px-4 py-2 border-b border-slate-200">
                                 <p class="text-xs font-bold text-slate-600 uppercase tracking-wider">Daftar Produk di Struk Ini</p>
-                                <p class="text-[10px] text-slate-500 mt-0.5">Isi angka pada produk yang ingin dibuang saja. Kosongkan jika produk masih utuh.</p>
+                                <p class="text-[10px] text-slate-500 mt-0.5">Isi angka pada produk yang ingin ditarik saja. Kosongkan jika utuh.</p>
                             </div>
                             <div id="product-list-container" class="divide-y divide-slate-100 bg-white">
                                 </div>

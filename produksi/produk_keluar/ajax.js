@@ -89,14 +89,12 @@ async function cariInvoice() {
         const details = response.details;
         const tgl_prod = new Date(response.tgl_produksi);
         
-        // Format Tgl Produksi
         const fmtTglProd = tgl_prod.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + tgl_prod.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
         
         document.getElementById('origin_invoice').value = invoice_no;
         document.getElementById('info_invoice').innerText = invoice_no;
         document.getElementById('info_tgl_produksi').innerText = fmtTglProd;
         
-        // RENDER BARIS PRODUK
         let htmlList = '';
         details.forEach((d) => {
             htmlList += `
@@ -126,14 +124,14 @@ async function cariInvoice() {
 
 async function loadHistory() {
     const tbody = document.getElementById('table-body');
-    tbody.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
     
     const response = await fetchAjax('logic.php?action=read', 'GET');
     
     if (response.status === 'success') {
         let html = '';
         if (response.data.length === 0) {
-            html = '<tr><td colspan="9" class="p-8 text-center text-secondary">Belum ada riwayat pencatatan produk ditarik/keluar.</td></tr>';
+            html = '<tr><td colspan="10" class="p-8 text-center text-secondary">Belum ada riwayat pencatatan produk ditarik/keluar.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 const dateObj = new Date(item.created_at);
@@ -156,6 +154,7 @@ async function loadHistory() {
                         </td>
                         <td class="p-4 font-mono text-[10px] font-bold text-slate-400">${item.out_id}</td>
                         <td class="p-4 font-mono text-xs font-bold text-primary">${item.origin_invoice}</td>
+                        <td class="p-4 text-xs font-bold text-slate-500 uppercase">${item.kitchen_name || '-'}</td>
                         <td class="p-4 font-bold text-slate-800">${item.product_name}</td>
                         <td class="p-4 text-center font-black text-danger text-lg">-${item.quantity}</td>
                         <td class="p-4 text-center">${reasonBadge}</td>
