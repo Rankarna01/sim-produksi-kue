@@ -7,17 +7,37 @@ header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
 
 try {
-    if ($action === 'init_form') {
+   if ($action === 'init_form') {
         $products = $pdo->query("SELECT id, name, code FROM products ORDER BY name ASC")->fetchAll();
         $warehouses = $pdo->query("SELECT id, name FROM warehouses ORDER BY name ASC")->fetchAll();
         
-        // PERBAIKAN: Ambil nama dapur sekalian agar bisa ditampilkan di dropdown (e.g., Randy - Dapur 1)
-        $employees = $pdo->query("
-            SELECT e.id, e.name as emp_name, k.name as kitchen_name 
-            FROM employees e 
-            LEFT JOIN kitchens k ON e.kitchen_id = k.id 
-            ORDER BY e.name ASC
-        ")->fetchAll(PDO::FETCH_ASSOC);
+        // 1. Cari tahu admin yang sedang login ini terikat ke Dapur mana
+        $stmtUser = $pdo->prepare("SELECT kitchen_id FROM users WHERE id = ?");
+        $stmtUser->execute([$_SESSION['user_id']]);
+        $userKitchenId = $stmtUser->fetchColumn();
+
+        // 2. Ambil Karyawan HANYA dari Dapur tersebut
+        if ($userKitchenId) {
+            // Jika dia Admin Dapur (punya kitchen_id), filter karyawannya!
+            $stmtEmp = $pdo->prepare("
+                SELECT e.id, e.name as emp_name, k.name as kitchen_name 
+                FROM employees e 
+                LEFT JOIN kitchens k ON e.kitchen_id = k.id 
+                WHERE e.kitchen_id = ?
+                ORDER BY e.name ASC
+            ");
+            $stmtEmp->execute([$userKitchenId]);
+        } else {
+            // Jika dia Owner/Global (tidak punya kitchen_id), tampilkan semua
+            $stmtEmp = $pdo->query("
+                SELECT e.id, e.name as emp_name, k.name as kitchen_name 
+                FROM employees e 
+                LEFT JOIN kitchens k ON e.kitchen_id = k.id 
+                ORDER BY e.name ASC
+            ");
+        }
+        
+        $employees = $stmtEmp->fetchAll(PDO::FETCH_ASSOC);
         
         echo json_encode([
             'status' => 'success', 

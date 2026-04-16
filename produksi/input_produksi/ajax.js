@@ -16,9 +16,9 @@ async function initForm() {
 
         let optEmployee = '<option value="">-- Pilih Nama Anda --</option>';
         res.employees.forEach(e => {
-            // PERBAIKAN: Menampilkan nama dapur di dropdown karyawan
+            // Karena datanya sudah difilter oleh backend, kita tampilkan lebih rapi
             const dapurInfo = e.kitchen_name ? e.kitchen_name : "Belum diatur";
-            optEmployee += `<option value="${e.id}">${e.emp_name} - ${dapurInfo}</option>`;
+            optEmployee += `<option value="${e.id}">${e.emp_name} (${dapurInfo})</option>`;
         });
         document.getElementById('employee_id').innerHTML = optEmployee;
 
