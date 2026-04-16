@@ -45,18 +45,19 @@ function resetFormUser() {
     document.getElementById('modal-title-user').innerText = 'Tambah Akun Sistem';
     document.getElementById('password_input').required = true;
     document.getElementById('password_help').innerText = 'Wajib diisi untuk akun baru.';
+    document.getElementById('user_kitchen_id').value = '';
 }
 
 async function loadUsers() {
     const tbody = document.getElementById('table-user');
-    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
     
     const response = await fetchAjax('logic.php?action=read_users', 'GET');
     
     if (response.status === 'success') {
         let html = '';
         if (response.data.length === 0) {
-            html = '<tr><td colspan="5" class="p-8 text-center text-secondary">Belum ada data user.</td></tr>';
+            html = '<tr><td colspan="6" class="p-8 text-center text-secondary">Belum ada data user.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
                 const namaJabatan = item.role_name || item.role_slug; 
@@ -66,6 +67,11 @@ async function loadUsers() {
                 else if(item.role_slug === 'produksi') roleBadge = `<span class="bg-accent/10 text-accent border border-accent/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
                 else if(item.role_slug === 'admin') roleBadge = `<span class="bg-success/10 text-success border border-success/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
                 else if(item.role_slug === 'auditor') roleBadge = `<span class="bg-indigo-100 text-indigo-600 border border-indigo-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
+
+                // PERBAIKAN: Menampilkan Info Dapur di Tabel Akun User
+                let kitchenBadge = item.kitchen_name 
+                    ? `<span class="text-xs font-bold text-slate-500 uppercase tracking-widest"><i class="fa-solid fa-store mr-1"></i> ${item.kitchen_name}</span>`
+                    : `<span class="text-xs font-semibold text-slate-400 italic">Global (Akses Semua)</span>`;
 
                 let btnHapus = '';
                 if (currentUserRole === 'owner') {
@@ -78,6 +84,7 @@ async function loadUsers() {
                         <td class="p-4 font-bold text-slate-800">${item.name}</td>
                         <td class="p-4 text-secondary font-mono text-sm">${item.username}</td>
                         <td class="p-4 text-center">${roleBadge}</td>
+                        <td class="p-4">${kitchenBadge}</td>
                         <td class="p-4 text-center btn-aksi">
                             <div class="flex items-center justify-center gap-2">
                                 <button onclick='editUser(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center" title="Edit Akun"><i class="fa-solid fa-pen text-xs"></i></button>
@@ -115,6 +122,9 @@ function editUser(item) {
     
     const roleSelect = document.getElementById('role_input');
     if(roleSelect) roleSelect.value = item.role_slug;
+
+    // Set value kitchen
+    document.getElementById('user_kitchen_id').value = item.kitchen_id || "";
     
     document.getElementById('password_input').value = '';
     document.getElementById('password_input').required = false;
@@ -222,7 +232,7 @@ function editEmployee(item) {
     document.getElementById('emp_kitchen').value = item.kitchen_id;
     
     document.getElementById('emp_pin').value = '';
-    document.getElementById('emp_pin').required = false; // Optional saat edit
+    document.getElementById('emp_pin').required = false; 
     document.getElementById('pin_help').innerText = 'Kosongkan jika tidak ingin mengubah PIN.';
     
     document.getElementById('modal-title-karyawan').innerText = 'Edit Nama Karyawan';

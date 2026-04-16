@@ -8,7 +8,7 @@ $action = $_GET['action'] ?? '';
 
 try {
     // ==========================================
-    // BAGIAN 1: MANAJEMEN AKUN LOGIN (USERS) (100% ASLI)
+    // BAGIAN 1: MANAJEMEN AKUN LOGIN (USERS)
     // ==========================================
     if ($action === 'get_roles') {
         $stmt = $pdo->query("SELECT role_slug, role_name FROM roles ORDER BY role_name ASC");
@@ -17,10 +17,13 @@ try {
     }
 
     if ($action === 'read_users') {
+        // PERBAIKAN: Menambahkan join ke tabel kitchens
         $sql = "
-            SELECT u.id, u.name, u.username, u.role as role_slug, r.role_name 
+            SELECT u.id, u.name, u.username, u.role as role_slug, u.kitchen_id, 
+                   r.role_name, k.name as kitchen_name 
             FROM users u 
             LEFT JOIN roles r ON u.role = r.role_slug 
+            LEFT JOIN kitchens k ON u.kitchen_id = k.id
             ORDER BY u.id DESC
         ";
         $stmt = $pdo->query($sql);
@@ -34,9 +37,15 @@ try {
         $username = strtolower(trim($_POST['username'])); 
         $password = $_POST['password'] ?? '';
         $role = $_POST['role'];
+        $kitchen_id = $_POST['kitchen_id'] ?? null;
 
         if (empty($name) || empty($username) || empty($role)) {
             echo json_encode(['status' => 'error', 'message' => 'Nama, Username, dan Jabatan wajib diisi!']); exit;
+        }
+
+        // Paksa NULL jika string kosong agar masuk ke database dengan benar
+        if ($kitchen_id === "") {
+            $kitchen_id = null;
         }
 
         if (empty($id)) {
@@ -50,8 +59,8 @@ try {
             }
 
             $hashed = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO users (name, username, password, role) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$name, $username, $hashed, $role]);
+            $stmt = $pdo->prepare("INSERT INTO users (name, username, password, role, kitchen_id) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$name, $username, $hashed, $role, $kitchen_id]);
             echo json_encode(['status' => 'success', 'message' => 'Akun berhasil ditambahkan!']);
         } else {
             $cek = $pdo->prepare("SELECT id FROM users WHERE username = ? AND id != ?");
@@ -62,11 +71,11 @@ try {
 
             if (!empty($password)) {
                 $hashed = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("UPDATE users SET name=?, username=?, password=?, role=? WHERE id=?");
-                $stmt->execute([$name, $username, $hashed, $role, $id]);
+                $stmt = $pdo->prepare("UPDATE users SET name=?, username=?, password=?, role=?, kitchen_id=? WHERE id=?");
+                $stmt->execute([$name, $username, $hashed, $role, $kitchen_id, $id]);
             } else {
-                $stmt = $pdo->prepare("UPDATE users SET name=?, username=?, role=? WHERE id=?");
-                $stmt->execute([$name, $username, $role, $id]);
+                $stmt = $pdo->prepare("UPDATE users SET name=?, username=?, role=?, kitchen_id=? WHERE id=?");
+                $stmt->execute([$name, $username, $role, $kitchen_id, $id]);
             }
             echo json_encode(['status' => 'success', 'message' => 'Akun berhasil diperbarui!']);
         }
@@ -92,7 +101,6 @@ try {
     // BAGIAN 2: MANAJEMEN KARYAWAN DAPUR DENGAN PIN & LOKASI
     // ==========================================
     if ($action === 'read_employees') {
-        // PERBAIKAN: JOIN dengan tabel kitchens untuk menampilkan nama dapur
         $sql = "
             SELECT e.id, e.name, e.kitchen_id, e.created_at, k.name as kitchen_name 
             FROM employees e 
@@ -115,7 +123,6 @@ try {
         }
 
         if (empty($id)) {
-            // INSERT BARU (Wajib ada PIN 4 angka)
             if(empty($pin) || !preg_match('/^\d{4}$/', $pin)) {
                 echo json_encode(['status' => 'error', 'message' => 'PIN otorisasi wajib diisi dengan 4 Angka!']); exit;
             }
@@ -123,7 +130,6 @@ try {
             $stmt->execute([$name, $kitchen_id, $pin]);
             echo json_encode(['status' => 'success', 'message' => 'Karyawan berhasil didaftarkan beserta PIN-nya!']);
         } else {
-            // EDIT
             if(!empty($pin)) {
                 if(!preg_match('/^\d{4}$/', $pin)) {
                     echo json_encode(['status' => 'error', 'message' => 'PIN harus 4 angka!']); exit;
@@ -131,7 +137,6 @@ try {
                 $stmt = $pdo->prepare("UPDATE employees SET name=?, kitchen_id=?, pin=? WHERE id=?");
                 $stmt->execute([$name, $kitchen_id, $pin, $id]);
             } else {
-                // Jika PIN dikosongkan saat edit, update data lain saja
                 $stmt = $pdo->prepare("UPDATE employees SET name=?, kitchen_id=? WHERE id=?");
                 $stmt->execute([$name, $kitchen_id, $id]);
             }
