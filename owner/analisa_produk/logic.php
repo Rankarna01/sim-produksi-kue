@@ -7,10 +7,11 @@ header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
 
 try {
-    // FITUR BARU: Tarik data Master Gudang untuk Dropdown
+    // FITUR BARU: Tarik data Master Store & Dapur untuk Dropdown
     if ($action === 'init_filter') {
         $warehouses = $pdo->query("SELECT id, name FROM warehouses ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['status' => 'success', 'warehouses' => $warehouses]);
+        $kitchens = $pdo->query("SELECT id, name FROM kitchens ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'warehouses' => $warehouses, 'kitchens' => $kitchens]);
         exit;
     }
 
@@ -18,23 +19,34 @@ try {
         $start_date = $_GET['start_date'] ?? date('Y-m-01');
         $end_date = $_GET['end_date'] ?? date('Y-m-t');
         $warehouse_id = $_GET['warehouse_id'] ?? '';
+        $kitchen_id = $_GET['kitchen_id'] ?? ''; // Filter Baru: Dapur
 
-        // Query Dasar untuk Produksi
+        // Query Dasar untuk Produksi (Join ke employees untuk filter Dapur)
         $prod_where = "p.status IN ('masuk_gudang', 'expired') AND DATE(p.created_at) >= ? AND DATE(p.created_at) <= ?";
         $prod_params = [$start_date, $end_date];
+        $prod_join = "JOIN productions p ON d.production_id = p.id LEFT JOIN employees e ON p.employee_id = e.id";
 
-        // Query Dasar untuk Barang Keluar (Terbuang)
+        // Query Dasar untuk Barang Keluar (Terbuang) (Join ke productions & employees untuk filter Dapur)
         $out_where = "o.reason IN ('Expired', 'Rusak') AND DATE(o.created_at) >= ? AND DATE(o.created_at) <= ?";
         $out_params = [$start_date, $end_date];
+        $out_join = "LEFT JOIN productions prod ON o.origin_invoice = prod.invoice_no LEFT JOIN employees e_prod ON prod.employee_id = e_prod.id";
 
-        // Jika Filter Gudang Aktif, tambahkan kondisi ke masing-masing sub-query
+        // Jika Filter Store Aktif
         if (!empty($warehouse_id)) {
             $prod_where .= " AND p.warehouse_id = ?";
             $prod_params[] = $warehouse_id;
 
-            // Numpang ke tabel productions (prod) untuk mencari gudang asal produk keluar
             $out_where .= " AND prod.warehouse_id = ?";
             $out_params[] = $warehouse_id;
+        }
+
+        // Jika Filter Dapur Aktif
+        if (!empty($kitchen_id)) {
+            $prod_where .= " AND e.kitchen_id = ?";
+            $prod_params[] = $kitchen_id;
+
+            $out_where .= " AND e_prod.kitchen_id = ?";
+            $out_params[] = $kitchen_id;
         }
 
         // Gabungkan semua parameter array
@@ -51,14 +63,14 @@ try {
             LEFT JOIN (
                 SELECT d.product_id, SUM(d.quantity) as qty
                 FROM production_details d
-                JOIN productions p ON d.production_id = p.id
+                $prod_join
                 WHERE $prod_where
                 GROUP BY d.product_id
             ) prod_data ON pr.id = prod_data.product_id
             LEFT JOIN (
                 SELECT o.product_id, SUM(o.quantity) as qty
                 FROM product_outs o
-                LEFT JOIN productions prod ON o.origin_invoice = prod.invoice_no
+                $out_join
                 WHERE $out_where
                 GROUP BY o.product_id
             ) out_data ON pr.id = out_data.product_id

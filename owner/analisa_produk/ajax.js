@@ -1,23 +1,30 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    // Muat daftar gudang untuk dropdown filter
+    // Muat daftar filter dropdown
     await loadFilterGudang();
     applyQuickFilter(); 
 });
 
-// FITUR BARU: Ambil Daftar Gudang dari Server
+// FITUR BARU: Ambil Daftar Store dan Dapur dari Server
 async function loadFilterGudang() {
     try {
         const response = await fetchAjax('logic.php?action=init_filter', 'GET');
         if (response.status === 'success') {
-            const selectGudang = document.getElementById('warehouse_id');
-            let options = '<option value="">Semua Gudang</option>';
+            const selectStore = document.getElementById('warehouse_id');
+            let optStore = '<option value="">Semua Store</option>';
             response.warehouses.forEach(w => {
-                options += `<option value="${w.id}">${w.name}</option>`;
+                optStore += `<option value="${w.id}">${w.name}</option>`;
             });
-            selectGudang.innerHTML = options;
+            if(selectStore) selectStore.innerHTML = optStore;
+
+            const selectKitchen = document.getElementById('kitchen_id');
+            let optKitchen = '<option value="">Semua Dapur</option>';
+            response.kitchens.forEach(k => {
+                optKitchen += `<option value="${k.id}">${k.name}</option>`;
+            });
+            if(selectKitchen) selectKitchen.innerHTML = optKitchen;
         }
     } catch (e) {
-        console.error("Gagal memuat filter gudang");
+        console.error("Gagal memuat filter dropdown");
     }
 }
 
@@ -76,15 +83,18 @@ async function loadAnalisa() {
     const start = document.getElementById('start_date').value;
     const end = document.getElementById('end_date').value;
     
-    // Ambil Filter Gudang
+    // Ambil Filter Store & Dapur
     const warehouseSelect = document.getElementById('warehouse_id');
     const warehouseId = warehouseSelect.value;
-    const warehouseName = warehouseSelect.options[warehouseSelect.selectedIndex].text;
-    
-    document.getElementById('print-periode').innerText = `Periode: ${start || 'Awal'} s/d ${end || 'Akhir'} | Lokasi: ${warehouseName.toUpperCase()}`;
+    const warehouseName = warehouseId ? warehouseSelect.options[warehouseSelect.selectedIndex].text : 'Semua Store';
 
-    // Kirimkan parameter gudang ke URL
-    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}`;
+    const kitchenSelect = document.getElementById('kitchen_id');
+    const kitchenId = kitchenSelect.value;
+    const kitchenName = kitchenId ? kitchenSelect.options[kitchenSelect.selectedIndex].text : 'Semua Dapur';
+    
+    document.getElementById('print-periode').innerText = `Periode: ${start || 'Awal'} s/d ${end || 'Akhir'} | Dapur: ${kitchenName.toUpperCase()} | Store: ${warehouseName.toUpperCase()}`;
+
+    const url = `logic.php?action=read&start_date=${start}&end_date=${end}&warehouse_id=${warehouseId}&kitchen_id=${kitchenId}`;
     const response = await fetchAjax(url, 'GET');
     
     if (response.status === 'success') {
@@ -103,7 +113,7 @@ async function loadAnalisa() {
                 
                 // Indikator Warna Berdasarkan Persentase Kerugian (Loss Rate)
                 let statusBadge = '';
-                let rankTrophy = index < 3 ? `<i class="fa-solid fa-trophy text-danger opacity-50 ml-1"></i>` : ''; // Top 3 paling rugi
+                let rankTrophy = index < 3 ? `<i class="fa-solid fa-trophy text-danger opacity-50 ml-1"></i>` : ''; 
 
                 if (item.loss_rate >= 15) {
                     statusBadge = `<span class="bg-danger/10 text-danger border border-danger/20 px-3 py-1 rounded-full text-[11px] font-bold uppercase print:border-none print:text-black print:p-0"><i class="fa-solid fa-skull-crossbones mr-1"></i> Bahaya (Kurangi Prod)</span>`;
