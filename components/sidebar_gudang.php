@@ -31,6 +31,30 @@ function getNavClass($path, $current_uri) {
 
         <div class="my-4 border-t border-slate-50"></div>
 
+        <div x-data="{ open: <?= strpos($current_uri, 'produk') !== false ? 'true' : 'false' ?> }">
+            <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all text-slate-500 hover:bg-slate-50 hover:text-blue-600 font-medium">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-cube w-5 text-center text-indigo-500"></i>
+                    <span class="text-sm">Produk & Master</span>
+                </div>
+                <i class="fa-solid fa-chevron-down text-[10px] transition-transform" :class="open ? 'rotate-180' : ''"></i>
+            </button>
+            <div x-show="open" x-transition class="mt-1 ml-4 pl-2 border-l-2 border-slate-100 space-y-1">
+                <a href="<?= BASE_URL ?>gudang/produk/inventory/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/produk/inventory/', $current_uri) ?>">
+                    <i class="fa-solid fa-boxes-stacked text-slate-400"></i> Inventory & Stok
+                </a>
+                <a href="<?= BASE_URL ?>gudang/produk/kategori/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/produk/kategori/', $current_uri) ?>">
+                    <i class="fa-solid fa-tags text-slate-400"></i> Master Kategori
+                </a>
+                <a href="<?= BASE_URL ?>gudang/produk/satuan/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/produk/satuan/', $current_uri) ?>">
+                    <i class="fa-solid fa-weight-scale text-slate-400"></i> Master Satuan
+                </a>
+                <a href="<?= BASE_URL ?>gudang/produk/lokasi/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/produk/lokasi/', $current_uri) ?>">
+                    <i class="fa-solid fa-location-dot text-slate-400"></i> Master Lokasi Rak
+                </a>
+            </div>
+        </div>
+
         <div x-data="{ open: <?= strpos($current_uri, 'transaksi') !== false ? 'true' : 'false' ?> }">
             <button @click="open = !open" class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all text-slate-500 hover:bg-slate-50 hover:text-blue-600 font-medium">
                 <div class="flex items-center gap-3">
