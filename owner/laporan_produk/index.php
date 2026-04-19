@@ -1,6 +1,6 @@
 <?php
 require_once '../../config/auth.php';
-checkPermission('laporan_produk');
+checkPermission('laporan_produk_jadi');
 ?>
 <!DOCTYPE html>
 <html lang="id">

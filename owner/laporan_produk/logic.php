@@ -1,7 +1,7 @@
 <?php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
-checkPermission('laporan_produk');
+checkPermission('laporan_produk_jadi');
 
 $action = $_GET['action'] ?? '';
 
