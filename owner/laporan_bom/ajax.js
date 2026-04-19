@@ -28,7 +28,7 @@ async function loadLaporan() {
         } else {
             response.data.forEach((item, index) => {
                 const totalBahan = item.materials.length;
-                // Encode Data Bahan menjadi string aman agar bisa dimasukkan ke dalam elemen HTML
+                // Encode Data Bahan menjadi string aman agar bisa dimasukkan ke dalam atribut HTML
                 const bahanEncoded = encodeURIComponent(JSON.stringify(item.materials));
 
                 html += `
@@ -37,7 +37,7 @@ async function loadLaporan() {
                         <td class="p-4 font-bold text-slate-800 text-base">${item.product_name}</td>
                         <td class="p-4 text-center">
                             <span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg text-xs font-bold border border-indigo-100">
-                                ${totalBahan} Bahan Baku
+                                ${totalBahan} Bahan Baku Induk
                             </span>
                         </td>
                         <td class="p-4 text-center">
@@ -45,8 +45,8 @@ async function loadLaporan() {
                                 data-produk="${item.product_name}" 
                                 data-bahan="${bahanEncoded}" 
                                 onclick="bukaDetail(this)" 
-                                class="bg-primary/10 hover:bg-primary text-primary hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 mx-auto">
-                                <i class="fa-solid fa-eye"></i> Detail
+                                class="bg-primary/10 hover:bg-primary text-primary hover:text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 mx-auto shadow-sm">
+                                <i class="fa-solid fa-eye"></i> Detail Resep
                             </button>
                         </td>
                     </tr>
@@ -72,7 +72,7 @@ function bukaDetail(btnElement) {
         htmlBahan += `
             <tr class="hover:bg-slate-50 transition-colors">
                 <td class="p-3 text-center text-slate-400 text-xs">${i + 1}</td>
-                <td class="p-3 font-semibold text-slate-700">${m.material_name}</td>
+                <td class="p-3 font-semibold text-slate-700 uppercase text-xs">${m.material_name}</td>
                 <td class="p-3 text-right font-black text-primary">${m.quantity_needed} <span class="text-[10px] text-slate-400 uppercase tracking-widest font-bold ml-1">${m.unit_used}</span></td>
             </tr>
         `;
@@ -109,7 +109,7 @@ async function cetakPDF() {
                                 <thead>
                                     <tr>
                                         <th style="width:50px; text-align:center;">No</th>
-                                        <th>Nama Bahan Baku</th>
+                                        <th>Nama Bahan Baku Induk</th>
                                         <th style="text-align:right;">Takaran (Per 1 Pcs)</th>
                                     </tr>
                                 </thead>
@@ -119,7 +119,7 @@ async function cetakPDF() {
                     htmlPrint += `
                         <tr>
                             <td style="text-align:center;">${i + 1}</td>
-                            <td>${m.material_name}</td>
+                            <td style="text-transform: uppercase;">${m.material_name}</td>
                             <td style="text-align:right; font-weight:bold;">${m.quantity_needed} ${m.unit_used}</td>
                         </tr>
                     `;

@@ -8,23 +8,25 @@ $action = $_GET['action'] ?? '';
 try {
     $search = $_GET['search'] ?? '';
 
+    // PERBAIKAN KRUSIAL: Join ke tabel materials_stocks (Gudang Pilar) 
+    // karena master resep (BOM) sekarang mengacu ke sana.
     $sql = "
-        SELECT p.name AS product_name, m.name AS material_name, b.quantity_needed, b.unit_used 
+        SELECT p.name AS product_name, ms.material_name AS material_name, b.quantity_needed, b.unit_used 
         FROM bom b
         JOIN products p ON b.product_id = p.id
-        JOIN materials m ON b.material_id = m.id
+        JOIN materials_stocks ms ON b.material_id = ms.id
         WHERE 1=1
     ";
     
     $params = [];
 
     if (!empty($search)) {
-        $sql .= " AND (p.name LIKE ? OR m.name LIKE ?)";
+        $sql .= " AND (p.name LIKE ? OR ms.material_name LIKE ?)";
         $params[] = "%$search%";
         $params[] = "%$search%";
     }
 
-    $sql .= " ORDER BY p.name ASC, m.name ASC";
+    $sql .= " ORDER BY p.name ASC, ms.material_name ASC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -42,7 +44,7 @@ try {
         $output = fopen('php://output', 'w');
         fputs($output, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
 
-        fputcsv($output, ['No', 'Nama Produk', 'Bahan Baku', 'Takaran', 'Satuan']);
+        fputcsv($output, ['No', 'Nama Produk', 'Bahan Baku Induk', 'Takaran', 'Satuan']);
         
         $no = 1;
         foreach ($data as $row) {
