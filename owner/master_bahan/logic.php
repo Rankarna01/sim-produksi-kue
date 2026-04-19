@@ -23,7 +23,6 @@ try {
                 $warehouse_id = $user_kitchen_id; 
             }
 
-            // Jika $warehouse_id adalah 1 (Dapur Utama yg lama) kita juga tarik yg NULL agar data lama tetap muncul.
             if ($warehouse_id == 1) {
                 $stmt = $pdo->prepare("SELECT * FROM materials WHERE warehouse_id = ? OR warehouse_id IS NULL ORDER BY id DESC");
             } else {
@@ -55,13 +54,10 @@ try {
             if (empty($id)) {
                 echo json_encode(['status' => 'error', 'message' => 'Silakan gunakan fitur Ajukan Permintaan!']); exit;
             } else {
-                // 1. Cari tahu bahan ini milik Dapur mana
                 $stmtWh = $pdo->prepare("SELECT warehouse_id FROM materials WHERE id = ?");
                 $stmtWh->execute([$id]);
                 $current_wh = $stmtWh->fetchColumn();
 
-                // 2. Cek duplikasi kode HANYA pada dapur yang sama
-                // Jika data lama (warehouse_id NULL), kita abaikan pengecekan ketatnya
                 if ($current_wh !== null) {
                     $cek = $pdo->prepare("SELECT id FROM materials WHERE code = ? AND id != ? AND warehouse_id = ?");
                     $cek->execute([$code, $id, $current_wh]);
@@ -89,7 +85,8 @@ try {
             break;
 
         case 'read_pilar':
-            $stmt = $pdo->query("SELECT id, material_name, total_stock, unit FROM materials_stocks ORDER BY material_name ASC");
+            // PERBAIKAN: Ubah total_stock menjadi stock. Filter hanya barang yg statusnya active.
+            $stmt = $pdo->query("SELECT id, material_name, stock, unit FROM materials_stocks WHERE status = 'active' ORDER BY material_name ASC");
             echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
             break;
 
@@ -117,7 +114,7 @@ try {
         case 'submit_request':
             $warehouse_id = $_POST['warehouse_id']; 
             
-            // PROTEKSI BACKEND: Jika dia punya session kitchen, paksa gunakan ID tersebut
+            // PROTEKSI BACKEND
             if ($user_kitchen_id !== null) {
                 $warehouse_id = $user_kitchen_id; 
             }
@@ -129,13 +126,16 @@ try {
 
             if ($qty <= 0) throw new Exception("Jumlah harus lebih dari 0!");
 
-            $stmtCek = $pdo->prepare("SELECT total_stock, unit FROM materials_stocks WHERE id = ?");
+            // PERBAIKAN: Cek stok di gudang pilar menggunakan nama kolom `stock` yang baru
+            $stmtCek = $pdo->prepare("SELECT stock, unit FROM materials_stocks WHERE id = ? AND status = 'active'");
             $stmtCek->execute([$pilar_id]);
             $pilar = $stmtCek->fetch();
 
-            if (!$pilar) throw new Exception("Bahan pilar tidak ditemukan!");
-            if ($pilar['total_stock'] < $qty) {
-                echo json_encode(['status' => 'error', 'message' => "Stok Gudang Pilar tidak cukup! Tersisa: " . $pilar['total_stock'] . " " . $pilar['unit']]); 
+            if (!$pilar) throw new Exception("Bahan pilar tidak ditemukan atau sudah diarsipkan!");
+            
+            // Validasi apakah jumlah yang diminta melebihi stok di gudang utama
+            if ($pilar['stock'] < $qty) {
+                echo json_encode(['status' => 'error', 'message' => "Stok Gudang Pilar tidak cukup! Tersisa: " . $pilar['stock'] . " " . $pilar['unit']]); 
                 exit;
             }
 

@@ -35,7 +35,6 @@ function loadSemuaData() {
 async function loadData() {
     const tbody = document.getElementById('table-body');
     const filterElement = document.getElementById('filter-dapur');
-    // Jika tidak ada dropdown (mungkin tidak ter-render), set default
     const warehouse_id = filterElement ? filterElement.value : 1;
     
     tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
@@ -172,7 +171,8 @@ async function loadPilarStock() {
     if (response.status === 'success') {
         let options = '<option value="">-- Pilih Bahan di Pilar --</option>';
         response.data.forEach(item => {
-            options += `<option value="${item.id}">${item.material_name} (Tersedia: ${item.total_stock} ${item.unit})</option>`;
+            // PERBAIKAN: item.total_stock diubah menjadi item.stock
+            options += `<option value="${item.id}">${item.material_name} (Tersedia: ${item.stock} ${item.unit})</option>`;
         });
         select.innerHTML = options;
     }
