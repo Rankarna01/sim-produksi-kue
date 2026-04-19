@@ -1,44 +1,63 @@
 <?php
 require_once '../../../config/auth.php';
 require_once '../../../config/database.php';
-header('Content-Type: application/json');
 
-$action = $_GET['action'] ?? '';
+header('Content-Type: application/json');
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
+    // 1. INIT FORM (Tarik Barang)
+    if ($action === 'init_form') {
+        $materials = $pdo->query("SELECT id, material_name, unit, stock FROM materials_stocks WHERE status = 'active' ORDER BY material_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'materials' => $materials]);
+        exit;
+    }
+
+    // 2. READ DATA LIST
     if ($action === 'read') {
-        $status = $_GET['status'] ?? 'semua';
         $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-        $limit = 15;
+        $search = $_GET['search'] ?? '';
+        $tab = $_GET['tab'] ?? 'semua'; // semua, pending, processing, rejected
+        $start_date = $_GET['start_date'] ?? '';
+        $end_date = $_GET['end_date'] ?? '';
+        
+        $limit = 10; 
         $offset = ($page - 1) * $limit;
 
-        $whereClause = "";
+        $whereClause = "WHERE 1=1";
         $params = [];
-        
-        // Pengamanan Query menggunakan parameter
-        if ($status !== 'semua') {
-            $whereClause = "WHERE mr.status = :status";
-            $params[':status'] = $status;
+
+        if ($tab !== 'semua') {
+            $whereClause .= " AND pr.status = ?";
+            $params[] = $tab;
+        }
+        if (!empty($start_date) && !empty($end_date)) {
+            $whereClause .= " AND DATE(pr.created_at) BETWEEN ? AND ?";
+            $params[] = $start_date;
+            $params[] = $end_date;
+        }
+        if (!empty($search)) {
+            $whereClause .= " AND (ms.material_name LIKE ? OR u.name LIKE ? OR pr.request_no LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
         }
 
-        // Hitung Total Data untuk Pagination
-        $countSql = "SELECT COUNT(*) FROM material_requests mr $whereClause";
-        $totalStmt = $pdo->prepare($countSql);
-        $totalStmt->execute($params);
-        $total_pages = ceil($totalStmt->fetchColumn() / $limit);
+        $countSql = "SELECT COUNT(pr.id) FROM purchase_requests pr LEFT JOIN materials_stocks ms ON pr.material_id = ms.id LEFT JOIN users u ON pr.user_id = u.id $whereClause";
+        $countStmt = $pdo->prepare($countSql);
+        $countStmt->execute($params);
+        $total_data = $countStmt->fetchColumn();
+        $total_pages = ceil($total_data / $limit);
 
-        // Ambil Data - PERBAIKAN: JOIN ke tabel kitchens (k)
         $sql = "
-            SELECT mr.*, ms.material_name, ms.unit, k.name as nama_dapur, u.name as nama_staff
-            FROM material_requests mr
-            JOIN materials_stocks ms ON mr.material_id = ms.id
-            JOIN kitchens k ON mr.warehouse_id = k.id
-            LEFT JOIN users u ON mr.user_id = u.id
-            $whereClause
-            ORDER BY mr.created_at DESC
+            SELECT pr.*, ms.material_name, ms.unit, u.name as requester_name 
+            FROM purchase_requests pr
+            LEFT JOIN materials_stocks ms ON pr.material_id = ms.id
+            LEFT JOIN users u ON pr.user_id = u.id
+            $whereClause 
+            ORDER BY pr.created_at DESC 
             LIMIT $limit OFFSET $offset
         ";
-        
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -46,14 +65,45 @@ try {
         echo json_encode([
             'status' => 'success', 
             'data' => $data,
-            'total_pages' => $total_pages,
-            'current_page' => $page
+            'current_page' => $page,
+            'total_pages' => $total_pages
         ]);
         exit;
     }
-} catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+
+    // 3. SAVE CART DATA
+    if ($action === 'save') {
+        $cart = json_decode($_POST['cart'], true);
+        $user_id = $_SESSION['user_id'] ?? 1;
+
+        if (empty($cart)) {
+            echo json_encode(['status' => 'error', 'message' => 'Keranjang kosong!']); exit;
+        }
+
+        $pdo->beginTransaction();
+        
+        // Generate nomor batch request untuk kemudahan tracking
+        $batch_no = "PR-" . date('YmdHis');
+
+        $stmt = $pdo->prepare("INSERT INTO purchase_requests (request_no, material_id, qty, notes, status, user_id) VALUES (?, ?, ?, ?, 'pending', ?)");
+
+        foreach ($cart as $item) {
+            $stmt->execute([
+                $batch_no, 
+                $item['material_id'], 
+                $item['qty'], 
+                $item['notes'], 
+                $user_id
+            ]);
+        }
+
+        $pdo->commit();
+        echo json_encode(['status' => 'success', 'message' => 'Semua permintaan berhasil dikirim!']);
+        exit;
+    }
+
 } catch (Exception $e) {
-    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . $e->getMessage()]);
 }
 ?>
