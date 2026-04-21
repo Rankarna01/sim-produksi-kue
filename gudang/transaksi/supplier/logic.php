@@ -1,6 +1,7 @@
 <?php
 require_once '../../../config/auth.php';
 require_once '../../../config/database.php';
+checkPermission('trx_supplier');
 
 header('Content-Type: application/json');
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
