@@ -2,6 +2,7 @@
 require_once '../../../config/auth.php';
 require_once '../../../config/database.php';
 header('Content-Type: application/json');
+checkPermission('trx_permintaan_dapur');
 
 $action = $_GET['action'] ?? '';
 
