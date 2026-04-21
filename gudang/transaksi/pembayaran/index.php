@@ -1,5 +1,6 @@
 <?php
 require_once '../../../config/auth.php';
+checkPermission('trx_pembayaran');
 ?>
 <!DOCTYPE html>
 <html lang="id">
