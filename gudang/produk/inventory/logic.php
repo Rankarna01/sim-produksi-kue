@@ -1,23 +1,100 @@
 <?php
 require_once '../../../config/auth.php';
 require_once '../../../config/database.php';
+checkPermission('master_inventory');
 
-header('Content-Type: application/json');
-$action = $_GET['action'] ?? '';
+// Jangan set header JSON secara global karena fungsi export butuh header CSV
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
+    // ==========================================
+    // BAGIAN EXPORT & IMPORT (TIDAK PAKAI JSON)
+    // ==========================================
+    
+    // 1. Download Template CSV
+    if ($action === 'download_template') {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=Template_Import_Barang.csv');
+        $output = fopen('php://output', 'w');
+        // Kolom Header
+        fputcsv($output, ['SKU/Barcode', 'Nama Barang', 'Satuan', 'Stok Awal', 'Batas Stok Menipis']);
+        // Data Contoh
+        fputcsv($output, ['BRG-001', 'Contoh Terigu', 'Kg', '100', '10']);
+        fclose($output);
+        exit;
+    }
+
+    // 2. Export Data ke CSV
+    if ($action === 'export') {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=Data_Inventory_Gudang.csv');
+        $output = fopen('php://output', 'w');
+        fputcsv($output, ['SKU/Barcode', 'Nama Barang', 'Kategori', 'Satuan', 'Rak', 'Stok Aktual', 'Min Stok', 'Status']);
+        
+        $stmt = $pdo->query("
+            SELECT m.sku_code, m.material_name, c.name as category_name, m.unit, r.name as rack_name, m.stock, m.min_stock, m.status 
+            FROM materials_stocks m 
+            LEFT JOIN material_categories c ON m.category_id = c.id 
+            LEFT JOIN racks r ON m.rack_id = r.id
+        ");
+        
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            fputcsv($output, $row);
+        }
+        fclose($output);
+        exit;
+    }
+
+    // 3. Proses Import CSV
+    if ($action === 'import') {
+        header('Content-Type: application/json');
+        if (isset($_FILES['file']) && $_FILES['file']['error'] == 0) {
+            $file = $_FILES['file']['tmp_name'];
+            $handle = fopen($file, "r");
+            $header = fgetcsv($handle, 1000, ","); // Skip baris pertama (Header)
+            
+            $berhasil = 0;
+            while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+                // Pastikan jumlah kolom sesuai template (minimal 5)
+                if (count($data) >= 5) {
+                    $sku = trim($data[0]);
+                    $name = trim($data[1]);
+                    $unit = trim($data[2]);
+                    $stock = (float)$data[3];
+                    $min_stock = (float)$data[4];
+
+                    if (!empty($sku) && !empty($name)) {
+                        // Cek apakah SKU sudah ada
+                        $cek = $pdo->prepare("SELECT id FROM materials_stocks WHERE sku_code = ?");
+                        $cek->execute([$sku]);
+                        if ($cek->rowCount() == 0) {
+                            $stmt = $pdo->prepare("INSERT INTO materials_stocks (sku_code, material_name, unit, stock, min_stock, status) VALUES (?, ?, ?, ?, ?, 'active')");
+                            $stmt->execute([$sku, $name, $unit, $stock, $min_stock]);
+                            $berhasil++;
+                        }
+                    }
+                }
+            }
+            fclose($handle);
+            echo json_encode(['status' => 'success', 'message' => "$berhasil data barang berhasil diimport!"]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Gagal membaca file!']);
+        }
+        exit;
+    }
+
+    // ==========================================
+    // KODE LAMA (TETAP AMAN) KEMBALI PAKAI JSON
+    // ==========================================
+    header('Content-Type: application/json');
+
     // INITIAL LOAD: Tarik Dropdown Master
     if ($action === 'init_form') {
         $categories = $pdo->query("SELECT id, name FROM material_categories ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
-        $units = $pdo->query("SELECT name FROM units ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC); // Pakai string namenya saja sesuai permintaan
+        $units = $pdo->query("SELECT name FROM units ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
         $racks = $pdo->query("SELECT id, name FROM racks ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
         
-        echo json_encode([
-            'status' => 'success', 
-            'categories' => $categories,
-            'units' => $units,
-            'racks' => $racks
-        ]);
+        echo json_encode(['status' => 'success', 'categories' => $categories, 'units' => $units, 'racks' => $racks]);
         exit;
     }
 
@@ -48,7 +125,6 @@ try {
         $total_data = $countStmt->fetchColumn();
         $total_pages = ceil($total_data / $limit);
 
-        // JOIN MENGAMBIL NAMA KATEGORI & RAK
         $sql = "
             SELECT m.*, c.name as category_name, r.name as rack_name 
             FROM materials_stocks m
@@ -113,12 +189,16 @@ try {
         exit;
     }
 
-    // ARCHIVE (NON-AKTIFKAN, BUKAN DELETE PERMANENT)
-    if ($action === 'archive') {
+    // TOGGLE STATUS (ARCHIVE & UN-ARCHIVE)
+    if ($action === 'toggle_status') {
         $id = $_POST['id'] ?? '';
-        $stmt = $pdo->prepare("UPDATE materials_stocks SET status = 'inactive' WHERE id = ?");
-        $stmt->execute([$id]);
-        echo json_encode(['status' => 'success', 'message' => 'Barang berhasil diarsipkan!']);
+        $new_status = $_POST['new_status'] ?? 'active';
+        
+        $stmt = $pdo->prepare("UPDATE materials_stocks SET status = ? WHERE id = ?");
+        $stmt->execute([$new_status, $id]);
+        
+        $msg = $new_status === 'inactive' ? 'Barang berhasil diarsipkan!' : 'Barang dikembalikan ke daftar Aktif!';
+        echo json_encode(['status' => 'success', 'message' => $msg]);
         exit;
     }
 

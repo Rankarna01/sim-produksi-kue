@@ -1,6 +1,6 @@
 <?php
 require_once '../../../config/auth.php';
-// checkRole(['admin', 'owner']); 
+checkPermission('master_inventory');
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -22,6 +22,19 @@ require_once '../../../config/auth.php';
                 </div>
                 
                 <div class="flex flex-wrap gap-2 items-center">
+                    <div class="flex items-center bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl overflow-hidden font-bold text-xs shadow-sm">
+                        <a href="logic.php?action=download_template" class="px-3 py-2.5 hover:bg-emerald-100 transition-colors flex items-center gap-1 border-r border-emerald-200" title="Download Template Excel/CSV">
+                            <i class="fa-regular fa-file-excel"></i> Template
+                        </a>
+                        <button onclick="document.getElementById('fileImport').click()" class="px-3 py-2.5 hover:bg-emerald-100 transition-colors flex items-center gap-1 border-r border-emerald-200">
+                            <i class="fa-solid fa-file-import"></i> Import
+                        </button>
+                        <a href="logic.php?action=export" class="px-3 py-2.5 hover:bg-emerald-100 transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-file-export"></i> Export
+                        </a>
+                        <input type="file" id="fileImport" class="hidden" accept=".csv" onchange="prosesImport(this)">
+                    </div>
+
                     <a href="../kategori/" class="bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm">
                         <i class="fa-solid fa-tags text-slate-400"></i> Kelola Kategori
                     </a>
@@ -65,7 +78,7 @@ require_once '../../../config/auth.php';
                                 <th class="p-4 font-bold">Lokasi</th>
                                 <th class="p-4 font-bold text-center">Stok</th>
                                 <th class="p-4 font-bold">Kadaluarsa</th>
-                                <th class="p-4 font-bold text-center w-32">Aksi</th>
+                                <th class="p-4 font-bold text-center w-40">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-data" class="text-sm divide-y divide-slate-100">
@@ -142,15 +155,11 @@ require_once '../../../config/auth.php';
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 border-t border-slate-100 pt-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Stok Awal Fisik <span class="text-danger">*</span></label>
-                            <div class="relative">
-                                <input type="number" step="0.01" id="stock" name="stock" value="0" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none transition-all text-sm bg-slate-50 focus:bg-surface font-black text-primary">
-                            </div>
+                            <input type="number" step="0.01" id="stock" name="stock" value="0" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none transition-all text-sm bg-slate-50 focus:bg-surface font-black text-primary">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Batas Stok Menipis <span class="text-danger">*</span></label>
-                            <div class="relative">
-                                <input type="number" step="0.01" id="min_stock" name="min_stock" value="5" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none transition-all text-sm bg-slate-50 focus:bg-surface font-black text-amber-500">
-                            </div>
+                            <input type="number" step="0.01" id="min_stock" name="min_stock" value="5" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none transition-all text-sm bg-slate-50 focus:bg-surface font-black text-amber-500">
                         </div>
                     </div>
                     
@@ -161,6 +170,53 @@ require_once '../../../config/auth.php';
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-detail-inventory" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeModal('modal-detail-inventory')"></div>
+        <div class="relative bg-surface w-full max-w-lg rounded-3xl shadow-2xl z-10 transform transition-all flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-3xl">
+                <h3 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-circle-info text-blue-500 mr-2"></i> Detail Barang</h3>
+                <button onclick="closeModal('modal-detail-inventory')" class="text-secondary hover:text-danger transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 bg-white">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">ID / Barcode</span>
+                    <span class="font-mono font-bold text-slate-700" id="detail_sku"></span>
+                </div>
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Nama Barang</span>
+                    <span class="font-bold text-slate-800" id="detail_nama"></span>
+                </div>
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Kategori & Satuan</span>
+                    <span class="font-bold text-slate-600" id="detail_katsat"></span>
+                </div>
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Lokasi Rak</span>
+                    <span class="font-bold text-slate-600" id="detail_rak"></span>
+                </div>
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Tanggal Kadaluarsa</span>
+                    <span class="font-bold text-slate-600" id="detail_exp"></span>
+                </div>
+                <div class="grid grid-cols-2 gap-4 pt-2">
+                    <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 text-center">
+                        <span class="block text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Stok Aktual</span>
+                        <span class="text-2xl font-black text-blue-600" id="detail_stok"></span>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-2xl border border-amber-100 text-center">
+                        <span class="block text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1">Batas Menipis</span>
+                        <span class="text-2xl font-black text-amber-600" id="detail_minstok"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button onclick="closeModal('modal-detail-inventory')" class="px-6 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition-colors shadow-sm">Tutup</button>
             </div>
         </div>
     </div>

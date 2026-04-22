@@ -1,7 +1,7 @@
 <?php
 require_once '../../../config/auth.php';
 require_once '../../../config/database.php';
-// checkRole(['admin', 'gudang']);
+checkPermission('master_kategori');
 
 header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';

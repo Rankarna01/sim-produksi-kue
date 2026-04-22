@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
-    // 1. VERIFIKASI KODE PIN
+    // 1. VERIFIKASI KODE PIN (Menggunakan tabel PIN yang sudah ada)
     if ($action === 'verify_pin') {
         $pin = $_POST['pin'] ?? '';
         
@@ -23,14 +23,14 @@ try {
         exit;
     }
 
-    // 2. INIT DATA (Tarik Barang untuk Dropdown)
+    // 2. INIT DATA (Tarik Barang untuk Dropdown Scanner)
     if ($action === 'init_data') {
         $materials = $pdo->query("SELECT id, material_name, sku_code, unit, stock FROM materials_stocks WHERE status = 'active' ORDER BY material_name ASC")->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['status' => 'success', 'materials' => $materials]);
         exit;
     }
 
-    // 3. SIMPAN HASIL OPNAME
+    // 3. SIMPAN HASIL OPNAME (Ke Tabel Khusus Gudang)
     if ($action === 'save_opname') {
         $drafts = json_decode($_POST['drafts'], true);
         $user_id = $_SESSION['user_id'] ?? 1;
@@ -41,33 +41,36 @@ try {
 
         $pdo->beginTransaction();
 
-        // A. Generate Nomor Opname (SO-...)
-        $opname_no = "SO-" . date('YmdHis') . "-" . rand(100,999);
+        // A. Generate Nomor Opname & Waktu Aktual
+        $opname_no = "SO-GDG-" . date('YmdHis') . "-" . rand(100,999);
+        $opname_date = date('Y-m-d H:i:s');
 
-        // B. Insert Header
-        $stmtHeader = $pdo->prepare("INSERT INTO stok_opname (opname_no, user_id) VALUES (?, ?)");
-        $stmtHeader->execute([$opname_no, $user_id]);
+        // B. Insert Header ke gudang_stok_opnames
+        // Karena ada otorisasi PIN, kita anggap otomatis 'approved'
+        $stmtHeader = $pdo->prepare("INSERT INTO gudang_stok_opnames (opname_no, opname_date, status, created_by) VALUES (?, ?, 'approved', ?)");
+        $stmtHeader->execute([$opname_no, $opname_date, $user_id]);
         $opname_id = $pdo->lastInsertId();
 
-        // C. Siapkan Statement Detail & Update Stok
-        $stmtDetail = $pdo->prepare("INSERT INTO stok_opname_details (opname_id, material_id, system_stock, physical_stock, difference, notes) VALUES (?, ?, ?, ?, ?, ?)");
+        // C. Siapkan Statement Detail & Update Stok Master
+        $stmtDetail = $pdo->prepare("INSERT INTO gudang_stok_opname_details (opname_id, material_id, system_stock, physical_stock, difference, notes) VALUES (?, ?, ?, ?, ?, ?)");
         
-        // Lock Update agar tidak ada selisih saat dieksekusi
+        // Lock Update (FOR UPDATE) agar tidak ada pergeseran stok saat proses iterasi
         $stmtGetStock = $pdo->prepare("SELECT stock FROM materials_stocks WHERE id = ? FOR UPDATE");
         $stmtUpdStock = $pdo->prepare("UPDATE materials_stocks SET stock = ? WHERE id = ?");
 
         foreach ($drafts as $item) {
             $mat_id = $item['material_id'];
             $phys_qty = (float)$item['physical_stock'];
-            $notes = $item['notes'];
+            $notes = $item['notes'] ?? '';
 
-            // Ambil stok sistem paling update di detik ini
+            // Ambil stok sistem paling update di detik eksekusi ini
             $stmtGetStock->execute([$mat_id]);
             $sys_qty = (float)$stmtGetStock->fetchColumn();
 
+            // Hitung selisih
             $diff = $phys_qty - $sys_qty;
 
-            // Simpan Histori
+            // Simpan Histori ke gudang_stok_opname_details
             $stmtDetail->execute([$opname_id, $mat_id, $sys_qty, $phys_qty, $diff, $notes]);
 
             // Timpa / Update master stok menjadi stok fisik
@@ -75,7 +78,7 @@ try {
         }
 
         $pdo->commit();
-        echo json_encode(['status' => 'success', 'message' => 'Stok berhasil disesuaikan berdasarkan fisik!']);
+        echo json_encode(['status' => 'success', 'message' => 'Stok Gudang berhasil disesuaikan berdasarkan fisik!']);
         exit;
     }
 

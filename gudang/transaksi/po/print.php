@@ -5,15 +5,34 @@ require_once '../../../config/database.php';
 $po_id = $_GET['id'] ?? '';
 if (empty($po_id)) die("ID Purchase Order tidak valid.");
 
+// 1. AMBIL DATA PROFIL TOKO DARI DATABASE
+$stmtToko = $pdo->query("SELECT * FROM store_profile WHERE id = 1");
+$toko = $stmtToko->fetch(PDO::FETCH_ASSOC);
+
+// Fallback jika tabel profil toko kosong (belum disetting)
+$nama_toko = $toko['store_name'] ?? 'PERUSAHAAN KAMI';
+$alamat_toko = $toko['address'] ?? 'Alamat Belum Disetting';
+$telp_toko = $toko['phone'] ?? '-';
+$email_toko = $toko['email'] ?? '-';
+$logo_toko = !empty($toko['logo_path']) ? '../../../' . $toko['logo_path'] : null;
+
+// 2. AMBIL DATA PO & SUPPLIER
 $sqlHeader = "SELECT p.*, s.name as supplier_name, s.address, s.phone, s.contact_person, u.name as admin_name 
-              FROM purchase_orders p JOIN suppliers s ON p.supplier_id = s.id LEFT JOIN users u ON p.created_by = u.id WHERE p.id = ?";
+              FROM purchase_orders p 
+              JOIN suppliers s ON p.supplier_id = s.id 
+              LEFT JOIN users u ON p.created_by = u.id 
+              WHERE p.id = ?";
 $stmtHeader = $pdo->prepare($sqlHeader);
 $stmtHeader->execute([$po_id]);
 $po = $stmtHeader->fetch(PDO::FETCH_ASSOC);
 
 if (!$po) die("Data Purchase Order tidak ditemukan.");
 
-$sqlDetail = "SELECT pod.*, ms.material_name, ms.sku_code, ms.unit FROM purchase_order_details pod JOIN materials_stocks ms ON pod.material_id = ms.id WHERE pod.po_id = ?";
+// 3. AMBIL DETAIL ITEM BARANG
+$sqlDetail = "SELECT pod.*, ms.material_name, ms.sku_code, ms.unit 
+              FROM purchase_order_details pod 
+              JOIN materials_stocks ms ON pod.material_id = ms.id 
+              WHERE pod.po_id = ?";
 $stmtDetail = $pdo->prepare($sqlDetail);
 $stmtDetail->execute([$po_id]);
 $items = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
@@ -42,11 +61,21 @@ $items = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
     <div class="a4-container">
+        
         <div class="flex justify-between items-start border-b-4 border-slate-800 pb-4 mb-8">
-            <div>
-                <h1 class="text-4xl font-black text-blue-700 uppercase tracking-tighter">ROTIKU ERP</h1>
-                <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">Divisi Logistik & Gudang</p>
-                <p class="text-xs text-slate-500 mt-2">Jl. Gudang Utama No. 123<br>Telp: (061) 1234567 | logistik@rotiku.com</p>
+            <div class="flex items-center gap-4">
+                <?php if ($logo_toko && file_exists($logo_toko)): ?>
+                    <img src="<?= htmlspecialchars($logo_toko) ?>" alt="Logo Toko" class="w-20 h-20 object-contain">
+                <?php endif; ?>
+                
+                <div>
+                    <h1 class="text-3xl font-black text-blue-700 uppercase tracking-tighter"><?= htmlspecialchars($nama_toko) ?></h1>
+                    <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">Divisi Logistik & Gudang</p>
+                    <p class="text-xs text-slate-500 mt-2">
+                        <?= nl2br(htmlspecialchars($alamat_toko)) ?><br>
+                        Telp: <?= htmlspecialchars($telp_toko) ?> | <?= htmlspecialchars($email_toko) ?>
+                    </p>
+                </div>
             </div>
             <div class="text-right">
                 <h2 class="text-3xl font-black text-slate-800 uppercase tracking-widest mb-1">PURCHASE ORDER</h2>
@@ -93,9 +122,9 @@ $items = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
                         <tr>
                             <td class="text-center text-slate-400 font-bold"><?= $index + 1 ?></td>
                             <td class="font-mono text-[10px] text-slate-400 font-bold"><?= $item['sku_code'] ?></td>
-                            <td class="font-black text-slate-800 uppercase text-xs"><?= $item['material_name'] ?></td>
+                            <td class="font-black text-slate-800 uppercase text-xs"><?= htmlspecialchars($item['material_name']) ?></td>
                             <td class="text-center font-black text-base text-blue-700"><?= floatval($item['qty']) ?></td>
-                            <td class="text-center font-bold text-slate-500 uppercase text-[10px]"><?= $item['unit'] ?></td>
+                            <td class="text-center font-bold text-slate-500 uppercase text-[10px]"><?= htmlspecialchars($item['unit']) ?></td>
                         </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -133,6 +162,12 @@ $items = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
             </ol>
         </div>
     </div>
-    <script>window.onload = function() { setTimeout(function() { window.print(); }, 500); }</script>
+    
+    <script>
+        // Hapus timeout print jika logo perlu loading agak lama
+        window.onload = function() { 
+            setTimeout(function() { window.print(); }, 1000); 
+        }
+    </script>
 </body>
 </html>

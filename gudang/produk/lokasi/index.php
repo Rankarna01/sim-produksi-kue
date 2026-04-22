@@ -1,6 +1,6 @@
 <?php
 require_once '../../../config/auth.php';
-// Bebas diakses tanpa checkRole/checkPermission sesuai request sebelumnya
+checkPermission('master_lokasi');
 ?>
 <!DOCTYPE html>
 <html lang="id">

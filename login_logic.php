@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // PERBAIKAN 1: Gunakan SELECT * agar kolom baru seperti 'kitchen_id' otomatis terbaca
+    // SELECT * agar semua kolom terbaca
     $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
     $stmt->execute([$username]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -22,14 +22,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user) {
         $login_success = false;
 
-        // 1. Cek apakah password cocok dengan Hash Bcrypt
+        // 1. Cek Bcrypt
         if (password_verify($password, $user['password'])) {
             $login_success = true;
         } 
-        // 2. Trik Transisi: Jika password masih teks biasa
+        // 2. Transisi Plain Text ke Bcrypt
         else if ($password === $user['password']) {
             $login_success = true;
-            // Otomatis ubah password menjadi Hash Bcrypt
             $newHash = password_hash($password, PASSWORD_DEFAULT);
             $update = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
             $update->execute([$newHash, $user['id']]);
@@ -38,19 +37,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($login_success) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['name'] = $user['name'];
-            $_SESSION['role'] = $user['role'];
+            $_SESSION['role'] = $user['role']; // Ini menyimpan slug role-nya (cth: admin_gudang, produksi)
             
-            // PERBAIKAN 2: Simpan ID Dapur ke session jika akun tersebut dihubungkan ke Dapur
             if (isset($user['kitchen_id'])) {
                 $_SESSION['kitchen_id'] = $user['kitchen_id'];
             }
 
-            // Deteksi Localhost atau cPanel agar routing dinamis
+            // Routing
             $is_localhost = (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false);
             $base = $is_localhost ? '/sim-produksi-kue/' : '/';
             
             // ==========================================
-            // PERBAIKAN 3: Routing Dinamis Berdasarkan Role
+            // ROUTING DINAMIS BERDASARKAN ROLE (SLUG)
             // ==========================================
             if ($user['role'] === 'produksi') {
                 $redirect_url = $base . 'produksi/input_produksi/';
@@ -58,18 +56,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             elseif ($user['role'] === 'admin') {
                 $redirect_url = $base . 'admin/scan_barcode/';
             } 
-            elseif ($user['role'] === 'gudang_pilar') {
-                // SEKAT BARU: Diarahkan ke folder khusus gudang pilar
+            // CEK JIKA ROLE ADALAH MILIK GUDANG (Role dinamis yg dibuat di Gudang Roles)
+            // Asumsi: Semua role gudang (admin_gudang, spv_gudang) akan diarahkan ke dashboard gudang
+            elseif (strpos($user['role'], 'gudang') !== false || $user['role'] === 'admin_gudang') {
                 $redirect_url = $base . 'gudang/dashboard/';
             } 
             elseif ($user['role'] === 'owner' || $user['role'] === 'auditor') {
-                // Role eksekutif yang memantau dashboard owner
                 $redirect_url = $base . 'owner/dashboard/'; 
             } 
             else {
-                // PERBAIKAN 4: Default fallback untuk Role Dinamis (Role kustom buatan Owner)
-                // Kita arahkan ke layout utama RotiKu (owner/dashboard). 
-                // Sistem RBAC akan otomatis hanya menampilkan menu yang dicentang untuk role tersebut.
+                // Fallback jika role tidak spesifik
                 $redirect_url = $base . 'owner/dashboard/'; 
             }
 

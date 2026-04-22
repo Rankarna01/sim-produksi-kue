@@ -41,10 +41,16 @@ try {
 
         $pdo->beginTransaction();
 
+        $stmtSetting = $pdo->query("SELECT req_approval_po FROM store_profile WHERE id = 1");
+        $req_approval = $stmtSetting->fetchColumn() ?? 1;
+
+        $status_po = ($req_approval == 1) ? 'waiting_approval' : 'approved';
+
         $po_no = "LC-" . date('dmY') . "-" . rand(1000, 9999);
 
-        $stmtPO = $pdo->prepare("INSERT INTO purchase_orders (po_no, supplier_id, shipping_date, status, created_by) VALUES (?, ?, ?, 'waiting_approval', ?)");
-        $stmtPO->execute([$po_no, $supplier_id, $shipping_date, $user_id]);
+        // Insert ke DB dengan status print awal "unlocked"
+        $stmtPO = $pdo->prepare("INSERT INTO purchase_orders (po_no, supplier_id, shipping_date, status, created_by, print_po_status, print_terima_status) VALUES (?, ?, ?, ?, ?, 'unlocked', 'unlocked')");
+        $stmtPO->execute([$po_no, $supplier_id, $shipping_date, $status_po, $user_id]);
         $po_id = $pdo->lastInsertId();
 
         $stmtDetail = $pdo->prepare("INSERT INTO purchase_order_details (po_id, material_id, qty, price) VALUES (?, ?, ?, 0)"); 
@@ -71,7 +77,7 @@ try {
         $params = [];
         
         if ($tab === 'belum_terima') {
-            $where .= " AND p.status IN ('waiting_approval', 'approved')";
+            $where .= " AND p.status IN ('waiting_approval', 'approved', 'processing')";
         } elseif ($tab === 'sudah_terima') {
             $where .= " AND p.status = 'received'";
         } elseif ($tab === 'dibatalkan') {
@@ -118,7 +124,7 @@ try {
         exit;
     }
 
-    // 5. SIMPAN HASIL TERIMA BARANG & UPDATE STOK DAN KEUANGAN
+    // 5. SIMPAN HASIL TERIMA BARANG
     if ($action === 'save_receive_po') {
         $po_id = $_POST['po_id'] ?? '';
         $items = json_decode($_POST['items'], true); 
@@ -144,10 +150,9 @@ try {
         foreach ($items as $item) {
             $mat_id = $item['material_id'];
             $qty = (float)$item['qty_terima'];
-            $price = (float)$item['price']; // Harga Satuan
+            $price = (float)$item['price']; 
             $exp_date = !empty($item['exp_date']) ? $item['exp_date'] : null;
 
-            // Hitung Grand Total
             $total_po_amount += ($qty * $price);
 
             $stmtInsertDetail->execute([$po_id, $mat_id, $qty, $price]);
@@ -161,12 +166,56 @@ try {
             $stmtHistory->execute([$po_no, $mat_id, $supplier_id, $qty, $po_id, $exp_date, $user_id]);
         }
 
-        // UPDATE STATUS PO DAN NOMINAL KEUANGAN
         $stmtPO = $pdo->prepare("UPDATE purchase_orders SET status = 'received', total_amount = ?, payment_status = 'unpaid', updated_at = CURRENT_TIMESTAMP WHERE id = ?");
         $stmtPO->execute([$total_po_amount, $po_id]);
 
         $pdo->commit();
         echo json_encode(['status' => 'success', 'message' => 'Barang berhasil diterima. Tagihan otomatis tercatat di sistem Keuangan!']);
+        exit;
+    }
+
+    // ==========================================
+    // LOGIC KUNCI CETAK & IZIN CETAK (TERPISAH PO & TERIMA)
+    // ==========================================
+
+    // A. KUNCI SAAT DICETAK 1X
+    if ($action === 'mark_printed') {
+        $id = $_POST['id'] ?? '';
+        $tipe = $_POST['tipe'] ?? ''; // 'po' atau 'terima'
+        
+        $column = ($tipe === 'terima') ? 'print_terima_status' : 'print_po_status';
+
+        $stmt = $pdo->prepare("SELECT $column FROM purchase_orders WHERE id = ?");
+        $stmt->execute([$id]);
+        $status_cetak = $stmt->fetchColumn();
+
+        if ($status_cetak === 'unlocked') {
+            $update = $pdo->prepare("UPDATE purchase_orders SET $column = 'locked' WHERE id = ?");
+            $update->execute([$id]);
+            echo json_encode(['status' => 'success', 'message' => 'Dokumen terkunci setelah dicetak.']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Dokumen ini sudah terkunci. Butuh persetujuan.']);
+        }
+        exit;
+    }
+
+    // B. AJUKAN IZIN CETAK ULANG
+    if ($action === 'request_print') {
+        $id = $_POST['id'] ?? '';
+        $tipe = $_POST['tipe'] ?? ''; 
+        
+        // Cek SOP Toko
+        $stmtSetting = $pdo->query("SELECT req_approval_print FROM store_profile WHERE id = 1");
+        $req_approval = $stmtSetting->fetchColumn() ?? 1;
+
+        $column = ($tipe === 'terima') ? 'print_terima_status' : 'print_po_status';
+        $status_baru = ($req_approval == 1) ? 'pending_approval' : 'unlocked';
+
+        $update = $pdo->prepare("UPDATE purchase_orders SET $column = ? WHERE id = ?");
+        $update->execute([$status_baru, $id]);
+        
+        $msg = ($req_approval == 1) ? 'Izin cetak ulang telah diajukan ke Manager.' : 'Akses cetak langsung dibuka (Auto-Approve).';
+        echo json_encode(['status' => 'success', 'message' => $msg]);
         exit;
     }
 

@@ -1,6 +1,6 @@
 <?php
 require_once '../../../config/auth.php';
-// checkRole(['admin', 'gudang']); 
+checkPermission('master_kategori');
 ?>
 <!DOCTYPE html>
 <html lang="id">

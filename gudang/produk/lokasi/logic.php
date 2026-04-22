@@ -1,7 +1,7 @@
 <?php
 require_once '../../../config/auth.php';
 require_once '../../../config/database.php';
-// Akses role/permission dilepas sesuai permintaan
+checkPermission('master_lokasi');
 
 header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';

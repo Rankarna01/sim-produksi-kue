@@ -25,7 +25,7 @@ checkPermission('trx_po');
                 <button @click="tab = 'buat_po'; loadDraftPO();" x-show="tab !== 'buat_po'" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-md shadow-blue-200 flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Buat PO Baru
                 </button>
-                <button @click="tab = 'semua'; loadDataPO();" x-show="tab === 'buat_po'" x-cloak class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm">
+                <button @click="tab = 'semua'; switchTabPO('semua');" x-show="tab === 'buat_po'" x-cloak class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm">
                     <i class="fa-solid fa-arrow-left"></i> Kembali ke List PO
                 </button>
             </div>
@@ -33,10 +33,10 @@ checkPermission('trx_po');
             <div x-show="tab !== 'buat_po'" class="space-y-6">
                 <div class="bg-white p-4 rounded-3xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
                     <div class="flex border-b border-slate-100 w-full md:w-auto overflow-x-auto custom-scrollbar">
-                        <button @click="tab = 'semua'; loadDataPO();" :class="tab === 'semua' ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'" class="pb-3 px-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap">Semua PO</button>
-                        <button @click="tab = 'belum_terima'; loadDataPO();" :class="tab === 'belum_terima' ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'" class="pb-3 px-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap">Belum Diterima</button>
-                        <button @click="tab = 'sudah_terima'; loadDataPO();" :class="tab === 'sudah_terima' ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'" class="pb-3 px-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap">Sudah Diterima</button>
-                        <button @click="tab = 'dibatalkan'; loadDataPO();" :class="tab === 'dibatalkan' ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'" class="pb-3 px-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap">Dibatalkan</button>
+                        <button @click="tab = 'semua'; switchTabPO('semua');" :class="tab === 'semua' ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'" class="pb-3 px-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap">Semua PO</button>
+                        <button @click="tab = 'belum_terima'; switchTabPO('belum_terima');" :class="tab === 'belum_terima' ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'" class="pb-3 px-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap">Belum Diterima</button>
+                        <button @click="tab = 'sudah_terima'; switchTabPO('sudah_terima');" :class="tab === 'sudah_terima' ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'" class="pb-3 px-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap">Sudah Diterima</button>
+                        <button @click="tab = 'dibatalkan'; switchTabPO('dibatalkan');" :class="tab === 'dibatalkan' ? 'border-slate-800 text-slate-800' : 'border-transparent text-slate-400 hover:text-slate-600'" class="pb-3 px-4 text-xs font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap">Dibatalkan</button>
                     </div>
 
                     <div class="relative w-full md:w-64">

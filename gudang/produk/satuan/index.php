@@ -1,6 +1,6 @@
 <?php
 require_once '../../../config/auth.php';
-// Akses role/permission dilepas sesuai permintaan
+checkPermission('master_satuan');
 ?>
 <!DOCTYPE html>
 <html lang="id">
