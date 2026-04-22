@@ -5,15 +5,13 @@ checkPermission('master_bahan');
 
 // 1. CEK SESSION KITCHEN ID
 $user_kitchen_id = $_SESSION['kitchen_id'] ?? null;
-$is_owner = is_null($user_kitchen_id); // Jika null, berarti dia eksekutif (Owner/Auditor)
+$is_owner = is_null($user_kitchen_id);
 
-// 2. AMBIL DATA DAPUR SESUAI HAK AKSES
+// 2. AMBIL DATA DAPUR
 if ($is_owner) {
-    // Owner bisa melihat semua dapur
     $stmtKitchens = $pdo->query("SELECT * FROM kitchens ORDER BY id ASC");
     $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
 } else {
-    // Pegawai produksi hanya bisa melihat dapurnya sendiri
     $stmtKitchens = $pdo->prepare("SELECT * FROM kitchens WHERE id = ?");
     $stmtKitchens->execute([$user_kitchen_id]);
     $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
@@ -91,10 +89,10 @@ if ($is_owner) {
             <div>
                 <h3 class="text-lg font-bold text-slate-800 mb-4">Riwayat Pengajuan ke Pilar</h3>
                 <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
-                    <button @click="tabStatus = 'semua'; loadRequests('semua')" :class="tabStatus === 'semua' ? 'bg-primary text-white shadow-md' : 'bg-surface text-slate-500 hover:bg-slate-100 border border-slate-200'" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap">Semua</button>
-                    <button @click="tabStatus = 'menunggu'; loadRequests('menunggu')" :class="tabStatus === 'menunggu' ? 'bg-amber-500 text-white shadow-md' : 'bg-surface text-slate-500 hover:bg-slate-100 border border-slate-200'" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap">Menunggu</button>
-                    <button @click="tabStatus = 'diproses'; loadRequests('diproses')" :class="tabStatus === 'diproses' ? 'bg-emerald-500 text-white shadow-md' : 'bg-surface text-slate-500 hover:bg-slate-100 border border-slate-200'" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap">Disetujui / Diproses</button>
-                    <button @click="tabStatus = 'ditolak'; loadRequests('ditolak')" :class="tabStatus === 'ditolak' ? 'bg-danger text-white shadow-md' : 'bg-surface text-slate-500 hover:bg-slate-100 border border-slate-200'" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap">Ditolak</button>
+                    <button @click="tabStatus = 'semua'; loadRequests('semua', 1)" :class="tabStatus === 'semua' ? 'bg-primary text-white shadow-md' : 'bg-surface text-slate-500 hover:bg-slate-100 border border-slate-200'" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap">Semua</button>
+                    <button @click="tabStatus = 'menunggu'; loadRequests('menunggu', 1)" :class="tabStatus === 'menunggu' ? 'bg-amber-500 text-white shadow-md' : 'bg-surface text-slate-500 hover:bg-slate-100 border border-slate-200'" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap">Menunggu</button>
+                    <button @click="tabStatus = 'berhasil'; loadRequests('berhasil', 1)" :class="tabStatus === 'berhasil' ? 'bg-emerald-500 text-white shadow-md' : 'bg-surface text-slate-500 hover:bg-slate-100 border border-slate-200'" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap">Berhasil (Approved)</button>
+                    <button @click="tabStatus = 'ditolak'; loadRequests('ditolak', 1)" :class="tabStatus === 'ditolak' ? 'bg-danger text-white shadow-md' : 'bg-surface text-slate-500 hover:bg-slate-100 border border-slate-200'" class="px-5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap">Ditolak</button>
                 </div>
 
                 <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -115,6 +113,8 @@ if ($is_owner) {
                         </table>
                     </div>
                 </div>
+                
+                <div id="pagination-requests" class="mt-4 flex items-center justify-center gap-2"></div>
             </div>
 
         </main>
@@ -125,27 +125,24 @@ if ($is_owner) {
         <div class="bg-surface w-full max-w-md rounded-2xl shadow-xl z-10 transform transition-all flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center">
                 <h3 id="modal-title" class="text-lg font-bold text-slate-800">Edit Bahan Baku</h3>
-                <button onclick="closeModal('modal-bahan')" class="text-secondary hover:text-danger transition-colors">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+                <button onclick="closeModal('modal-bahan')" class="text-secondary hover:text-danger transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div class="p-6 overflow-y-auto">
                 <form id="formBahan" class="space-y-4">
                     <input type="hidden" id="material_id" name="id">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Kode Bahan <span class="text-danger">*</span></label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Kode Bahan</label>
                         <input type="text" id="code" name="code" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary outline-none bg-slate-50 uppercase">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Nama Bahan Baku <span class="text-danger">*</span></label>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nama Bahan Baku</label>
                         <input type="text" id="name" name="name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary outline-none bg-slate-50">
                     </div>
                     <div class="grid grid-cols-3 gap-4">
                         <div class="col-span-1">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Satuan <span class="text-danger">*</span></label>
-                            <select id="unit" name="unit" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary outline-none bg-slate-50">
-                                <option value="">-- Memuat --</option>
-                            </select>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Satuan</label>
+                            <input type="text" id="unit" name="unit" readonly class="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-100 text-slate-500 font-bold outline-none cursor-not-allowed" title="Satuan mengikuti master Gudang Pilar" placeholder="Unit">
+                            <p class="text-[9px] text-slate-400 mt-1 leading-tight">*Terkunci ke Gudang</p>
                         </div>
                         <div class="col-span-1">
                             <label class="block text-sm font-medium text-slate-700 mb-1">Stok</label>
@@ -170,28 +167,43 @@ if ($is_owner) {
     <div id="modal-request" class="fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('modal-request')"></div>
         <div class="bg-surface w-full max-w-md rounded-2xl shadow-xl z-10 transform transition-all flex flex-col">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-slate-800">Ajukan Permintaan Bahan</h3>
-                <button onclick="closeModal('modal-request')" class="text-secondary hover:text-danger transition-colors">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50/50 rounded-t-2xl">
+                <h3 class="text-lg font-black text-blue-800">Ajukan Permintaan Bahan</h3>
+                <button onclick="closeModal('modal-request')" class="text-secondary hover:text-danger transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div class="p-6 overflow-y-auto">
                 <form id="formRequest" class="space-y-4">
                     <input type="hidden" id="req_warehouse_id" name="warehouse_id">
+                    
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Bahan di Gudang Pilar <span class="text-danger">*</span></label>
-                        <select id="pilar_material_id" name="pilar_id" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary outline-none bg-slate-50">
+                        <select id="pilar_material_id" name="pilar_id" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary outline-none bg-slate-50 font-semibold text-slate-700">
                             <option value="">-- Memuat Stok Pilar --</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Jumlah Permintaan <span class="text-danger">*</span></label>
-                        <input type="number" step="any" id="req_qty" name="qty" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary outline-none bg-slate-50" placeholder="Contoh: 10">
+                    
+                    <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="col-span-1">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Jumlah</label>
+                            <input type="number" step="any" id="req_qty" name="qty" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary outline-none bg-white text-lg font-black text-blue-600" placeholder="0">
+                        </div>
+                        <div class="col-span-1">
+                            <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Pilih Satuan</label>
+                            <select id="req_unit" name="req_unit" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary outline-none bg-white font-bold text-slate-700">
+                                <option value="default">Sesuai Gudang</option>
+                                <option value="gram">Gram (gr)</option>
+                                <option value="ml">Mililiter (ml)</option>
+                                <option value="pcs">Pcs</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2 text-[10px] text-slate-400 font-medium">
+                            *Jika Anda memilih Gram/Ml, sistem akan otomatis membaginya menjadi Kg/Liter saat memotong stok Gudang Pusat.
+                        </div>
                     </div>
+
                     <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
                         <button type="button" onclick="closeModal('modal-request')" class="px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">Batal</button>
-                        <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-surface bg-primary hover:opacity-90 rounded-xl flex items-center gap-2">
+                        <button type="submit" class="px-5 py-2.5 text-sm font-semibold text-surface bg-blue-600 hover:bg-blue-700 rounded-xl flex items-center gap-2 shadow-md">
                             <i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan
                         </button>
                     </div>
