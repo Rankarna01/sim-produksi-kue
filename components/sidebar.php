@@ -191,6 +191,15 @@ function getNavClass($path, $current_uri)
             </a>
         <?php endif; ?>
 
+            <?php if (hasPermission('laporan_titipan')): ?>
+        <a href="<?= BASE_URL ?>owner/laporan_titipan/" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= (strpos($_SERVER['PHP_SELF'], 'laporan_titipan') !== false) ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-slate-500 hover:bg-slate-100' ?>">
+    <div class="w-8 h-8 flex items-center justify-center">
+        <i class="fa-solid fa-chart-line text-lg"></i>
+    </div>
+    <span class="font-bold text-sm">Laporan Titipan UMKM</span>
+</a>
+  <?php endif; ?>
+
     </nav>
 </aside>
 
