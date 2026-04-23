@@ -22,7 +22,6 @@ try {
         $where = "WHERE 1=1";
         $params = [];
 
-        // Logika Admin Produksi yang terikat Dapur tertentu
         $stmtUser = $pdo->prepare("SELECT kitchen_id FROM users WHERE id = ?");
         $stmtUser->execute([$_SESSION['user_id']]);
         $userKitchenId = $stmtUser->fetchColumn();
@@ -59,51 +58,125 @@ try {
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        echo json_encode(['status' => 'success', 'data' => $data]);
+        echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
     }
 
     if ($action === 'cancel') {
         $id = $_POST['id'] ?? '';
-        
         $pdo->beginTransaction();
 
         $cekStatus = $pdo->prepare("SELECT status FROM titipan_productions WHERE id = ? FOR UPDATE");
         $cekStatus->execute([$id]);
         $currentStatus = $cekStatus->fetchColumn();
 
-        if ($currentStatus === 'cancelled') {
-            echo json_encode(['status' => 'error', 'message' => 'Data sudah dibatalkan sebelumnya.']); 
-            exit;
-        }
-        if ($currentStatus === 'received') {
-            echo json_encode(['status' => 'error', 'message' => 'Barang sudah diterima oleh Store, tidak dapat dibatalkan.']); 
-            exit;
+        if ($currentStatus === 'cancelled' || $currentStatus === 'received') {
+            echo json_encode(['status' => 'error', 'message' => 'Status barang tidak dapat dibatalkan.']); exit;
         }
 
-        // KEMBALIKAN STOK TITIPAN
         $stmtDetail = $pdo->prepare("SELECT titipan_id, quantity FROM titipan_production_details WHERE titipan_production_id = ?");
         $stmtDetail->execute([$id]);
-        $details = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($details as $d) {
-            $updStok = $pdo->prepare("UPDATE barang_titipan SET stok = stok + ? WHERE id = ?");
-            $updStok->execute([$d['quantity'], $d['titipan_id']]);
+        foreach ($stmtDetail->fetchAll(PDO::FETCH_ASSOC) as $d) {
+            $pdo->prepare("UPDATE barang_titipan SET stok = stok + ? WHERE id = ?")->execute([$d['quantity'], $d['titipan_id']]);
         }
 
-        // UPDATE STATUS
-        $updStatus = $pdo->prepare("UPDATE titipan_productions SET status = 'cancelled' WHERE id = ?");
-        $updStatus->execute([$id]);
+        $pdo->prepare("UPDATE titipan_productions SET status = 'cancelled' WHERE id = ?")->execute([$id]);
 
         $pdo->commit();
         echo json_encode(['status' => 'success', 'message' => 'Transaksi berhasil dibatalkan dan stok dikembalikan!']);
         exit;
     }
 
+    // ==========================================
+    // BAGIAN BARU: AMBIL DATA UNTUK MODAL REVISI
+    // ==========================================
+    if ($action === 'get_revisi_data') {
+        $id = $_GET['id'];
+        
+        $stmtHead = $pdo->prepare("SELECT p.id, p.invoice_no, p.employee_id, e.name as emp_name FROM titipan_productions p LEFT JOIN employees e ON p.employee_id = e.id WHERE p.id = ?");
+        $stmtHead->execute([$id]);
+        $header = $stmtHead->fetch(PDO::FETCH_ASSOC);
+
+        $stmtDetail = $pdo->prepare("
+            SELECT d.titipan_id as id, b.nama_barang as name, b.nama_umkm as code, d.quantity 
+            FROM titipan_production_details d
+            JOIN barang_titipan b ON d.titipan_id = b.id
+            WHERE d.titipan_production_id = ?
+        ");
+        $stmtDetail->execute([$id]);
+        $details = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
+
+        $master = $pdo->query("SELECT id, nama_barang as name, nama_umkm as code, stok FROM barang_titipan ORDER BY nama_barang ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode(['status' => 'success', 'header' => $header, 'details' => $details, 'master' => $master]);
+        exit;
+    }
+
+    // ==========================================
+    // BAGIAN BARU: PROSES SIMPAN REVISI
+    // ==========================================
+    if ($action === 'revisi') {
+        $production_id = $_POST['production_id'];
+        $product_ids = $_POST['product_id'] ?? []; 
+        $quantities = $_POST['quantity'] ?? [];
+        $pin_input = trim($_POST['pin'] ?? '');
+
+        if (empty($pin_input) || count($product_ids) === 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Lengkapi data dan PIN!']); exit;
+        }
+
+        $pdo->beginTransaction();
+
+        $stmtEmp = $pdo->prepare("SELECT e.id, e.pin FROM titipan_productions p JOIN employees e ON p.employee_id = e.id WHERE p.id = ?");
+        $stmtEmp->execute([$production_id]);
+        $emp = $stmtEmp->fetch(PDO::FETCH_ASSOC);
+
+        if ((string)$emp['pin'] !== (string)$pin_input) {
+            echo json_encode(['status' => 'error', 'message' => 'PIN Salah! Otorisasi ditolak.']); exit;
+        }
+
+        // 1. REFUND LAMA
+        $old_details = $pdo->prepare("SELECT titipan_id, quantity FROM titipan_production_details WHERE titipan_production_id = ?");
+        $old_details->execute([$production_id]);
+        foreach ($old_details->fetchAll() as $old) {
+            $pdo->prepare("UPDATE barang_titipan SET stok = stok + ? WHERE id = ?")->execute([$old['quantity'], $old['titipan_id']]);
+        }
+        $pdo->prepare("DELETE FROM titipan_production_details WHERE titipan_production_id = ?")->execute([$production_id]);
+
+        // 2. CEK STOK BARU & POTONG
+        $invoice_no = $pdo->prepare("SELECT invoice_no FROM titipan_productions WHERE id = ?")->execute([$production_id]) ? $pdo->query("SELECT invoice_no FROM titipan_productions WHERE id = $production_id")->fetchColumn() : 'TTP-REV';
+
+        for ($i = 0; $i < count($product_ids); $i++) {
+            $titipan_id = $product_ids[$i];
+            $qty = (int)$quantities[$i];
+
+            if (empty($titipan_id) || $qty <= 0) continue; 
+
+            $cekStok = $pdo->prepare("SELECT nama_barang, stok FROM barang_titipan WHERE id = ? FOR UPDATE");
+            $cekStok->execute([$titipan_id]);
+            $brg = $cekStok->fetch(PDO::FETCH_ASSOC);
+
+            if (!$brg || $brg['stok'] < $qty) {
+                $pdo->rollBack();
+                $sisa = $brg ? $brg['stok'] : 0;
+                echo json_encode(['status' => 'error', 'message' => "Stok {$brg['nama_barang']} tidak cukup! (Tersedia: $sisa)"]); exit;
+            }
+
+            $pdo->prepare("UPDATE barang_titipan SET stok = stok - ? WHERE id = ?")->execute([$qty, $titipan_id]);
+            
+            $barcode = $invoice_no . "-" . ($i + 1);
+            $pdo->prepare("INSERT INTO titipan_production_details (titipan_production_id, titipan_id, quantity, barcode) VALUES (?, ?, ?, ?)")->execute([$production_id, $titipan_id, $qty, $barcode]);
+        }
+
+        $pdo->prepare("UPDATE titipan_productions SET status = 'pending' WHERE id = ?")->execute([$production_id]);
+        
+        $pdo->commit();
+        echo json_encode(['status' => 'success', 'message' => 'Revisi berhasil disimpan, status kembali Pending.']);
+        exit;
+    }
+
 } catch (Exception $e) {
     if ($pdo->inTransaction()) { $pdo->rollBack(); }
-    echo json_encode(['status' => 'error', 'message' => 'System Error: ' . $e->getMessage()]);
+    echo json_encode(['status' => 'error', 'message' => 'Sistem Error: ' . $e->getMessage()]);
 }
 ?>

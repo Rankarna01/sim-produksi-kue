@@ -12,7 +12,7 @@ checkRole(['produksi']);
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
     </style>
 </head>
-<body class="text-slate-800 antialiased h-screen flex overflow-hidden bg-slate-50">
+<body class="text-slate-800 antialiased h-screen flex overflow-hidden bg-slate-50" onclick="closeAllDropdowns(event)">
 
     <?php include '../../components/sidebar_produksi.php'; ?>
 
@@ -46,7 +46,8 @@ checkRole(['produksi']);
                         <select id="filter_status" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-blue-600 outline-none text-sm font-bold text-slate-700 bg-slate-50">
                             <option value="">Semua Status</option>
                             <option value="pending">Pending</option>
-                            <option value="received">Diterima</option>
+                            <option value="received">Diterima / Valid</option>
+                            <option value="ditolak">Ditolak</option>
                             <option value="cancelled">Dibatalkan</option>
                         </select>
                     </div>
@@ -84,6 +85,40 @@ checkRole(['produksi']);
             </div>
 
         </main>
+    </div>
+
+    <div id="modal-revisi" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="tutupModalRevisi()"></div>
+        <div class="relative bg-white w-full max-w-4xl rounded-[2rem] shadow-xl z-10 flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center rounded-t-[2rem]">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800 flex items-center gap-2"><i class="fa-solid fa-pen-to-square text-amber-500"></i> Revisi Barang Titipan</h3>
+                    <p class="text-xs text-slate-500 font-bold mt-1">Invoice: <span id="rev_invoice" class="text-blue-600"></span></p>
+                </div>
+                <button onclick="tutupModalRevisi()" class="text-slate-400 hover:text-rose-500 transition-colors"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50 custom-scrollbar">
+                <form id="formRevisi">
+                    <input type="hidden" id="rev_prod_id" name="production_id">
+                    <input type="hidden" id="rev_emp_name">
+                    
+                    <div id="rev-product-container" class="space-y-4">
+                        </div>
+
+                    <button type="button" onclick="addRevRow()" class="mt-5 bg-white hover:bg-slate-100 text-slate-700 px-4 py-3 rounded-xl text-sm font-bold transition-all flex items-center gap-2 border border-slate-300 border-dashed w-full sm:w-auto justify-center shadow-sm">
+                        <i class="fa-solid fa-plus"></i> Tambah Barang Lainnya
+                    </button>
+                </form>
+            </div>
+            
+            <div class="p-6 border-t border-slate-100 bg-white rounded-b-[2rem] flex justify-end gap-3">
+                <button type="button" onclick="tutupModalRevisi()" class="px-6 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all">Batal</button>
+                <button type="button" onclick="submitRevisi()" class="bg-amber-500 hover:bg-amber-600 text-white px-8 py-2.5 rounded-xl text-sm font-black shadow-md shadow-amber-200 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-save"></i> Simpan & Kirim Ulang
+                </button>
+            </div>
+        </div>
     </div>
 
     <?php include '../../components/footer.php'; ?>
