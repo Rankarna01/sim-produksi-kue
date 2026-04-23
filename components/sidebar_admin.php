@@ -40,6 +40,12 @@ function getNavClass($path, $current_uri) {
             <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Scan Barcode</span>
         </a>
 
+        <a href="<?= BASE_URL ?>admin/validasi_titipan/" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= (strpos($_SERVER['PHP_SELF'], 'validasi_titipan') !== false) ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100' ?>">
+    <div class="w-8 h-8 flex items-center justify-center">
+        <i class="fa-solid fa-clipboard-check text-lg"></i>
+    </div>
+    <span class="font-bold text-sm">Validasi Titipan</span>
+</a>
         
         <a href="<?= BASE_URL ?>admin/riwayat_validasi/" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/admin/riwayat_validasi/', $current_uri) ?>">
             <i class="fa-solid fa-list-check w-5 text-center"></i> <span class="text-sm">Riwayat Validasi</span>
