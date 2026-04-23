@@ -3,7 +3,7 @@ require_once '../../config/auth.php';
 require_once '../../config/database.php'; // Tambahkan ini untuk akses DB
 
 // Gunakan permission master_user atau buat permission baru khusus master_role
-checkPermission('master_user'); 
+checkPermission('master_user');
 
 // --- SUNTIKAN: AMBIL DATA DAPUR DINAMIS ---
 $stmtKitchens = $pdo->query("SELECT * FROM kitchens ORDER BY id ASC");
@@ -11,43 +11,68 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <?php include '../../components/head.php'; ?>
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
-        /* Style khusus untuk checkbox utama agar terlihat seperti Card */
-        .perm-card { transition: all 0.2s; }
-        .perm-checkbox:checked + .perm-card {
-            background-color: #eff6ff; /* blue-50 */
-            border-color: #3b82f6; /* blue-500 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
         }
-        .perm-checkbox:checked + .perm-card .perm-icon {
-            color: #2563eb; /* blue-600 */
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        /* Style khusus untuk checkbox utama agar terlihat seperti Card */
+        .perm-card {
+            transition: all 0.2s;
+        }
+
+        .perm-checkbox:checked+.perm-card {
+            background-color: #eff6ff;
+            /* blue-50 */
+            border-color: #3b82f6;
+            /* blue-500 */
+        }
+
+        .perm-checkbox:checked+.perm-card .perm-icon {
+            color: #2563eb;
+            /* blue-600 */
         }
 
         /* Style untuk sub-checkbox (Edit/Hapus) */
-        .sub-perm-checkbox:checked + .sub-perm-label {
-            background-color: #fef3c7; /* amber-50 */
-            color: #d97706; /* amber-600 */
-            border-color: #f59e0b; /* amber-500 */
+        .sub-perm-checkbox:checked+.sub-perm-label {
+            background-color: #fef3c7;
+            /* amber-50 */
+            color: #d97706;
+            /* amber-600 */
+            border-color: #f59e0b;
+            /* amber-500 */
         }
-        .sub-perm-checkbox-danger:checked + .sub-perm-label {
-            background-color: #fef2f2; /* red-50 */
-            color: #dc2626; /* red-600 */
-            border-color: #ef4444; /* red-500 */
+
+        .sub-perm-checkbox-danger:checked+.sub-perm-label {
+            background-color: #fef2f2;
+            /* red-50 */
+            color: #dc2626;
+            /* red-600 */
+            border-color: #ef4444;
+            /* red-500 */
         }
     </style>
 </head>
+
 <body class="text-slate-800 antialiased h-screen flex overflow-hidden bg-background">
 
     <?php include '../../components/sidebar.php'; ?>
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
         <?php include '../../components/header.php'; ?>
-        
+
         <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8 w-full relative">
             <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
@@ -72,7 +97,9 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
                             </tr>
                         </thead>
                         <tbody id="table-data" class="text-sm divide-y divide-slate-100">
-                            <tr><td colspan="5" class="p-8 text-center text-secondary">Memuat data...</td></tr>
+                            <tr>
+                                <td colspan="5" class="p-8 text-center text-secondary">Memuat data...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -89,7 +116,7 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
-            
+
             <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
                 <form id="formRole">
                     <input type="hidden" id="form_mode" value="add">
@@ -112,13 +139,13 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
                     </div>
 
                     <div class="space-y-6">
-                        
+
                         <div>
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-store mr-1"></i> Akses Dapur & Cabang</p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                                <?php 
+                                <?php
                                 // Looping data dapur dari database
-                                foreach($kitchens as $k): 
+                                foreach ($kitchens as $k):
                                 ?>
                                     <?= renderCheckbox('akses_dapur_' . $k['id'], 'Akses ' . htmlspecialchars($k['name']), 'fa-shop') ?>
                                 <?php endforeach; ?>
@@ -134,6 +161,9 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
                                 <?= renderCheckboxGroup('master_produk', 'Data Produk', 'fa-box') ?>
                                 <?= renderCheckboxGroup('master_kategori', 'Kategori Produk', 'fa-tags') ?>
                                 <?= renderCheckboxGroup('master_bahan', 'Data Bahan Baku', 'fa-wheat-awn') ?>
+
+                                <?= renderCheckboxGroup('master_titipan', 'Master Barang Titipan UMKM', 'fa-store') ?>
+
                                 <?= renderCheckboxGroup('master_satuan', 'Master Satuan', 'fa-weight-scale') ?>
                                 <?= renderCheckbox('master_resep', 'Data Resep (BOM)', 'fa-list-check') ?>
                                 <?= renderCheckbox('master_user', 'Manajemen User & Role', 'fa-users-gear') ?>
@@ -167,7 +197,7 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
                     </div>
                 </form>
             </div>
-            
+
             <div class="p-5 border-t border-slate-100 bg-slate-50 shrink-0 flex justify-end gap-3 rounded-b-3xl">
                 <button type="button" onclick="closeModal('modal-role')" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors shadow-sm">Batal</button>
                 <button type="button" onclick="saveData()" class="px-5 py-2.5 text-sm font-bold text-white bg-primary hover:bg-blue-700 rounded-xl transition-all shadow-sm">
@@ -182,10 +212,10 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
     <script>
         // Script kecil agar jika induknya di-uncheck, anak-anaknya juga ikut di-uncheck otomatis
         document.addEventListener('change', function(e) {
-            if(e.target.classList.contains('master-perm')) {
-                if(!e.target.checked) {
+            if (e.target.classList.contains('master-perm')) {
+                if (!e.target.checked) {
                     const parentCard = e.target.closest('.group-card');
-                    if(parentCard) {
+                    if (parentCard) {
                         parentCard.querySelectorAll('.sub-perm-checkbox, .sub-perm-checkbox-danger').forEach(sub => {
                             sub.checked = false;
                         });
@@ -195,40 +225,43 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
         });
     </script>
 </body>
+
 </html>
 
 <?php
 // Fungsi Helper LAMA (Hanya akses halaman)
-function renderCheckbox($value, $label, $icon) {
+function renderCheckbox($value, $label, $icon)
+{
     return '
     <label class="cursor-pointer relative block">
-        <input type="checkbox" name="permissions[]" value="'.$value.'" class="perm-checkbox peer absolute opacity-0 w-0 h-0">
+        <input type="checkbox" name="permissions[]" value="' . $value . '" class="perm-checkbox peer absolute opacity-0 w-0 h-0">
         <div class="perm-card flex items-center gap-3 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 bg-white shadow-sm h-full">
-            <div class="w-5 text-center text-slate-400 perm-icon transition-colors"><i class="fa-solid '.$icon.'"></i></div>
-            <div class="text-xs font-bold text-slate-700 select-none">'.$label.'</div>
+            <div class="w-5 text-center text-slate-400 perm-icon transition-colors"><i class="fa-solid ' . $icon . '"></i></div>
+            <div class="text-xs font-bold text-slate-700 select-none">' . $label . '</div>
         </div>
     </label>
     ';
 }
 
 // Fungsi Helper BARU (Akses Halaman + Opsi Edit & Hapus)
-function renderCheckboxGroup($value, $label, $icon) {
+function renderCheckboxGroup($value, $label, $icon)
+{
     return '
     <div class="border border-slate-200 rounded-xl bg-white shadow-sm group-card flex flex-col h-full overflow-hidden">
         <label class="cursor-pointer relative flex-1">
-            <input type="checkbox" name="permissions[]" value="'.$value.'" class="perm-checkbox master-perm peer absolute opacity-0 w-0 h-0">
+            <input type="checkbox" name="permissions[]" value="' . $value . '" class="perm-checkbox master-perm peer absolute opacity-0 w-0 h-0">
             <div class="perm-card flex items-center gap-3 p-3 transition-colors h-full">
-                <div class="w-5 text-center text-slate-400 perm-icon transition-colors"><i class="fa-solid '.$icon.'"></i></div>
-                <div class="text-xs font-bold text-slate-700 select-none">'.$label.'</div>
+                <div class="w-5 text-center text-slate-400 perm-icon transition-colors"><i class="fa-solid ' . $icon . '"></i></div>
+                <div class="text-xs font-bold text-slate-700 select-none">' . $label . '</div>
             </div>
         </label>
         <div class="bg-slate-50 border-t border-slate-100 p-2 flex gap-2">
             <label class="cursor-pointer flex-1 text-center">
-                <input type="checkbox" name="permissions[]" value="edit_'.$value.'" class="sub-perm-checkbox peer absolute opacity-0 w-0 h-0">
+                <input type="checkbox" name="permissions[]" value="edit_' . $value . '" class="sub-perm-checkbox peer absolute opacity-0 w-0 h-0">
                 <div class="sub-perm-label text-[10px] font-bold text-slate-500 border border-slate-200 bg-white py-1 rounded transition-colors select-none">Edit</div>
             </label>
             <label class="cursor-pointer flex-1 text-center">
-                <input type="checkbox" name="permissions[]" value="hapus_'.$value.'" class="sub-perm-checkbox-danger peer absolute opacity-0 w-0 h-0">
+                <input type="checkbox" name="permissions[]" value="hapus_' . $value . '" class="sub-perm-checkbox-danger peer absolute opacity-0 w-0 h-0">
                 <div class="sub-perm-label text-[10px] font-bold text-slate-500 border border-slate-200 bg-white py-1 rounded transition-colors select-none">Hapus</div>
             </label>
         </div>
