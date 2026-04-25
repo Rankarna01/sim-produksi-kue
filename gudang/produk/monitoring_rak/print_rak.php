@@ -16,11 +16,11 @@ $rack_name = $stmtRak->fetchColumn();
 
 if (!$rack_name) die("Rak tidak valid.");
 
-// Ambil Data Barang
+// PERBAIKAN: Menggunakan m.rack_id sesuai dengan database
 $sql = "SELECT m.sku_code, m.material_name, m.stock, m.unit, c.name as category_name
         FROM materials_stocks m
         LEFT JOIN material_categories c ON m.category_id = c.id
-        WHERE m.lokasi_rak_id = ? AND m.status = 'active'
+        WHERE m.rack_id = ? AND m.status = 'active'
         ORDER BY m.material_name ASC";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$rack_id]);
@@ -30,7 +30,7 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Cetak Isi Rak <?= $rack_name ?></title>
+    <title>Cetak Isi Rak <?= htmlspecialchars($rack_name) ?></title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; }
         .container { max-width: 800px; margin: 20px auto; }
@@ -46,9 +46,9 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <button onclick="window.print()" style="margin-bottom:20px; padding:10px; background:blue; color:white; border:none; cursor:pointer;">Cetak Sekarang</button>
     <div class="container">
         <div class="header">
-            <h2 style="margin:0; text-transform:uppercase;"><?= $nama_toko ?></h2>
+            <h2 style="margin:0; text-transform:uppercase;"><?= htmlspecialchars($nama_toko) ?></h2>
             <h3 style="margin:5px 0 0 0;">DAFTAR INVENTARIS FISIK RAK</h3>
-            <p style="margin:5px 0 0 0; font-size: 18px; font-weight: bold; color: #2563eb;">LOKASI RAK: <?= $rack_name ?></p>
+            <p style="margin:5px 0 0 0; font-size: 18px; font-weight: bold; color: #2563eb;">LOKASI RAK: <?= htmlspecialchars($rack_name) ?></p>
             <p style="margin:5px 0 0 0;">Tanggal Cetak: <?= date('d/m/Y H:i') ?></p>
         </div>
 
@@ -69,10 +69,10 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <?php foreach ($items as $idx => $item): ?>
                         <tr>
                             <td class="text-center"><?= $idx + 1 ?></td>
-                            <td style="font-family: monospace;"><?= $item['sku_code'] ?></td>
-                            <td><strong><?= strtoupper($item['material_name']) ?></strong></td>
-                            <td class="text-center"><?= $item['category_name'] ?: '-' ?></td>
-                            <td class="text-center" style="font-size: 14px;"><strong><?= floatval($item['stock']) ?></strong> <?= $item['unit'] ?></td>
+                            <td style="font-family: monospace; font-weight: bold;"><?= htmlspecialchars($item['sku_code']) ?></td>
+                            <td><strong><?= strtoupper(htmlspecialchars($item['material_name'])) ?></strong></td>
+                            <td class="text-center"><?= htmlspecialchars($item['category_name'] ?: '-') ?></td>
+                            <td class="text-center" style="font-size: 14px;"><strong><?= floatval($item['stock']) ?></strong> <?= htmlspecialchars($item['unit']) ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>

@@ -6,10 +6,10 @@ $stmtToko = $pdo->query("SELECT * FROM store_profile WHERE id = 1");
 $toko = $stmtToko->fetch(PDO::FETCH_ASSOC);
 $nama_toko = $toko['store_name'] ?? 'PERUSAHAAN KAMI';
 
-// Ambil semua rak
+// PERBAIKAN: Menggunakan m.rack_id sesuai dengan database
 $sql = "SELECT r.name, COUNT(m.id) as total_items, IFNULL(SUM(m.stock), 0) as total_stock
         FROM racks r
-        LEFT JOIN materials_stocks m ON r.id = m.lokasi_rak_id AND m.status = 'active'
+        LEFT JOIN materials_stocks m ON r.id = m.rack_id AND m.status = 'active'
         GROUP BY r.id ORDER BY r.name ASC";
 $racks = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -34,7 +34,7 @@ $racks = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     <button onclick="window.print()" style="margin-bottom:20px; padding:10px; background:blue; color:white; border:none; cursor:pointer;">Cetak Sekarang</button>
     <div class="container">
         <div class="header">
-            <h2 style="margin:0; text-transform:uppercase;"><?= $nama_toko ?></h2>
+            <h2 style="margin:0; text-transform:uppercase;"><?= htmlspecialchars($nama_toko) ?></h2>
             <h3 style="margin:5px 0 0 0;">RINGKASAN LOKASI RAK GUDANG</h3>
             <p style="margin:5px 0 0 0;">Tanggal Cetak: <?= date('d M Y H:i') ?></p>
         </div>
@@ -57,7 +57,7 @@ $racks = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
                 ?>
                     <tr>
                         <td class="text-center"><?= $idx + 1 ?></td>
-                        <td><strong><?= strtoupper($rack['name']) ?></strong></td>
+                        <td><strong><?= strtoupper(htmlspecialchars($rack['name'])) ?></strong></td>
                         <td class="text-center"><?= $rack['total_items'] ?> Jenis</td>
                         <td class="text-right"><strong><?= floatval($rack['total_stock']) ?></strong> Unit</td>
                     </tr>
