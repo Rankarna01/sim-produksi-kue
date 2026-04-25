@@ -80,10 +80,11 @@ $periode_text = (!empty($start_date) && !empty($end_date) && $filter_date === 'p
             <tr>
                 <th style="width:12%">Tanggal</th>
                 <th style="width:20%">Barang</th>
-                <th style="width:10%">Tipe Transaksi</th>
-                <th style="width:20%">Keterangan / Ref</th>
-                <th class="text-center" style="width:8%">IN</th>
-                <th class="text-center" style="width:8%">OUT</th>
+                <th class="text-center" style="width:6%">Satuan</th>
+                <th class="text-center" style="width:10%">Tipe Transaksi</th>
+                <th style="width:18%">Keterangan / Ref</th>
+                <th class="text-center" style="width:6%">IN</th>
+                <th class="text-center" style="width:6%">OUT</th>
                 <th class="text-center" style="width:10%">SALDO</th>
                 <th style="width:12%">Admin</th>
             </tr>
@@ -94,16 +95,17 @@ $periode_text = (!empty($start_date) && !empty($end_date) && $filter_date === 'p
                 <tr>
                     <td><?= date('d/m/Y H:i', strtotime($row['created_at'])) ?></td>
                     <td><strong><?= htmlspecialchars($row['material_name']) ?></strong></td>
+                    <td class="text-center" style="font-weight: bold;"><?= htmlspecialchars($row['unit']) ?></td>
                     <td class="text-center font-bold"><?= $row['tipe'] ?></td>
                     <td><?= htmlspecialchars($row['notes'] ?: '-') ?> <br><small>[<?= $row['ref'] ?>]</small></td>
                     <td class="text-center" style="color:green;"><?= $row['masuk'] > 0 ? floatval($row['masuk']) : '-' ?></td>
                     <td class="text-center" style="color:red;"><?= $row['keluar'] > 0 ? floatval($row['keluar']) : '-' ?></td>
-                    <td class="text-center font-bold" style="background:#f8fafc;"><?= floatval($row['saldo']) ?> <?= $row['unit'] ?></td>
+                    <td class="text-center font-bold" style="background:#f8fafc;"><?= floatval($row['saldo']) ?></td>
                     <td><?= $row['admin_name'] ?></td>
                 </tr>
                 <?php endforeach; ?>
             <?php else: ?>
-                <tr><td colspan="8" class="text-center">Tidak ada pergerakan barang.</td></tr>
+                <tr><td colspan="9" class="text-center">Tidak ada pergerakan barang.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

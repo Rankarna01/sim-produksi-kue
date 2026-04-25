@@ -59,7 +59,6 @@ try {
             FROM gudang_stok_opname_details od JOIN gudang_stok_opnames o ON od.opname_id = o.id WHERE od.difference < 0 AND o.status = 'approved'
         ";
 
-        // Hitung Total Data (Khusus untuk logic.php, untuk export_pdf/excel abaikan $countSql ini)
         $countSql = "SELECT COUNT(*) FROM ($unionQuery) t JOIN materials_stocks ms ON t.material_id = ms.id $whereClause";
         if (isset($limit)) {
             $countStmt = $pdo->prepare($countSql);
@@ -68,8 +67,6 @@ try {
             $total_pages = ceil($total_data / $limit);
         }
 
-        // Fetch Data + Saldo Berjalan Dinamis
-       // 2. FETCH DATA + SALDO BERJALAN DINAMIS
         $sql = "
             SELECT t.*, ms.material_name, ms.unit, u.name as admin_name,
             (
@@ -84,7 +81,6 @@ try {
             ORDER BY t.created_at DESC 
         ";
         
-        // Tambahkan Limit jika di logic.php (Hapus/abaikan 2 baris ini jika di file export_pdf.php / export_excel.php)
         if (isset($limit) && isset($offset)) {
             $sql .= " LIMIT $limit OFFSET $offset";
         }

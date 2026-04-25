@@ -3,6 +3,7 @@ require_once '../../../config/auth.php';
 require_once '../../../config/database.php';
 
 $method_id = $_GET['method'] ?? 'semua';
+$status_po = $_GET['status_po'] ?? 'semua';
 $filter_date = $_GET['filter_date'] ?? 'semua';
 $start_date = $_GET['start_date'] ?? '';
 $end_date = $_GET['end_date'] ?? '';
@@ -12,6 +13,9 @@ $whereClause = "WHERE 1=1";
 $params = [];
 
 if ($method_id !== 'semua') { $whereClause .= " AND pp.payment_method_id = ?"; $params[] = $method_id; }
+
+if ($status_po === 'paid') { $whereClause .= " AND po.payment_status = 'paid'"; }
+elseif ($status_po === 'unpaid_partial') { $whereClause .= " AND po.payment_status IN ('unpaid', 'partial')"; }
 
 if ($filter_date === 'harian') { $whereClause .= " AND DATE(pp.payment_date) = CURDATE()"; } 
 elseif ($filter_date === 'periode' && !empty($start_date) && !empty($end_date)) {
@@ -30,7 +34,7 @@ $sumStmt = $pdo->prepare("SELECT SUM(pp.amount) $joins $whereClause");
 $sumStmt->execute($params);
 $grand_total = $sumStmt->fetchColumn() ?: 0;
 
-$sql = "SELECT pp.*, po.po_no, s.name as supplier_name, pm.name as method_name, u.name as admin_name $joins $whereClause ORDER BY pp.payment_date ASC";
+$sql = "SELECT pp.*, po.po_no, po.payment_status, s.name as supplier_name, pm.name as method_name, u.name as admin_name $joins $whereClause ORDER BY pp.payment_date ASC";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -50,6 +54,7 @@ if($filter_date === 'periode') $periode_teks = date('d/m/Y', strtotime($start_da
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f4f4f4; font-weight: bold; }
         .text-right { text-align: right; }
+        .text-center { text-align: center; }
         .font-bold { font-weight: bold; }
         .text-blue { color: #1d4ed8; }
         @media print { @page { size: landscape; } button { display: none; } }
@@ -64,21 +69,25 @@ if($filter_date === 'periode') $periode_teks = date('d/m/Y', strtotime($start_da
     <table>
         <thead>
             <tr>
-                <th style="width: 15%;">Tanggal</th>
-                <th style="width: 15%;">No PO</th>
-                <th style="width: 20%;">Supplier</th>
+                <th style="width: 12%;">Tanggal</th>
+                <th style="width: 12%;">No PO</th>
+                <th style="width: 10%;" class="text-center">Status PO</th>
+                <th style="width: 18%;">Supplier</th>
                 <th style="width: 12%;">Metode</th>
-                <th style="width: 18%;">Catatan</th>
+                <th style="width: 16%;">Catatan</th>
                 <th style="width: 10%;">Admin</th>
                 <th style="width: 10%;" class="text-right">Jumlah (Rp)</th>
             </tr>
         </thead>
         <tbody>
             <?php if(count($data) > 0): ?>
-                <?php foreach($data as $row): ?>
+                <?php foreach($data as $row): 
+                    $stat = $row['payment_status'] == 'paid' ? 'LUNAS' : ($row['payment_status'] == 'partial' ? 'PARSIAL' : 'BELUM LUNAS');
+                ?>
                 <tr>
                     <td><?= date('d/m/Y H:i', strtotime($row['payment_date'])) ?></td>
                     <td class="font-bold text-blue"><?= $row['po_no'] ?></td>
+                    <td class="text-center font-bold"><?= $stat ?></td>
                     <td><?= $row['supplier_name'] ?></td>
                     <td><?= $row['method_name'] ?></td>
                     <td><?= $row['notes'] ?: '-' ?></td>
@@ -87,13 +96,13 @@ if($filter_date === 'periode') $periode_teks = date('d/m/Y', strtotime($start_da
                 </tr>
                 <?php endforeach; ?>
                 <tr>
-                    <td colspan="6" class="text-right font-bold" style="background-color: #f4f4f4; padding: 12px 8px;">TOTAL PEMBAYARAN</td>
+                    <td colspan="7" class="text-right font-bold" style="background-color: #f4f4f4; padding: 12px 8px;">TOTAL PEMBAYARAN</td>
                     <td class="text-right font-bold" style="background-color: #f4f4f4; font-size: 14px; color: #1d4ed8;">
                         Rp <?= number_format($grand_total,0,',','.') ?>
                     </td>
                 </tr>
             <?php else: ?>
-                <tr><td colspan="7" style="text-align: center;">Tidak ada data laporan.</td></tr>
+                <tr><td colspan="8" style="text-align: center;">Tidak ada data laporan.</td></tr>
             <?php endif; ?>
         </tbody>
     </table>

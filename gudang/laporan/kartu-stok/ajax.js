@@ -66,7 +66,7 @@ function cariData() {
 async function loadData(page = 1) {
     currentPage = page;
     const tbody = document.getElementById('table-data');
-    tbody.innerHTML = '<tr><td colspan="8" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>';
     
     const material_id = document.getElementById('filter_material').value;
     const search = document.getElementById('search').value;
@@ -79,14 +79,14 @@ async function loadData(page = 1) {
     if (res.status === 'success') {
         let html = '';
         if (res.data.length === 0) {
-            html = '<tr><td colspan="8" class="p-10 text-center text-slate-400 italic font-medium">Tidak ada pergerakan barang ditemukan.</td></tr>';
+            html = '<tr><td colspan="9" class="p-10 text-center text-slate-400 italic font-medium">Tidak ada pergerakan barang ditemukan.</td></tr>';
         } else {
             res.data.forEach((item) => {
                 let badgeTipe = '';
                 if(item.tipe === 'IN') badgeTipe = '<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-black text-[10px]">IN</span>';
                 else if(item.tipe === 'OUT') badgeTipe = '<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded font-black text-[10px]">OUT</span>';
-                else if(item.tipe === 'IN (Opname)') badgeTipe = '<span class="bg-purple-100 text-purple-700 px-2 py-1 rounded font-black text-[10px] tracking-tighter">IN (OPNAME)</span>';
-                else if(item.tipe === 'OUT (Opname)') badgeTipe = '<span class="bg-fuchsia-100 text-fuchsia-700 px-2 py-1 rounded font-black text-[10px] tracking-tighter">OUT (OPNAME)</span>';
+                else if(item.tipe === 'IN (Opname)') badgeTipe = '<span class="bg-purple-100 text-purple-700 px-2 py-1 rounded font-black text-[10px] tracking-tighter">IN (OPN)</span>';
+                else if(item.tipe === 'OUT (Opname)') badgeTipe = '<span class="bg-fuchsia-100 text-fuchsia-700 px-2 py-1 rounded font-black text-[10px] tracking-tighter">OUT (OPN)</span>';
 
                 let valMasuk = item.masuk > 0 ? `<span class="text-emerald-600 font-bold">+${parseFloat(item.masuk)}</span>` : '<span class="text-slate-300">-</span>';
                 let valKeluar = item.keluar > 0 ? `<span class="text-rose-600 font-bold">-${parseFloat(item.keluar)}</span>` : '<span class="text-slate-300">-</span>';
@@ -100,6 +100,7 @@ async function loadData(page = 1) {
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="p-4 text-xs font-bold text-slate-500">${formatTglTime(item.created_at)}</td>
                         <td class="p-4 text-xs font-black text-slate-800">${item.material_name}</td>
+                        <td class="p-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">${item.unit}</td>
                         <td class="p-4 text-center">${badgeTipe}</td>
                         <td class="p-4 text-xs text-slate-600">${notesInfo}</td>
                         <td class="p-4 text-center">${valMasuk}</td>

@@ -6,9 +6,25 @@ checkPermission('lap_kartu_stok');
 header("Content-Type: application/vnd.ms-excel");
 header("Content-Disposition: attachment; filename=Kartu_Stok_Gudang_" . date('Ymd_His') . ".xls");
 
-// --- (Copy-Paste Blok Filter Data & $sql dari export_pdf.php DI SINI) ---
-// Note: Persis seperti kode logic data $params dan $stmt di atas
-// ...
+$material_id = $_GET['material_id'] ?? '';
+$filter_date = $_GET['filter_date'] ?? 'semua';
+$start_date = $_GET['start_date'] ?? '';
+$end_date = $_GET['end_date'] ?? '';
+$search = $_GET['search'] ?? '';
+
+$whereClause = "WHERE 1=1";
+$params = [];
+
+if (!empty($material_id)) { $whereClause .= " AND t.material_id = ?"; $params[] = $material_id; }
+if ($filter_date === 'harian') { $whereClause .= " AND DATE(t.created_at) = CURDATE()"; } 
+elseif ($filter_date === 'periode' && !empty($start_date) && !empty($end_date)) {
+    $whereClause .= " AND DATE(t.created_at) BETWEEN ? AND ?";
+    $params[] = $start_date; $params[] = $end_date;
+}
+if (!empty($search)) {
+    $whereClause .= " AND (ms.material_name LIKE ? OR t.ref LIKE ? OR t.notes LIKE ?)";
+    $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%";
+}
 
 $unionQuery = "
             SELECT 'IN' as tipe, created_at, material_id, qty as masuk, 0 as keluar, notes, transaction_no as ref, user_id FROM barang_masuk
@@ -42,11 +58,12 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <table border="1">
     <thead>
-        <tr><th colspan="8"><h3>LAPORAN KARTU STOK GUDANG</h3></th></tr>
-        <tr><th colspan="8">Waktu Cetak: <?= date('d M Y H:i:s') ?></th></tr>
+        <tr><th colspan="9"><h3>LAPORAN KARTU STOK GUDANG</h3></th></tr>
+        <tr><th colspan="9">Waktu Cetak: <?= date('d M Y H:i:s') ?></th></tr>
         <tr>
             <th style="background-color: #f4f4f4;">Tanggal</th>
             <th style="background-color: #f4f4f4;">Barang</th>
+            <th style="background-color: #e5e7eb;">Satuan</th>
             <th style="background-color: #f4f4f4;">Tipe</th>
             <th style="background-color: #f4f4f4;">Referensi Dokumen</th>
             <th style="background-color: #dcfce7;">QTY MASUK</th>
@@ -60,11 +77,12 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <tr>
             <td><?= date('d/m/Y H:i', strtotime($row['created_at'])) ?></td>
             <td><?= htmlspecialchars($row['material_name']) ?></td>
+            <td style="font-weight:bold; text-align:center;"><?= htmlspecialchars($row['unit']) ?></td>
             <td><?= $row['tipe'] ?></td>
             <td><?= htmlspecialchars($row['notes'] ?: '-') ?> (<?= $row['ref'] ?>)</td>
-            <td style="color: green;"><?= $row['masuk'] > 0 ? floatval($row['masuk']) : '' ?></td>
-            <td style="color: red;"><?= $row['keluar'] > 0 ? floatval($row['keluar']) : '' ?></td>
-            <td style="font-weight: bold;"><?= floatval($row['saldo']) ?></td>
+            <td style="color: green; text-align:center;"><?= $row['masuk'] > 0 ? floatval($row['masuk']) : '' ?></td>
+            <td style="color: red; text-align:center;"><?= $row['keluar'] > 0 ? floatval($row['keluar']) : '' ?></td>
+            <td style="font-weight: bold; text-align:center;"><?= floatval($row['saldo']) ?></td>
             <td><?= $row['admin_name'] ?></td>
         </tr>
         <?php endforeach; ?>

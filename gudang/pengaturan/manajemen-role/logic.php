@@ -85,16 +85,24 @@ try {
     // 4. HAPUS ROLE GUDANG
     if ($action === 'delete') {
         $id = $_POST['id'] ?? '';
-        if ($id == 1 || $id == 2) {
-            echo json_encode(['status' => 'error', 'message' => 'Jabatan Master Owner tidak boleh dihapus demi keamanan sistem!']); 
-            exit;
-        }
         
-        // PENTING: Cek apakah role_slug ini sedang dipakai oleh user di tabel users
+        // PENTING: Ambil slug role-nya dulu untuk dicek
         $cekRole = $pdo->prepare("SELECT role_slug FROM gudang_roles WHERE id = ?");
         $cekRole->execute([$id]);
         $role_slug = $cekRole->fetchColumn();
 
+        // ============================================================
+        // PROTEKSI ROLE INTI (Hanya bisa di-edit, dilarang di-hapus)
+        // ============================================================
+        $protected_roles = ['owner_gudang', 'owner_produksi', 'admin_gudang', 'admin_produksi'];
+        
+        if (in_array($role_slug, $protected_roles)) {
+            echo json_encode(['status' => 'error', 'message' => 'Gagal! Jabatan Inti Master (Owner/Admin) dilarang dihapus demi keamanan sistem.']); 
+            exit;
+        }
+        // ============================================================
+        
+        // Cek apakah role_slug ini sedang dipakai oleh user di tabel users
         $cekUser = $pdo->prepare("SELECT id FROM users WHERE role = ?");
         $cekUser->execute([$role_slug]);
         if($cekUser->rowCount() > 0) {

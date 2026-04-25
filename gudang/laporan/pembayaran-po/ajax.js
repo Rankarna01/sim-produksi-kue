@@ -57,27 +57,36 @@ function cariData() {
 async function loadData(page = 1) {
     currentPage = page;
     const tbody = document.getElementById('table-data');
-    tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>';
     
     const method = document.getElementById('filter_method').value;
+    const status_po = document.getElementById('filter_status_po').value;
     const search = document.getElementById('search').value;
     const start_date = document.getElementById('start_date').value;
     const end_date = document.getElementById('end_date').value;
     
-    const url = `logic.php?action=read&page=${currentPage}&method=${method}&filter_date=${currentFilterDate}&start_date=${start_date}&end_date=${end_date}&search=${search}`;
+    const url = `logic.php?action=read&page=${currentPage}&method=${method}&status_po=${status_po}&filter_date=${currentFilterDate}&start_date=${start_date}&end_date=${end_date}&search=${search}`;
     const res = await fetchAjax(url, 'GET');
     
     if (res.status === 'success') {
         let html = '';
         if (res.data.length === 0) {
-            html = '<tr><td colspan="7" class="p-10 text-center text-slate-400 italic font-medium">Tidak ada data laporan pembayaran.</td></tr>';
+            html = '<tr><td colspan="8" class="p-10 text-center text-slate-400 italic font-medium">Tidak ada data laporan pembayaran.</td></tr>';
             document.getElementById('total-pembayaran').innerText = 'Rp 0';
         } else {
             res.data.forEach((item) => {
+                
+                // Badge Status PO
+                let badgeStatusPO = '';
+                if (item.payment_status === 'paid') badgeStatusPO = '<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">Lunas</span>';
+                else if (item.payment_status === 'partial') badgeStatusPO = '<span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">Parsial</span>';
+                else badgeStatusPO = '<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">Belum Lunas</span>';
+
                 html += `
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="p-4 text-xs font-bold text-slate-600">${formatTglTime(item.payment_date)}</td>
                         <td class="p-4 text-xs font-black text-blue-600">${item.po_no}</td>
+                        <td class="p-4 text-center">${badgeStatusPO}</td>
                         <td class="p-4 text-xs text-slate-700">${item.supplier_name}</td>
                         <td class="p-4 text-xs text-slate-700">${item.method_name}</td>
                         <td class="p-4 text-[10px] text-slate-500 italic max-w-[150px] truncate">${item.notes || '-'}</td>
@@ -107,12 +116,13 @@ function renderPagination(totalPages, current) {
 
 function exportData(type) {
     const method = document.getElementById('filter_method').value;
+    const status_po = document.getElementById('filter_status_po').value;
     const search = document.getElementById('search').value;
     const start_date = document.getElementById('start_date').value;
     const end_date = document.getElementById('end_date').value;
     
     let url = (type === 'pdf') ? 'export_pdf.php' : 'export_excel.php';
-    url += `?method=${method}&filter_date=${currentFilterDate}&start_date=${start_date}&end_date=${end_date}&search=${search}`;
+    url += `?method=${method}&status_po=${status_po}&filter_date=${currentFilterDate}&start_date=${start_date}&end_date=${end_date}&search=${search}`;
     
     window.open(url, '_blank');
 }

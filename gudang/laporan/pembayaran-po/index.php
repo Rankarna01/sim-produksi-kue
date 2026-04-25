@@ -17,12 +17,18 @@ checkPermission('lap_pembayaran_po');
         <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
             
             <div class="mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                <div class="flex items-center gap-4">
+                <div class="flex flex-wrap items-center gap-4">
                     <h2 class="text-2xl font-black text-slate-800 tracking-tight">Laporan Pembayaran PO</h2>
                     
                     <select id="filter_method" onchange="loadData()" class="px-3 py-1.5 border border-slate-300 rounded-lg outline-none text-sm font-bold text-slate-600 bg-white">
                         <option value="semua">Semua Metode</option>
-                        </select>
+                    </select>
+
+                    <select id="filter_status_po" onchange="loadData()" class="px-3 py-1.5 border border-slate-300 rounded-lg outline-none text-sm font-bold text-slate-600 bg-white">
+                        <option value="semua">Semua Status PO</option>
+                        <option value="paid">Sudah Lunas</option>
+                        <option value="unpaid_partial">Belum Lunas (Nyicil)</option>
+                    </select>
                 </div>
                 
                 <div class="flex flex-wrap items-center gap-2">
@@ -54,20 +60,21 @@ checkPermission('lap_pembayaran_po');
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                 <div class="overflow-x-auto flex-1">
-                    <table class="w-full text-left text-sm">
+                    <table class="w-full text-left text-sm min-w-[1000px]">
                         <thead class="bg-white border-b border-slate-100">
-                            <tr class="text-xs font-black text-slate-800">
+                            <tr class="text-xs font-black text-slate-800 uppercase tracking-widest">
                                 <th class="p-4">Tanggal</th>
                                 <th class="p-4">No PO</th>
+                                <th class="p-4 text-center">Status PO</th>
                                 <th class="p-4">Supplier</th>
                                 <th class="p-4">Metode</th>
                                 <th class="p-4">Catatan</th>
                                 <th class="p-4">Admin</th>
-                                <th class="p-4 text-right">Jumlah</th>
+                                <th class="p-4 text-right">Jumlah Bayar</th>
                             </tr>
                         </thead>
                         <tbody id="table-data" class="divide-y divide-slate-100 font-bold text-slate-600">
-                            <tr><td colspan="7" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>
+                            <tr><td colspan="8" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -78,7 +85,7 @@ checkPermission('lap_pembayaran_po');
                 </div>
             </div>
 
-            <div id="pagination" class="mt-6 flex items-center justify-center gap-2"></div>
+            <div id="pagination" class="mt-6 flex items-center justify-center gap-2 pb-10"></div>
 
         </main>
     </div>

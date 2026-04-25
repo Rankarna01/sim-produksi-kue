@@ -21,6 +21,7 @@ try {
         $offset = ($page - 1) * $limit;
 
         $method_id = $_GET['method'] ?? 'semua';
+        $status_po = $_GET['status_po'] ?? 'semua';
         $filter_date = $_GET['filter_date'] ?? 'semua';
         $start_date = $_GET['start_date'] ?? '';
         $end_date = $_GET['end_date'] ?? '';
@@ -33,6 +34,13 @@ try {
         if ($method_id !== 'semua') {
             $whereClause .= " AND pp.payment_method_id = ?";
             $params[] = $method_id;
+        }
+
+        // Filter Status Lunas / Belum Lunas
+        if ($status_po === 'paid') {
+            $whereClause .= " AND po.payment_status = 'paid'";
+        } elseif ($status_po === 'unpaid_partial') {
+            $whereClause .= " AND po.payment_status IN ('unpaid', 'partial')";
         }
 
         // Filter Tanggal (Berdasarkan payment_date)
@@ -70,9 +78,9 @@ try {
         $sumStmt->execute($params);
         $grand_total = $sumStmt->fetchColumn() ?: 0;
 
-        // Fetch Data Pagination
+        // Fetch Data Pagination (Menarik po.payment_status juga)
         $sql = "
-            SELECT pp.*, po.po_no, s.name as supplier_name, pm.name as method_name, u.name as admin_name 
+            SELECT pp.*, po.po_no, po.payment_status, s.name as supplier_name, pm.name as method_name, u.name as admin_name 
             $joins
             $whereClause 
             ORDER BY pp.payment_date DESC 

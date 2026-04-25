@@ -61,11 +61,12 @@ checkPermission('lap_kartu_stok');
                     <h3 class="text-sm font-bold text-slate-500 tracking-widest uppercase">Barang: <span id="title_barang" class="font-black text-slate-800">Semua Barang</span></h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
+                    <table class="w-full text-left text-sm min-w-[1000px]">
                         <thead class="bg-white border-b border-slate-100">
                             <tr class="text-xs font-black text-slate-800">
                                 <th class="p-4">Tanggal</th>
                                 <th class="p-4">Barang</th>
+                                <th class="p-4 text-center">Satuan</th>
                                 <th class="p-4 text-center">Tipe</th>
                                 <th class="p-4">Keterangan</th>
                                 <th class="p-4 text-center w-20">Masuk</th>
@@ -75,13 +76,13 @@ checkPermission('lap_kartu_stok');
                             </tr>
                         </thead>
                         <tbody id="table-data" class="divide-y divide-slate-100 font-medium text-slate-600">
-                            <tr><td colspan="8" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>
+                            <tr><td colspan="9" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <div id="pagination" class="mt-6 flex items-center justify-center gap-2"></div>
+            <div id="pagination" class="mt-6 flex items-center justify-center gap-2 pb-10"></div>
 
         </main>
     </div>

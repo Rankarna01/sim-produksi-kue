@@ -29,10 +29,18 @@ async function loadData() {
     
     if (res.status === 'success') {
         let html = '';
+        
+        // DAFTAR SLUG JABATAN YANG DILARANG DIHAPUS
+        const protectedRoles = ['owner_gudang', 'owner_produksi', 'admin_gudang', 'admin_produksi'];
+
         res.data.forEach((item, idx) => {
-            // Proteksi Delete & Edit Slug untuk ID 1 (Admin Utama)
-            let btnDelete = item.id == 1 ? `<button disabled class="w-8 h-8 rounded-lg bg-slate-50 text-slate-300 flex items-center justify-center cursor-not-allowed"><i class="fa-solid fa-trash-can"></i></button>` 
-                                         : `<button onclick="hapusData(${item.id})" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center shadow-sm"><i class="fa-solid fa-trash-can"></i></button>`;
+            // Cek apakah slug-nya ada di daftar perlindungan
+            let btnDelete = '';
+            if (protectedRoles.includes(item.role_slug)) {
+                btnDelete = `<button disabled class="w-8 h-8 rounded-lg bg-slate-50 text-slate-300 flex items-center justify-center cursor-not-allowed" title="Jabatan Master Tidak Bisa Dihapus"><i class="fa-solid fa-lock text-[10px]"></i></button>`;
+            } else {
+                btnDelete = `<button onclick="hapusData(${item.id})" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Hapus Jabatan"><i class="fa-solid fa-trash-can text-xs"></i></button>`;
+            }
 
             html += `
                 <tr class="hover:bg-slate-50 transition-colors">
@@ -42,7 +50,7 @@ async function loadData() {
                     <td class="p-5 text-xs font-bold text-slate-500"><span class="text-emerald-600 font-black">${item.total_perms}</span> Menu Terbuka</td>
                     <td class="p-5 text-center">
                         <div class="flex items-center justify-center gap-2">
-                            <button onclick="editData(${item.id})" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center shadow-sm">
+                            <button onclick="editData(${item.id})" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center shadow-sm" title="Edit Hak Akses">
                                 <i class="fa-solid fa-pen-to-square text-[10px]"></i>
                             </button>
                             ${btnDelete}
@@ -66,8 +74,9 @@ async function editData(id) {
         document.getElementById('role_name').value = res.data.role_name;
         document.getElementById('role_slug').value = res.data.role_slug;
         
-        // Kunci Slug jika ID = 1 (System Admin)
-        document.getElementById('role_slug').readOnly = (res.data.id == 1);
+        // Kunci Slug jika yang diedit adalah jabatan Inti agar tidak bisa diubah slug-nya sembarangan
+        const protectedRoles = ['owner_gudang', 'owner_produksi', 'admin_gudang', 'admin_produksi'];
+        document.getElementById('role_slug').readOnly = protectedRoles.includes(res.data.role_slug);
 
         // Centang permissions yang dimiliki
         const checkboxes = document.querySelectorAll('input[name="permissions[]"]');
@@ -84,8 +93,6 @@ document.getElementById('form-role').addEventListener('submit', async function(e
     Swal.fire({ title: 'Menyimpan...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
 
     const formData = new FormData(this);
-    
-    // 👇 INI DIA KODE YANG KETINGGALAN TEMAN! 👇
     formData.append('action', 'save'); 
 
     const res = await fetchAjax('logic.php', 'POST', formData);
@@ -111,7 +118,9 @@ async function hapusData(id) {
 
     if (result.isConfirmed) {
         Swal.fire({ title: 'Menghapus...', icon: 'info', showConfirmButton: false });
-        const formData = new FormData(); formData.append('action', 'delete'); formData.append('id', id);
+        const formData = new FormData(); 
+        formData.append('action', 'delete'); 
+        formData.append('id', id);
         
         const res = await fetchAjax('logic.php', 'POST', formData);
         if (res.status === 'success') {
