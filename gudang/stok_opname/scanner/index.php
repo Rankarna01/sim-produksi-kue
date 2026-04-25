@@ -45,7 +45,7 @@ checkPermission('scanner_opname');
                         <h2 class="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
                             <i class="fa-solid fa-clipboard-check text-indigo-600"></i> Input Hasil Opname
                         </h2>
-                        <p class="text-sm text-slate-500 mt-1">Scan barcode atau ketik nama barang untuk menyesuaikan stok fisik.</p>
+                        <p class="text-sm text-slate-500 mt-1">Scan barcode, cari manual, atau gunakan import Excel untuk menyesuaikan stok fisik.</p>
                     </div>
                     <button @click="unlocked = false; pin = '';" class="bg-white border border-rose-200 text-rose-500 hover:bg-rose-50 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-sm">
                         <i class="fa-solid fa-lock"></i> Kunci Sesi
@@ -53,18 +53,21 @@ checkPermission('scanner_opname');
                 </div>
 
                 <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8">
-                    <div class="flex flex-wrap gap-2 mb-8 bg-emerald-50 border border-emerald-100 p-2 rounded-xl w-max">
-                        <div class="flex items-center text-emerald-600 text-xs font-bold px-3 border-r border-emerald-200">
+                    
+                    <div class="flex flex-wrap gap-2 mb-8 bg-emerald-50 border border-emerald-100 p-2 rounded-xl w-max items-center">
+                        <button onclick="downloadTemplate()" class="flex items-center text-emerald-600 hover:bg-emerald-100 transition-colors text-xs font-bold px-3 py-1.5 border-r border-emerald-200" title="Download Template Excel/CSV">
                             <i class="fa-regular fa-file-excel mr-2"></i> Template
-                        </div>
-                        <select class="bg-white border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold outline-none">
-                            <option>Pilih Rak</option>
-                            <option>A-01</option>
-                            <option>B-01</option>
-                        </select>
-                        <button class="px-3 py-1.5 text-emerald-600 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-all"><i class="fa-solid fa-download mr-1"></i> Template Rak</button>
-                        <button class="px-3 py-1.5 text-emerald-600 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-all"><i class="fa-solid fa-download mr-1"></i> Semua Rak</button>
-                        <button class="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all shadow-sm"><i class="fa-solid fa-upload mr-1"></i> Import</button>
+                        </button>
+                        
+                        <select id="filter_rak" class="bg-white border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold outline-none cursor-pointer">
+                            <option value="">Semua Rak</option>
+                            </select>
+                        
+                        <button onclick="document.getElementById('fileImport').click()" class="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center">
+                            <i class="fa-solid fa-upload mr-2"></i> Import
+                        </button>
+                        
+                        <input type="file" id="fileImport" class="hidden" accept=".csv" onchange="prosesImport(this)">
                     </div>
 
                     <div class="space-y-5">
@@ -101,10 +104,13 @@ checkPermission('scanner_opname');
                 <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                         <h3 class="font-black text-slate-700 flex items-center gap-2"><i class="fa-regular fa-folder-open text-indigo-500"></i> Kelola Draft Tersimpan</h3>
-                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-black" id="draft-count">0 Item</span>
+                        <div class="flex items-center gap-3">
+                            <button onclick="kosongkanDraft()" class="text-xs font-bold text-rose-500 hover:bg-rose-50 px-3 py-1 rounded-lg transition-colors border border-rose-200">Kosongkan Draft</button>
+                            <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-black" id="draft-count">0 Item</span>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
+                        <table class="w-full text-left text-sm min-w-[700px]">
                             <thead class="bg-white border-b border-slate-100">
                                 <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                     <th class="p-4 w-12 text-center">No</th>

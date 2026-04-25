@@ -59,23 +59,32 @@ async function loadUsers() {
         if (response.data.length === 0) {
             html = '<tr><td colspan="6" class="p-8 text-center text-secondary">Belum ada data user.</td></tr>';
         } else {
+            // DAFTAR ROLE YANG DILARANG DIHAPUS (HANYA BISA DI-EDIT)
+            const protectedRoles = ['owner', 'owner-produksi', 'admin', 'produksi', 'dapur-tenant'];
+
             response.data.forEach((item, index) => {
                 const namaJabatan = item.role_name || item.role_slug; 
-                let roleBadge = `<span class="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
+                let roleBadge = `<span class="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">${namaJabatan}</span>`;
                 
-                if(item.role_slug === 'owner') roleBadge = `<span class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
-                else if(item.role_slug === 'produksi') roleBadge = `<span class="bg-accent/10 text-accent border border-accent/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
-                else if(item.role_slug === 'admin') roleBadge = `<span class="bg-success/10 text-success border border-success/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
-                else if(item.role_slug === 'auditor') roleBadge = `<span class="bg-indigo-100 text-indigo-600 border border-indigo-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider print:border-none print:text-black print:p-0">${namaJabatan}</span>`;
+                if(item.role_slug === 'owner' || item.role_slug === 'owner-produksi') roleBadge = `<span class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">${namaJabatan}</span>`;
+                else if(item.role_slug === 'produksi') roleBadge = `<span class="bg-accent/10 text-accent border border-accent/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">${namaJabatan}</span>`;
+                else if(item.role_slug === 'admin') roleBadge = `<span class="bg-success/10 text-success border border-success/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">${namaJabatan}</span>`;
+                else if(item.role_slug === 'dapur-tenant') roleBadge = `<span class="bg-amber-100 text-amber-600 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">${namaJabatan}</span>`;
 
-                // PERBAIKAN: Menampilkan Info Dapur di Tabel Akun User
                 let kitchenBadge = item.kitchen_name 
                     ? `<span class="text-xs font-bold text-slate-500 uppercase tracking-widest"><i class="fa-solid fa-store mr-1"></i> ${item.kitchen_name}</span>`
                     : `<span class="text-xs font-semibold text-slate-400 italic">Global (Akses Semua)</span>`;
 
                 let btnHapus = '';
                 if (currentUserRole === 'owner') {
-                    btnHapus = `<button onclick="deleteUser(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus Akun"><i class="fa-solid fa-trash text-xs"></i></button>`;
+                    // Cek apakah rolenya dilindungi
+                    if (protectedRoles.includes(item.role_slug)) {
+                        // Jika dilindungi, tampilkan ikon gembok sebagai penanda tidak bisa dihapus
+                        btnHapus = `<div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center cursor-not-allowed" title="Akun Inti Tidak Bisa Dihapus"><i class="fa-solid fa-lock text-slate-300 text-xs"></i></div>`;
+                    } else {
+                        // Jika role biasa, tampilkan tombol tong sampah merah
+                        btnHapus = `<button onclick="deleteUser(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Hapus Akun"><i class="fa-solid fa-trash text-xs"></i></button>`;
+                    }
                 }
 
                 html += `
@@ -87,7 +96,7 @@ async function loadUsers() {
                         <td class="p-4">${kitchenBadge}</td>
                         <td class="p-4 text-center btn-aksi">
                             <div class="flex items-center justify-center gap-2">
-                                <button onclick='editUser(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center" title="Edit Akun"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button onclick='editUser(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Edit Akun"><i class="fa-solid fa-pen text-xs"></i></button>
                                 ${btnHapus}
                             </div>
                         </td>
@@ -123,7 +132,6 @@ function editUser(item) {
     const roleSelect = document.getElementById('role_input');
     if(roleSelect) roleSelect.value = item.role_slug;
 
-    // Set value kitchen
     document.getElementById('user_kitchen_id').value = item.kitchen_id || "";
     
     document.getElementById('password_input').value = '';
@@ -187,7 +195,7 @@ async function loadEmployees() {
 
                 let btnHapus = '';
                 if (currentUserRole === 'owner') {
-                    btnHapus = `<button onclick="deleteEmployee(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center" title="Hapus Karyawan"><i class="fa-solid fa-trash text-xs"></i></button>`;
+                    btnHapus = `<button onclick="deleteEmployee(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Hapus Karyawan"><i class="fa-solid fa-trash text-xs"></i></button>`;
                 }
 
                 html += `
@@ -198,7 +206,7 @@ async function loadEmployees() {
                         <td class="p-4 text-secondary text-sm">${tgl}</td>
                         <td class="p-4 text-center btn-aksi">
                             <div class="flex items-center justify-center gap-2">
-                                <button onclick='editEmployee(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center" title="Edit Karyawan"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button onclick='editEmployee(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Edit Karyawan"><i class="fa-solid fa-pen text-xs"></i></button>
                                 ${btnHapus}
                             </div>
                         </td>

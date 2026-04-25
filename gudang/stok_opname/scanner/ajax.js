@@ -24,39 +24,91 @@ document.getElementById('form-pin').addEventListener('submit', async function(e)
     
     if (res.status === 'success') {
         Swal.close();
-        // PERBAIKAN: Buka Gembok Alpine.js menggunakan Custom Event
         window.dispatchEvent(new CustomEvent('unlock-session'));
     } else {
         Swal.fire('Akses Ditolak!', res.message, 'error');
-        document.getElementById('input-pin').value = ''; // Reset Input
+        document.getElementById('input-pin').value = ''; 
     }
 });
 
 // ==========================================
-// 2. INIT DATA BARANG
+// 2. INIT DATA BARANG & LOKASI RAK
 // ==========================================
 async function initData() {
     const res = await fetchAjax('logic.php?action=init_data', 'GET');
     if (res.status === 'success') {
         materialsData = res.materials;
         
-        const select = document.getElementById('material_id');
-        let options = '<option value="">Ketik nama barang atau SKU...</option>';
+        // Render Dropdown Pencarian Barang
+        const selectMat = document.getElementById('material_id');
+        let optionsMat = '<option value="">Ketik nama barang atau SKU...</option>';
         res.materials.forEach(m => {
-            options += `<option value="${m.id}" data-unit="${m.unit}" data-stock="${m.stock}">[${m.sku_code}] ${m.material_name}</option>`;
+            optionsMat += `<option value="${m.id}" data-unit="${m.unit}" data-stock="${m.stock}">[${m.sku_code}] ${m.material_name}</option>`;
         });
-        select.innerHTML = options;
+        selectMat.innerHTML = optionsMat;
 
-        // Auto update label unit saat pilih barang
-        select.addEventListener('change', function() {
+        selectMat.addEventListener('change', function() {
             const selected = this.options[this.selectedIndex];
             document.getElementById('unit_label').innerText = selected.dataset.unit || '-';
         });
+
+        // Render Dropdown Lokasi Rak
+        const selectRak = document.getElementById('filter_rak');
+        let optionsRak = '<option value="">Semua Rak</option>';
+        res.racks.forEach(r => {
+            optionsRak += `<option value="${r.id}">${r.name}</option>`;
+        });
+        selectRak.innerHTML = optionsRak;
     }
 }
 
 // ==========================================
-// 3. TAMBAH KE DAFTAR DRAFT
+// 3. FITUR TEMPLATE EXPORT & IMPORT CSV
+// ==========================================
+function downloadTemplate() {
+    const rack_id = document.getElementById('filter_rak').value;
+    window.location.href = `logic.php?action=download_template&rack_id=${rack_id}`;
+}
+
+async function prosesImport(input) {
+    if(input.files && input.files[0]) {
+        const formData = new FormData();
+        formData.append('action', 'import_csv');
+        formData.append('file', input.files[0]);
+
+        Swal.fire({ title: 'Membaca CSV...', text: 'Menyiapkan data masuk ke Draft', icon: 'info', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+
+        const res = await fetchAjax('logic.php', 'POST', formData);
+        
+        if (res.status === 'success') {
+            if(res.data.length > 0) {
+                // Loop data hasil bacaan CSV dan gabungkan ke Array Draft
+                res.data.forEach(importedItem => {
+                    const existIdx = drafts.findIndex(d => d.material_id == importedItem.material_id);
+                    if(existIdx !== -1) {
+                        drafts[existIdx] = importedItem; // Timpa jika SKU yang sama sudah ada di draft
+                    } else {
+                        drafts.push(importedItem); // Tambah baru
+                    }
+                });
+                renderDraft();
+                
+                let msg = `${res.data.length} barang berhasil ditambahkan ke draft.`;
+                if(res.errors.length > 0) msg += `\nBeberapa SKU gagal dimuat.`;
+                Swal.fire('Import Selesai!', msg, 'success');
+            } else {
+                Swal.fire('Informasi', 'Tidak ada data stok fisik yang diisi di file CSV. Harap isi kolom "Stok Fisik Aktual" terlebih dahulu.', 'info');
+            }
+        } else {
+            Swal.fire('Gagal Import!', res.message, 'error');
+        }
+        input.value = ''; // Reset input file
+    }
+}
+
+
+// ==========================================
+// 4. MANUAL INPUT KE DAFTAR DRAFT
 // ==========================================
 function tambahKeDaftar() {
     const select = document.getElementById('material_id');
@@ -75,7 +127,6 @@ function tambahKeDaftar() {
     const unit = selectedOption.dataset.unit;
     const diff = p_qty - sys_qty;
 
-    // Cek apakah barang sudah ada di draft (kalau ada timpa / update)
     const existIdx = drafts.findIndex(d => d.material_id == mat_id);
     if(existIdx !== -1) {
         drafts[existIdx] = { material_id: mat_id, material_name: mat_name, system_stock: sys_qty, physical_stock: p_qty, difference: diff, unit: unit, notes: notes };
@@ -83,7 +134,6 @@ function tambahKeDaftar() {
         drafts.push({ material_id: mat_id, material_name: mat_name, system_stock: sys_qty, physical_stock: p_qty, difference: diff, unit: unit, notes: notes });
     }
 
-    // Reset Form Input
     select.value = '';
     document.getElementById('phys_qty').value = '';
     document.getElementById('notes').value = '';
@@ -97,21 +147,30 @@ function hapusDraft(index) {
     renderDraft();
 }
 
+function kosongkanDraft() {
+    if(drafts.length === 0) return;
+    Swal.fire({
+        title: 'Kosongkan Draft?', text: 'Semua barang yang belum disimpan akan dihapus dari layar.', icon: 'warning',
+        showCancelButton: true, confirmButtonColor: '#e11d48', confirmButtonText: 'Ya, Kosongkan'
+    }).then((res) => {
+        if(res.isConfirmed) { drafts = []; renderDraft(); }
+    });
+}
+
 // ==========================================
-// 4. RENDER TABEL DRAFT
+// 5. RENDER TABEL DRAFT LOKAL
 // ==========================================
 function renderDraft() {
     const tbody = document.getElementById('draft-table');
     document.getElementById('draft-count').innerText = `${drafts.length} Item`;
 
     if (drafts.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center text-slate-400 italic font-bold">Draft masih kosong. Tambahkan barang di atas.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center text-slate-400 italic font-bold">Draft masih kosong. Tambahkan barang di atas atau gunakan fitur Import Excel.</td></tr>';
         return;
     }
 
     let html = '';
     drafts.forEach((item, idx) => {
-        // Logika Warna Selisih
         let diffHTML = '';
         if (item.difference > 0) diffHTML = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-black text-xs">+${item.difference}</span>`;
         else if (item.difference < 0) diffHTML = `<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded font-black text-xs">${item.difference}</span>`;
@@ -137,7 +196,7 @@ function renderDraft() {
 }
 
 // ==========================================
-// 5. SIMPAN HASIL OPNAME (FINAL SUBMIT)
+// 6. SIMPAN HASIL OPNAME KE DB (FINAL SUBMIT)
 // ==========================================
 async function simpanOpname() {
     if(drafts.length === 0) { Swal.fire('Ups!', 'Belum ada barang di daftar draft.', 'warning'); return; }
@@ -147,7 +206,7 @@ async function simpanOpname() {
         text: 'Stok sistem akan ditimpa dengan stok fisik yang Anda masukkan ini!',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#4F46E5', // Indigo-600
+        confirmButtonColor: '#4F46E5',
         confirmButtonText: 'Ya, Simpan & Sesuaikan Stok!'
     });
 
@@ -162,9 +221,9 @@ async function simpanOpname() {
 
         if (res.status === 'success') {
             Swal.fire('Selesai!', res.message, 'success');
-            drafts = []; // Bersihkan draft
+            drafts = []; 
             renderDraft();
-            initData(); // Refresh data stok untuk scan selanjutnya
+            initData(); // Refresh data supaya stok dropdown ter-update
         } else {
             Swal.fire('Gagal!', res.message, 'error');
         }

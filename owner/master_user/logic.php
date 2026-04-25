@@ -17,7 +17,6 @@ try {
     }
 
     if ($action === 'read_users') {
-        // PERBAIKAN: Menambahkan join ke tabel kitchens
         $sql = "
             SELECT u.id, u.name, u.username, u.role as role_slug, u.kitchen_id, 
                    r.role_name, k.name as kitchen_name 
@@ -86,10 +85,28 @@ try {
         if ($_SESSION['role'] !== 'owner') {
             echo json_encode(['status' => 'error', 'message' => 'Akses Ditolak! Hanya Owner Utama yang dapat menghapus akun.']); exit;
         }
+        
         $id = $_POST['id'] ?? '';
+        
         if ($id == $_SESSION['user_id']) {
             echo json_encode(['status' => 'error', 'message' => 'Anda tidak bisa menghapus akun yang sedang Anda gunakan!']); exit;
         }
+
+        // ============================================================
+        // PROTEKSI ROLE INTI (Hanya bisa di-edit, dilarang di-hapus)
+        // ============================================================
+        $cekRole = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+        $cekRole->execute([$id]);
+        $role_target = $cekRole->fetchColumn();
+
+        // Daftar slug role yang haram dihapus
+        $protected_roles = ['owner', 'owner-produksi', 'admin', 'produksi', 'dapur-tenant'];
+
+        if (in_array($role_target, $protected_roles)) {
+            echo json_encode(['status' => 'error', 'message' => 'Gagal! Akun Inti Sistem atau Dapur Tenant tidak boleh dihapus. Hanya boleh diedit.']); exit;
+        }
+        // ============================================================
+
         $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
         $stmt->execute([$id]);
         echo json_encode(['status' => 'success', 'message' => 'Akun berhasil dihapus!']);

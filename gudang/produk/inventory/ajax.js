@@ -95,9 +95,9 @@ async function loadData(page = 1) {
                     expInfo = `<br><span class="text-[10px] text-slate-400">Tanpa Exp</span>`;
                 }
 
-                // PERBAIKAN: Tombol Detail sekarang memanggil fungsi lihatDetail
+                // FITUR CETAK BARCODE DI UPDATE DI SINI
                 let btnAksi = `
-                    <button onclick="dummyFitur('Cetak Barcode')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition-colors" title="Barcode">
+                    <button onclick="cetakBarcode(${item.id}, '${item.sku_code}', '${item.material_name.replace(/'/g, "&apos;")}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition-colors" title="Cetak Barcode Label">
                         <i class="fa-solid fa-barcode text-xs"></i>
                     </button>
                     <button onclick='lihatDetail(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors" title="Detail">
@@ -196,7 +196,6 @@ function editData(item) {
     openModal('modal-inventory');
 }
 
-// FITUR BARU: LIHAT DETAIL (MODAL READ-ONLY)
 function lihatDetail(item) {
     document.getElementById('detail_sku').innerText = item.sku_code;
     document.getElementById('detail_nama').innerText = item.material_name;
@@ -209,13 +208,12 @@ function lihatDetail(item) {
     openModal('modal-detail-inventory');
 }
 
-// MENGGABUNGKAN ARSIP DAN UN-ARSIP (PERBAIKAN TYPO)
 async function toggleStatus(id, newStatus) {
     const isArsip = newStatus === 'inactive';
     const result = await Swal.fire({
         title: isArsip ? 'Arsipkan Barang?' : 'Kembalikan Barang?',
         text: isArsip ? "Barang akan disembunyikan dari daftar aktif." : "Barang akan kembali aktif dan bisa digunakan transaksi.",
-        icon: isArsip ? 'warning' : 'question', // PERBAIKAN: isApprove diubah menjadi isArsip
+        icon: isArsip ? 'warning' : 'question',
         showCancelButton: true,
         confirmButtonColor: isArsip ? '#F43F5E' : '#2563EB',
         confirmButtonText: isArsip ? 'Ya, Arsipkan!' : 'Ya, Kembalikan!'
@@ -239,7 +237,6 @@ async function toggleStatus(id, newStatus) {
     }
 }
 
-// PROSES IMPORT CSV
 async function prosesImport(input) {
     if(input.files && input.files[0]) {
         const formData = new FormData();
@@ -257,11 +254,32 @@ async function prosesImport(input) {
             Swal.fire('Gagal Import!', response.message, 'error');
         }
         
-        input.value = ''; // Reset input file
+        input.value = ''; 
     }
 }
 
-// DUMMY FUNGSI UNTUK TOMBOL BARCODE
-function dummyFitur(nama) {
-    Swal.fire('Info', `Fitur ${nama} sedang dalam pengembangan.`, 'info');
+// ===============================================
+// FITUR BARU: POP-UP CETAK BARCODE BANYAK
+// ===============================================
+async function cetakBarcode(id, sku, nama) {
+    const { value: qty } = await Swal.fire({
+        title: 'Cetak Barcode Label',
+        html: `Berapa banyak stiker yang ingin dicetak untuk<br><b class="text-blue-600 mt-2 block">${nama}</b> <span class="text-xs text-slate-500">(${sku})</span>?`,
+        input: 'number',
+        inputValue: 1,
+        showCancelButton: true,
+        confirmButtonColor: '#2563EB',
+        confirmButtonText: '<i class="fa-solid fa-print"></i> Cetak',
+        cancelButtonText: 'Batal',
+        inputValidator: (value) => {
+            if (!value || value <= 0) {
+                return 'Jumlah cetak minimal 1!';
+            }
+        }
+    });
+
+    if (qty) {
+        // Buka tab baru untuk print
+        window.open(`print_barcode.php?id=${id}&qty=${qty}`, 'CetakBarcode', 'width=800,height=600');
+    }
 }
