@@ -1,27 +1,31 @@
 <?php
 require_once '../../config/auth.php';
 require_once '../../config/database.php';
-
-// Gunakan master_gudang agar tidak terjadi 403 Error
 checkPermission('manajemen_dapur');
 
-header('Content-Type: application/json');
 $action = $_GET['action'] ?? '';
 
 try {
     switch ($action) {
         case 'read':
+            header('Content-Type: application/json');
             $stmt = $pdo->query("SELECT * FROM kitchens ORDER BY id DESC");
-            echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['status' => 'success', 'data' => $data]);
             break;
 
         case 'save':
+            header('Content-Type: application/json');
+            // NAMA KUNCI DIPERBAIKI
+            checkPermission('edit_manajemen_dapur');
+
             $id = $_POST['id'] ?? '';
             $name = trim($_POST['name']);
             $location = trim($_POST['location']);
 
             if (empty($name)) {
-                echo json_encode(['status' => 'error', 'message' => 'Nama Dapur wajib diisi!']); exit;
+                echo json_encode(['status' => 'error', 'message' => 'Nama Dapur wajib diisi!']); 
+                exit;
             }
 
             if (empty($id)) {
@@ -36,13 +40,21 @@ try {
             break;
 
         case 'delete':
+            header('Content-Type: application/json');
+            // NAMA KUNCI DIPERBAIKI
+            checkPermission('hapus_manajemen_dapur');
+
             $id = $_POST['id'] ?? '';
-            
-            // Proteksi: Cek apakah dapur ini masih digunakan di tabel materials (Stok Dapur)
+            if (empty($id)) {
+                echo json_encode(['status' => 'error', 'message' => 'ID tidak valid!']);
+                exit;
+            }
+
             $cek = $pdo->prepare("SELECT id FROM materials WHERE warehouse_id = ?");
             $cek->execute([$id]);
             if ($cek->rowCount() > 0) {
-                echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus! Masih ada stok bahan baku yang terikat pada dapur ini.']); exit;
+                echo json_encode(['status' => 'error', 'message' => 'Gagal menghapus! Masih ada stok bahan baku yang terikat pada dapur ini.']); 
+                exit;
             }
 
             $stmt = $pdo->prepare("DELETE FROM kitchens WHERE id = ?");
@@ -51,9 +63,12 @@ try {
             break;
 
         default:
+            header('Content-Type: application/json');
             echo json_encode(['status' => 'error', 'message' => 'Aksi tidak valid']);
     }
 } catch (Exception $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    header('Content-Type: application/json');
     echo json_encode(['status' => 'error', 'message' => 'Database Error: ' . $e->getMessage()]);
 }
 ?>

@@ -1,6 +1,5 @@
 <?php
 require_once '../../config/auth.php';
-// Kita gunakan master_gudang agar otomatis bisa diakses oleh Owner tanpa harus centang ulang
 checkPermission('manajemen_dapur');
 ?>
 <!DOCTYPE html>
@@ -21,9 +20,14 @@ checkPermission('manajemen_dapur');
                     <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Manajemen Dapur</h2>
                     <p class="text-sm text-secondary mt-1">Kelola lokasi dapur produksi untuk pembagian stok dan user.</p>
                 </div>
-                <button onclick="openModal('modal-dapur'); resetForm();" class="bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-plus"></i> Tambah Dapur
-                </button>
+                
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <?php if (hasPermission('edit_manajemen_dapur')): ?>
+                    <button onclick="openModal('modal-dapur'); resetForm();" class="flex-1 sm:flex-none bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Tambah Dapur
+                    </button>
+                    <?php endif; ?>
+                </div>
             </div>
 
             <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -46,7 +50,7 @@ checkPermission('manajemen_dapur');
         </main>
     </div>
 
-    <div id="modal-dapur" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div id="modal-dapur" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('modal-dapur')"></div>
         <div class="bg-surface w-full max-w-md rounded-2xl shadow-xl z-10 transform transition-all flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -77,6 +81,11 @@ checkPermission('manajemen_dapur');
             </div>
         </div>
     </div>
+
+    <script>
+        const canEdit = <?= hasPermission('edit_manajemen_dapur') ? 'true' : 'false' ?>;
+        const canDelete = <?= hasPermission('hapus_manajemen_dapur') ? 'true' : 'false' ?>;
+    </script>
 
     <?php include '../../components/footer.php'; ?>
     <script src="ajax.js?v=<?= time() ?>"></script>

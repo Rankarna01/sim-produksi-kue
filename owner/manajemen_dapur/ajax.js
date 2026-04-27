@@ -14,24 +14,29 @@ function resetForm() {
 async function loadData() {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-secondary"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat data...</td></tr>';
-    
+
     const response = await fetchAjax('logic.php?action=read', 'GET');
-    
+
     if (response.status === 'success') {
         let html = '';
         if (response.data.length === 0) {
             html = '<tr><td colspan="4" class="p-8 text-center text-secondary">Belum ada data dapur.</td></tr>';
         } else {
             response.data.forEach((item, index) => {
-                // Tombol Aksi bergaya sama dengan Data Gudang / Bahan Baku
-                let btnAksi = `
-                    <button onclick='editData(${JSON.stringify(item)})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Edit">
-                        <i class="fa-solid fa-pen text-xs"></i>
-                    </button>
-                    <button onclick="deleteData(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Hapus">
-                        <i class="fa-solid fa-trash text-xs"></i>
-                    </button>
-                `;
+
+                let btnAksi = '';
+                
+                if (canEdit) {
+                    btnAksi += `<button onclick='editData(${JSON.stringify(item).replace(/'/g, "&apos;")})' class="w-8 h-8 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>&nbsp;`;
+                }
+                
+                if (canDelete) {
+                    btnAksi += `<button onclick="deleteData(${item.id})" class="w-8 h-8 rounded-lg bg-danger/10 text-danger hover:bg-danger hover:text-surface transition-colors flex items-center justify-center shadow-sm" title="Hapus"><i class="fa-solid fa-trash text-xs"></i></button>`;
+                }
+
+                if (btnAksi === '') {
+                    btnAksi = '<span class="text-[10px] font-bold text-slate-400">Akses Dibatasi</span>';
+                }
 
                 html += `
                     <tr class="hover:bg-slate-50 transition-colors">
@@ -73,7 +78,7 @@ function editData(item) {
 }
 
 function deleteData(id) {
-    customConfirm('Yakin ingin menghapus dapur ini? Pastikan tidak ada stok bahan yang masih terikat di dapur ini.', async () => {
+    customConfirm('Yakin ingin menghapus dapur ini?', async () => {
         const formData = new FormData();
         formData.append('id', id);
         const response = await fetchAjax('logic.php?action=delete', 'POST', formData);
