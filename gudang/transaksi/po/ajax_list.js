@@ -96,15 +96,30 @@ async function loadDataPO() {
                     printTerimaBtn = `<button onclick="cetakDokumen(${item.id}, 'terima', 'print_po.php')" class="flex-1 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-600 border border-emerald-200 px-2 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1 shadow-sm"><i class="fa-solid fa-print"></i> Print Terima (${terima_count}x)</button>`;
                 }
 
-                // Menyusun Tombol Aksi Kanan (Hapus tombol Edit & Delete sesuai permintaan)
+                // ==================================================
+                // MENYUSUN TOMBOL AKSI KANAN (TERMASUK TOMBOL RETUR)
+                // ==================================================
                 let actionButtons = '';
                 if (item.status === 'received') {
+                    
+                    // SUNTIKAN FITUR: TOMBOL RETUR MUNCUL JIKA BELUM LUNAS
+                    let btnRetur = '';
+                    if (item.payment_status !== 'paid') {
+                        btnRetur = `
+                            <button onclick="openModalRetur(${item.id}, '${item.po_no}')" class="bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 px-3 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1 shadow-sm mt-2 w-full uppercase tracking-widest">
+                                <i class="fa-solid fa-rotate-left"></i> Ajukan Retur
+                            </button>
+                        `;
+                    }
+
                     actionButtons = `
                         ${printPOBtn}
                         <div class="flex gap-2 w-full mt-2">
                             ${printTerimaBtn}
                         </div>
+                        ${btnRetur}
                     `;
+
                 } else if (item.status === 'approved') {
                     actionButtons = `
                         ${printPOBtn}
@@ -155,12 +170,11 @@ async function loadDataPO() {
 }
 
 // ==================================================
-// FITUR BARU: LIHAT DETAIL ITEM PO VIA POPUP
+// FITUR LIHAT DETAIL ITEM PO VIA POPUP
 // ==================================================
 async function lihatDetailPO(po_id, po_no) {
     Swal.fire({ title: 'Memuat data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     
-    // Memanfaatkan fungsi API lama yang sudah ada untuk narik detail item
     const res = await fetchAjax(`logic.php?action=get_po_receive&po_id=${po_id}`, 'GET');
     
     if (res.status === 'success') {
@@ -226,7 +240,7 @@ async function cetakDokumen(po_id, tipe, filePrint) {
         const formData = new FormData();
         formData.append('action', 'mark_printed');
         formData.append('id', po_id);
-        formData.append('tipe', tipe); // Mengirim parameter 'po' atau 'terima'
+        formData.append('tipe', tipe); 
         
         const res = await fetchAjax('logic.php', 'POST', formData);
         
@@ -262,6 +276,104 @@ async function ajukanIzinCetak(po_id, tipe) {
         if(res.status === 'success') {
             Swal.fire('Berhasil Diajukan', `Izin cetak ${textDesc} dikirim ke Manager.`, 'success');
             loadDataPO();
+        }
+    }
+}
+
+// ==================================================
+// FITUR BARU: MODAL RETUR PO & PENGAJUAN RETUR
+// ==================================================
+let returItems = [];
+let activeReturPoId = null;
+
+async function openModalRetur(po_id, po_no) {
+    activeReturPoId = po_id;
+    document.getElementById('retur-po-title').innerText = 'Pengajuan Retur PO: ' + po_no;
+    document.getElementById('retur_reason').value = '';
+    openModal('modal-retur-po'); // Pastikan fungsi openModal() ada di ajax_form.js atau file global
+
+    const res = await fetchAjax(`logic.php?action=get_po_retur&po_id=${po_id}`, 'GET');
+    
+    if (res.status === 'success') {
+        returItems = res.items.map(item => ({
+            material_id: item.material_id, 
+            material_name: item.material_name, 
+            unit: item.unit,
+            price: item.price,
+            qty_terima: parseFloat(item.qty), 
+            qty_return: 0 
+        }));
+        renderReturItems();
+    }
+}
+
+function renderReturItems() {
+    const tbody = document.getElementById('retur-po-items');
+    let html = '';
+    returItems.forEach((item, idx) => {
+        html += `
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="p-4 font-bold text-slate-700 text-xs">${item.material_name} <span class="text-[9px] uppercase text-slate-400 font-bold ml-1">${item.unit}</span></td>
+                <td class="p-4 text-center text-xs font-bold text-slate-500">${formatRupiah(item.price)}</td>
+                <td class="p-4 text-center font-black text-blue-600 bg-blue-50/30">${item.qty_terima}</td>
+                <td class="p-4 bg-rose-50/30">
+                    <input type="number" step="any" min="0" max="${item.qty_terima}" class="w-full px-2 py-1.5 border border-rose-300 rounded font-black text-rose-600 text-center outline-none focus:border-rose-500" value="${item.qty_return}" onchange="updateReturQty(${idx}, this.value, ${item.qty_terima})">
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+function updateReturQty(idx, val, maxVal) {
+    let num = parseFloat(val);
+    if (isNaN(num) || num < 0) num = 0;
+    if (num > maxVal) {
+        Swal.fire('Tidak Valid!', 'Jumlah retur tidak boleh melebihi jumlah yang diterima.', 'error');
+        num = 0;
+    }
+    returItems[idx].qty_return = num;
+    renderReturItems();
+}
+
+async function submitReturPO() {
+    const reason = document.getElementById('retur_reason').value;
+    if (!reason.trim()) {
+        Swal.fire('Ups!', 'Mohon isi Alasan Retur agar Owner mengetahui penyebabnya.', 'warning');
+        return;
+    }
+
+    const isAnyRetur = returItems.some(i => i.qty_return > 0);
+    if (!isAnyRetur) {
+        Swal.fire('Ups!', 'Silakan isi angka pada kolom Qty Retur minimal 1 barang.', 'warning');
+        return;
+    }
+
+    const confirm = await Swal.fire({ 
+        title: 'Ajukan Retur?', 
+        text: 'Pengajuan ini akan dikirim ke Owner. Jika disetujui, stok dan tagihan akan terpotong otomatis.', 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonText: 'Ya, Ajukan Retur', 
+        confirmButtonColor: '#e11d48' 
+    });
+    
+    if (confirm.isConfirmed) {
+        Swal.fire({ title: 'Memproses...', icon: 'info', showConfirmButton: false });
+        
+        const formData = new FormData();
+        formData.append('action', 'save_retur_po'); 
+        formData.append('po_id', activeReturPoId); 
+        formData.append('reason', reason); 
+        formData.append('items', JSON.stringify(returItems));
+        
+        const res = await fetchAjax('logic.php', 'POST', formData);
+        
+        if (res.status === 'success') {
+            closeModal('modal-retur-po'); 
+            Swal.fire('Berhasil Diajukan!', res.message, 'success'); 
+        } else { 
+            Swal.fire('Gagal!', res.message, 'error'); 
         }
     }
 }

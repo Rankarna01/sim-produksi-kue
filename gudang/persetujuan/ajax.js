@@ -493,3 +493,71 @@ async function loadHistori() {
         tbody.innerHTML = html;
     }
 }
+
+// ==========================================================
+// FUNGSI PERSETUJUAN RETUR PO (FITUR BARU)
+// ==========================================================
+async function loadReturPOApproval() {
+    const tbody = document.getElementById('table-retur-po-approval');
+    if(!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400"><i class="fa-solid fa-circle-notch fa-spin text-xl"></i></td></tr>';
+    
+    const res = await fetchAjax('logic.php?action=read_retur_po', 'GET');
+    if (res.status === 'success') {
+        let html = '';
+        if (res.data.length === 0) {
+            html = '<tr><td colspan="6" class="p-10 text-center text-slate-400 italic font-bold">Tidak ada pengajuan retur PO yang menunggu persetujuan.</td></tr>';
+        } else {
+            res.data.forEach((item, idx) => {
+                const d = new Date(item.created_at);
+                const tgl = d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+                let safeReason = (item.reason || '-').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+
+                html += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-4 text-center font-bold text-slate-400 text-xs">${idx + 1}</td>
+                        <td class="p-4 text-xs font-bold text-slate-500">${tgl}<br><span class="text-[9px] text-slate-400 uppercase">Oleh: ${item.admin_name}</span></td>
+                        <td class="p-4 font-black text-blue-600 tracking-widest">${item.po_no}<br><span class="text-xs text-slate-600 font-bold uppercase tracking-normal">${item.supplier_name}</span></td>
+                        <td class="p-4 font-black text-slate-700 uppercase">${item.material_name}<br><span class="text-rose-500 font-black text-sm">-${parseFloat(item.qty_return)} <span class="text-[10px] text-rose-400 uppercase">${item.unit}</span></span></td>
+                        <td class="p-4 text-xs text-slate-500 italic max-w-[150px] truncate" title="${safeReason}">${safeReason}</td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="prosesReturPO(${item.id}, 'approve')" class="bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-500 hover:text-white w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-sm" title="Setujui Retur"><i class="fa-solid fa-check"></i></button>
+                                <button onclick="prosesReturPO(${item.id}, 'reject')" class="bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-500 hover:text-white w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-sm" title="Tolak Retur"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        tbody.innerHTML = html;
+    }
+}
+
+async function prosesReturPO(id, keputusan) {
+    const isApprove = keputusan === 'approve';
+    const confirm = await Swal.fire({ 
+        title: isApprove ? 'Setujui Retur PO?' : 'Tolak Retur PO?', 
+        text: isApprove ? 'Stok Gudang dan Tagihan PO akan langsung dipotong!' : 'Pengajuan retur akan dibatalkan.', 
+        icon: isApprove ? 'question' : 'warning', 
+        showCancelButton: true, 
+        confirmButtonColor: isApprove ? '#10b981' : '#f43f5e', 
+        confirmButtonText: isApprove ? 'Ya, Setujui' : 'Ya, Tolak' 
+    });
+
+    if (confirm.isConfirmed) {
+        Swal.fire({ title: 'Memproses...', icon: 'info', showConfirmButton: false, allowOutsideClick: false });
+        const formData = new FormData(); 
+        formData.append('action', 'proses_retur_po'); 
+        formData.append('id', id); 
+        formData.append('keputusan', keputusan);
+        
+        const res = await fetchAjax('logic.php', 'POST', formData);
+        if (res.status === 'success') { 
+            Swal.fire('Berhasil!', res.message, 'success'); 
+            loadReturPOApproval(); 
+        } else { 
+            Swal.fire('Gagal!', res.message, 'error'); 
+        }
+    }
+}

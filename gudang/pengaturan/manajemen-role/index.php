@@ -4,9 +4,11 @@ checkPermission('manage_roles');
 ?>
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <?php include '../../../components/head.php'; ?>
 </head>
+
 <body class="text-slate-800 antialiased h-screen flex overflow-hidden bg-slate-50">
 
     <?php include '../../../components/sidebar_gudang.php'; ?>
@@ -15,7 +17,7 @@ checkPermission('manage_roles');
         <?php include '../../../components/header.php'; ?>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
-            
+
             <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 class="text-2xl font-black text-slate-800 tracking-tight">Manajemen Jabatan & Akses</h2>
@@ -39,7 +41,9 @@ checkPermission('manage_roles');
                             </tr>
                         </thead>
                         <tbody id="table-data" class="divide-y divide-slate-100 font-medium text-slate-600">
-                            <tr><td colspan="5" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>
+                            <tr>
+                                <td colspan="5" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -51,18 +55,18 @@ checkPermission('manage_roles');
     <div id="modal-role" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4 py-6">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-role')"></div>
         <div class="relative bg-white w-full max-w-5xl rounded-[2rem] shadow-2xl z-10 flex flex-col overflow-hidden max-h-full">
-            
+
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/80">
                 <h3 class="text-xl font-black text-slate-800 flex items-center gap-2" id="modal-title">
                     <i class="fa-solid fa-shield-halved text-blue-600"></i> Tambah Jabatan Baru
                 </h3>
                 <button onclick="closeModal('modal-role')" class="text-slate-400 hover:text-rose-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-rose-50"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            
+
             <form id="form-role" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
                 <div class="p-6 sm:p-8 space-y-8 flex-1">
                     <input type="hidden" id="role_id" name="role_id">
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50/30 p-5 rounded-2xl border border-blue-100">
                         <div>
                             <label class="block text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">Nama Jabatan <span class="text-rose-500">*</span></label>
@@ -78,22 +82,26 @@ checkPermission('manage_roles');
                     <div>
                         <h4 class="font-black text-slate-800 text-lg mb-1"><i class="fa-solid fa-list-check text-blue-600 mr-2"></i>Pengaturan Hak Akses Menu</h4>
                         <p class="text-xs text-slate-500 mb-6">* Centang menu mana saja yang boleh dibuka dan dikelola oleh jabatan ini.</p>
-                        
+
                         <div class="space-y-8">
-                            
+
                             <div>
                                 <p class="text-[11px] font-black text-slate-800 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2"><i class="fa-solid fa-house mr-2 text-slate-400"></i> Menu Utama & Persetujuan</p>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"><input type="checkbox" name="permissions[]" value="dashboard" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"><span class="text-xs font-bold text-slate-700">Dashboard</span></label>
-                                    
+
                                     <label class="flex items-center gap-3 p-3 border border-blue-200 bg-blue-50/30 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-100 transition-all"><input type="checkbox" name="permissions[]" value="persetujuan" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"><span class="text-xs font-black text-blue-800">Buka Menu Persetujuan</span></label>
-                                    
+
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"><input type="checkbox" name="permissions[]" value="persetujuan_po" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"><span class="text-xs font-bold text-slate-700">Approve PO</span></label>
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"><input type="checkbox" name="permissions[]" value="persetujuan_pr" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"><span class="text-xs font-bold text-slate-700">Approve Request (PR)</span></label>
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"><input type="checkbox" name="permissions[]" value="persetujuan_masuk_manual" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"><span class="text-xs font-bold text-slate-700">Approve Barang Masuk</span></label>
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"><input type="checkbox" name="permissions[]" value="persetujuan_keluar_manual" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"><span class="text-xs font-bold text-slate-700">Approve Barang Keluar</span></label>
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"><input type="checkbox" name="permissions[]" value="persetujuan_izin_cetak" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"><span class="text-xs font-bold text-slate-700">Approve Izin Cetak</span></label>
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"><input type="checkbox" name="permissions[]" value="persetujuan_histori" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"><span class="text-xs font-bold text-slate-700">Lihat Master Histori</span></label>
+                                    <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
+                                        <input type="checkbox" name="permissions[]" value="persetujuan_retur_po" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+                                        <span class="text-xs font-bold text-slate-700">Persetujuan Retur PO</span>
+                                    </label>
                                 </div>
                             </div>
 
@@ -126,6 +134,10 @@ checkPermission('manage_roles');
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all"><input type="checkbox" name="permissions[]" value="trx_permintaan_dapur" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"><span class="text-xs font-bold text-slate-700">Permintaan Dapur</span></label>
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all"><input type="checkbox" name="permissions[]" value="trx_permintaan_barang" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"><span class="text-xs font-bold text-slate-700">Permintaan Barang</span></label>
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all"><input type="checkbox" name="permissions[]" value="trx_po" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"><span class="text-xs font-bold text-slate-700">Purchase Order (PO)</span></label>
+                                    <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all">
+                                        <input type="checkbox" name="permissions[]" value="lap_retur_po" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+                                        <span class="text-xs font-bold text-slate-700">Laporan Retur PO</span>
+                                    </label>
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all"><input type="checkbox" name="permissions[]" value="trx_pembayaran" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"><span class="text-xs font-bold text-slate-700">Pembayaran PO</span></label>
                                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/50 transition-all"><input type="checkbox" name="permissions[]" value="trx_supplier" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"><span class="text-xs font-bold text-slate-700">Supplier & Harga</span></label>
                                 </div>
@@ -174,12 +186,24 @@ checkPermission('manage_roles');
     </div>
 
     <style>
-        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid white; }
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+            border: 2px solid white;
+        }
     </style>
 
     <?php include '../../../components/footer.php'; ?>
     <script src="ajax.js?v=<?= time() ?>"></script>
 </body>
+
 </html>

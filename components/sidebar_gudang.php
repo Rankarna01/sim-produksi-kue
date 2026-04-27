@@ -149,6 +149,11 @@ $showPengaturan = hasPermission('pengaturan_karyawan') || hasPermission('pengatu
                 <a href="<?= BASE_URL ?>gudang/transaksi/po/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/transaksi/po/', $current_uri) ?>">
                     <i class="fa-solid fa-cart-flatbed text-slate-400 w-4 text-center"></i> Purchase Order (PO)
                 </a>
+                <?php if(hasPermission('lap_retur_po')): ?>
+                <a href="<?= BASE_URL ?>gudang/transaksi/laporan_retur_po/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/transaksi/laporan_retur_po/', $current_uri) ?>">
+                    <i class="fa-solid fa-rotate-left text-slate-400 w-4 text-center"></i> Laporan Retur PO
+                </a>
+                <?php endif; ?>
                 <?php endif; ?>
                 <?php if(hasPermission('trx_pembayaran')): ?>
                 <a href="<?= BASE_URL ?>gudang/transaksi/pembayaran/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/transaksi/pembayaran/', $current_uri) ?>">

@@ -223,8 +223,78 @@ try {
         exit;
     }
 
+
+    // ==========================================
+    // 6. LOGIC RETUR PO (FITUR BARU)
+    // ==========================================
+    
+    // A. Ambil Item PO yang sudah di-receive untuk di-retur
+    if ($action === 'get_po_retur') {
+        $po_id = $_GET['po_id'] ?? '';
+        
+        $sqlDetail = "SELECT pod.material_id, pod.qty, pod.price, ms.material_name, ms.unit 
+                      FROM purchase_order_details pod 
+                      JOIN materials_stocks ms ON pod.material_id = ms.id 
+                      WHERE pod.po_id = ?";
+        $stmtDetail = $pdo->prepare($sqlDetail);
+        $stmtDetail->execute([$po_id]);
+        $items = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode(['status' => 'success', 'items' => $items]);
+        exit;
+    }
+
+    // B. Simpan Draft Pengajuan Retur ke tabel po_returns
+    if ($action === 'save_retur_po') {
+        $po_id = $_POST['po_id'] ?? '';
+        $reason = $_POST['reason'] ?? '';
+        $items = json_decode($_POST['items'], true); 
+        $user_id = $_SESSION['user_id'] ?? 1;
+
+        if (empty($reason)) {
+            echo json_encode(['status' => 'error', 'message' => 'Alasan retur wajib diisi!']); exit;
+        }
+
+        $pdo->beginTransaction();
+
+        $stmtIns = $pdo->prepare("INSERT INTO po_returns (po_id, material_id, qty_return, price, reason, status, created_by) VALUES (?, ?, ?, ?, ?, 'pending', ?)");
+
+        $total_item_retur = 0;
+        foreach ($items as $item) {
+            $qty_return = (float)$item['qty_return'];
+            
+            // Jika ada isian angka retur > 0, baru kita simpan ke database
+            if ($qty_return > 0) {
+                if ($qty_return > (float)$item['qty_terima']) {
+                    $pdo->rollBack();
+                    echo json_encode(['status' => 'error', 'message' => "Barang {$item['material_name']} tidak bisa diretur melebihi jumlah yang diterima!"]); exit;
+                }
+
+                $stmtIns->execute([
+                    $po_id,
+                    $item['material_id'],
+                    $qty_return,
+                    $item['price'],
+                    $reason,
+                    $user_id
+                ]);
+                $total_item_retur++;
+            }
+        }
+
+        if ($total_item_retur === 0) {
+            $pdo->rollBack();
+            echo json_encode(['status' => 'error', 'message' => 'Tidak ada barang yang di-retur. Silakan isi angka pada minimal 1 barang.']); exit;
+        }
+
+        $pdo->commit();
+        echo json_encode(['status' => 'success', 'message' => 'Pengajuan retur berhasil dikirim ke Owner untuk disetujui!']);
+        exit;
+    }
+
 } catch (Exception $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     echo json_encode(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
 }
+
 ?>

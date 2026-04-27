@@ -102,17 +102,14 @@ checkPermission('trx_po');
                         <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
                             <h4 class="font-black text-slate-700 text-sm mb-4">Item Barang (Manual)</h4>
                             <div class="flex flex-col md:flex-row gap-4 items-end">
-                                
                                 <div class="flex-1 w-full relative">
                                     <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Cari Nama Barang <span class="text-rose-500">*</span></label>
                                     <input type="text" id="search_material" placeholder="Ketik nama atau SKU bahan..." autocomplete="off" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-blue-600 outline-none transition-all font-bold text-slate-700 bg-white shadow-sm" onkeyup="filterMaterialList()">
                                     <input type="hidden" id="item_material_id">
-                                    
                                     <div id="material_list" class="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto hidden custom-scrollbar"></div>
                                 </div>
-
                                 <div class="w-full md:w-32">
-                                    <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Jumlah <span class="text-rose-500">*</span></label>
+                                    <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Jumlah</label>
                                     <input type="number" step="any" id="item_qty" value="1" class="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none bg-white font-black text-blue-600 text-center shadow-sm">
                                 </div>
                                 <button type="button" onclick="tambahItemManual()" class="w-full md:w-auto bg-slate-800 hover:bg-black text-white px-8 py-3 rounded-xl font-black transition-all shadow-sm">
@@ -144,7 +141,6 @@ checkPermission('trx_po');
                             </table>
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -158,7 +154,6 @@ checkPermission('trx_po');
                 <h3 class="text-lg font-black text-slate-800" id="terima-po-title">Penerimaan Barang PO: ---</h3>
                 <button onclick="closeModal('modal-terima-barang')" class="text-slate-400 hover:text-rose-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1 bg-slate-50/30">
                 <table class="w-full text-left text-sm mb-6 bg-white border border-slate-200 rounded-xl overflow-hidden">
                     <thead class="bg-slate-100 border-b border-slate-200">
@@ -169,6 +164,7 @@ checkPermission('trx_po');
                             <th class="p-4 w-24 text-center">Satuan</th>
                             <th class="p-4 w-32">Harga Satuan (Total)</th>
                             <th class="p-4 w-40">Expired Date</th>
+                            <th class="p-4 text-center w-16">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="terima-po-items" class="divide-y divide-slate-100">
@@ -189,6 +185,48 @@ checkPermission('trx_po');
             <div class="p-6 border-t border-slate-100 bg-white flex justify-end gap-3 shrink-0 rounded-b-3xl">
                 <button onclick="closeModal('modal-terima-barang')" class="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-all text-xs uppercase tracking-widest">Batal</button>
                 <button onclick="submitTerimaBarang()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-emerald-200 flex items-center gap-2"><i class="fa-solid fa-check"></i> Simpan & Terima Barang</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-retur-po" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4 py-6">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-retur-po')"></div>
+        <div class="relative bg-white w-full max-w-4xl rounded-3xl shadow-xl z-10 flex flex-col overflow-hidden max-h-full border-t-8 border-rose-500">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-rose-50 shrink-0">
+                <div>
+                    <h3 class="text-lg font-black text-rose-700" id="retur-po-title">Pengajuan Retur PO: ---</h3>
+                    <p class="text-[10px] text-rose-500 font-bold uppercase tracking-widest mt-1">Mengurangi Tagihan dan Stok Gudang</p>
+                </div>
+                <button onclick="closeModal('modal-retur-po')" class="text-slate-400 hover:text-rose-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full bg-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                <div class="bg-rose-50/50 p-4 rounded-xl border border-rose-100 mb-6 text-xs text-rose-700 font-bold">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Isi angka pada kolom "Qty Retur" untuk barang yang ingin dikembalikan karena rusak/sobek. Kosongkan (isi 0) jika barang aman.
+                </div>
+                <table class="w-full text-left text-sm mb-6 bg-white border border-slate-200 rounded-xl overflow-hidden">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                            <th class="p-4">Barang & Satuan</th>
+                            <th class="p-4 text-center w-28">Harga Satuan</th>
+                            <th class="p-4 text-center w-24 bg-blue-50/50">Diterima</th>
+                            <th class="p-4 text-center w-28 bg-rose-50/50">Qty Retur</th>
+                        </tr>
+                    </thead>
+                    <tbody id="retur-po-items" class="divide-y divide-slate-100 font-bold text-slate-700">
+                        <tr><td colspan="4" class="p-8 text-center text-slate-400"><i class="fa-solid fa-circle-notch fa-spin"></i> Memuat data...</td></tr>
+                    </tbody>
+                </table>
+
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Alasan Retur Keseluruhan <span class="text-rose-500">*</span></label>
+                    <textarea id="retur_reason" rows="2" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-rose-500 outline-none font-medium text-slate-700" placeholder="Contoh: Ada 2 karung tepung yang sobek digigit tikus..." required></textarea>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0 rounded-b-3xl">
+                <button onclick="closeModal('modal-retur-po')" class="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-200 transition-all text-xs uppercase tracking-widest">Batal</button>
+                <button onclick="submitReturPO()" class="bg-rose-600 hover:bg-rose-700 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-rose-200 flex items-center gap-2"><i class="fa-solid fa-paper-plane"></i> Ajukan Retur</button>
             </div>
         </div>
     </div>

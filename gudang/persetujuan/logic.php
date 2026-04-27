@@ -282,6 +282,9 @@ try {
             UNION ALL
             SELECT 'Keluar' as modul, transaction_no as ref_no, approval_status as status, created_at as tgl_proses, notes as detail
             FROM barang_keluar WHERE approval_status IN ('approved', 'rejected')
+            UNION ALL
+            SELECT 'Retur PO' as modul, (SELECT po_no FROM purchase_orders WHERE id = r.po_id) as ref_no, status, created_at as tgl_proses, CONCAT('Retur ', qty_return, ' item. ', reason) as detail
+            FROM po_returns r WHERE status IN ('approved', 'rejected')
         ";
 
         $finalSql = "SELECT * FROM ($query) as histori WHERE 1=1";
@@ -310,6 +313,84 @@ try {
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode(['status' => 'success', 'data' => $data]); exit;
+    }
+
+
+    // ==========================================================
+    // LOGIC PERSETUJUAN RETUR PO (FITUR BARU)
+    // ==========================================================
+    if ($action === 'read_retur_po') {
+        $sql = "
+            SELECT r.*, p.po_no, s.name as supplier_name, ms.material_name, ms.unit, u.name as admin_name
+            FROM po_returns r
+            JOIN purchase_orders p ON r.po_id = p.id
+            JOIN suppliers s ON p.supplier_id = s.id
+            JOIN materials_stocks ms ON r.material_id = ms.id
+            LEFT JOIN users u ON r.created_by = u.id
+            WHERE r.status = 'pending'
+            ORDER BY r.created_at ASC
+        ";
+        $data = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['status' => 'success', 'data' => $data]); exit;
+    }
+
+    if ($action === 'proses_retur_po') {
+        $id = $_POST['id'] ?? '';
+        $keputusan = $_POST['keputusan'] ?? ''; // 'approve' atau 'reject'
+        $user_id = $_SESSION['user_id'] ?? 1;
+
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM po_returns WHERE id = ? AND status = 'pending'");
+            $stmt->execute([$id]);
+            $returData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$returData) throw new Exception("Data retur tidak ditemukan atau sudah diproses!");
+
+            if ($keputusan === 'approve') {
+                $po_id = $returData['po_id'];
+                $mat_id = $returData['material_id'];
+                $qty = (float)$returData['qty_return'];
+                $harga_satuan = (float)$returData['price'];
+                $total_potongan = $qty * $harga_satuan;
+
+                // 1. Re-check Stok
+                $stmtCek = $pdo->prepare("SELECT stock FROM materials_stocks WHERE id = ? FOR UPDATE");
+                $stmtCek->execute([$mat_id]);
+                $curr_stock = $stmtCek->fetchColumn();
+                if ($curr_stock < $qty) throw new Exception("Persetujuan Gagal! Stok fisik Gudang (".(float)$curr_stock.") tidak mencukupi untuk diretur.");
+
+                // 2. Potong Stok Gudang
+                $pdo->prepare("UPDATE materials_stocks SET stock = stock - ? WHERE id = ?")->execute([$qty, $mat_id]);
+
+                // 3. Potong Tagihan PO (Total Amount)
+                $pdo->prepare("UPDATE purchase_orders SET total_amount = total_amount - ? WHERE id = ?")->execute([$total_potongan, $po_id]);
+
+                // 4. Update Status Retur
+                $pdo->prepare("UPDATE po_returns SET status = 'approved' WHERE id = ?")->execute([$id]);
+
+                // 5. Catat Histori Barang Keluar untuk Retur
+                $pdo->prepare("INSERT INTO barang_keluar (transaction_no, material_id, qty, status, notes, user_id, approval_status) VALUES (?, ?, ?, 'Lainnya', ?, ?, 'approved')")->execute([
+                    "RET-" . date('YmdHis') . rand(10,99),
+                    $mat_id,
+                    $qty,
+                    "Retur ke Supplier (ID PO: $po_id). Alasan: " . $returData['reason'],
+                    $user_id
+                ]);
+
+                $msg = 'Retur Disetujui! Stok gudang dan Tagihan PO berhasil dipotong.';
+            } else {
+                $pdo->prepare("UPDATE po_returns SET status = 'rejected' WHERE id = ?")->execute([$id]);
+                $msg = 'Pengajuan Retur Ditolak.';
+            }
+
+            $pdo->commit();
+            echo json_encode(['status' => 'success', 'message' => $msg]);
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+        exit;
     }
 
 } catch (PDOException $e) {

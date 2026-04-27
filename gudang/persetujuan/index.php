@@ -12,6 +12,7 @@ elseif (hasPermission('persetujuan_masuk_manual')) { $defaultTab = 'manual'; }
 elseif (hasPermission('persetujuan_keluar_manual')) { $defaultTab = 'keluar'; }
 elseif (hasPermission('persetujuan_izin_cetak')) { $defaultTab = 'izin'; }
 elseif (hasPermission('persetujuan_histori')) { $defaultTab = 'histori'; }
+elseif (hasPermission('persetujuan_retur_po')) { $defaultTab = 'retur_po'; }
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -81,6 +82,11 @@ elseif (hasPermission('persetujuan_histori')) { $defaultTab = 'histori'; }
                     <?php if (hasPermission('persetujuan_histori')): ?>
                     <button @click="tab = 'histori'; loadHistori();" :class="tab === 'histori' ? 'bg-slate-800 text-white shadow-md shadow-slate-300' : 'text-slate-500 hover:bg-slate-50'" class="snap-start shrink-0 px-5 sm:px-6 py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all">
                         <i class="fa-solid fa-clock-rotate-left mr-2"></i> Histori
+                    </button>
+                    <?php endif; ?>
+                    <?php if (hasPermission('persetujuan_retur_po')): ?>
+                    <button @click="tab = 'retur_po'; loadReturPOApproval();" :class="tab === 'retur_po' ? 'bg-rose-600 text-white shadow-md shadow-rose-200' : 'text-slate-500 hover:bg-slate-50'" class="snap-start shrink-0 px-5 sm:px-6 py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all">
+                        <i class="fa-solid fa-rotate-left mr-2"></i> Retur PO
                     </button>
                     <?php endif; ?>
 
@@ -287,6 +293,39 @@ elseif (hasPermission('persetujuan_histori')) { $defaultTab = 'histori'; }
             </div>
             <?php endif; ?>
 
+            <?php if (hasPermission('persetujuan_retur_po')): ?>
+            <div x-show="tab === 'retur_po'" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" style="display: none;">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <div>
+                            <h3 class="text-lg font-black text-slate-800 flex items-center gap-2"><i class="fa-solid fa-rotate-left text-rose-500"></i> Persetujuan Retur PO</h3>
+                            <p class="text-xs font-medium text-slate-500 mt-1">Otorisasi pemotongan stok dan pemotongan tagihan dari Supplier.</p>
+                        </div>
+                        <button onclick="loadReturPOApproval()" class="w-10 h-10 bg-white border border-slate-200 text-slate-500 hover:text-rose-600 rounded-xl shadow-sm flex items-center justify-center transition-colors shrink-0" title="Refresh Data">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm min-w-[900px]">
+                            <thead class="bg-white border-b border-slate-100">
+                                <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    <th class="p-4 w-12 text-center">No</th>
+                                    <th class="p-4">Tgl Pengajuan</th>
+                                    <th class="p-4">No. PO & Supplier</th>
+                                    <th class="p-4">Barang & Qty Retur</th>
+                                    <th class="p-4">Alasan Retur</th>
+                                    <th class="p-4 text-center w-28">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-retur-po-approval" class="divide-y divide-slate-100 font-medium text-slate-600">
+                                <tr><td colspan="6" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-rose-600 text-2xl"></i></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
         </main>
     </div>
 
@@ -360,6 +399,8 @@ elseif (hasPermission('persetujuan_histori')) { $defaultTab = 'histori'; }
             </div>
         </div>
     </div>
+
+
 
     <?php include '../../components/footer.php'; ?>
     <script src="ajax.js?v=<?= time() ?>"></script>
