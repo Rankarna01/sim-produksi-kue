@@ -74,13 +74,11 @@ function getNavClass($path, $current_uri)
                 <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Data Produk</span>
             </a>
         <?php endif; ?>
-        <?php if (hasPermission('master_titipan')): ?>
-            <a href="<?= BASE_URL ?>owner/barang_titipan/"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= (strpos($_SERVER['PHP_SELF'], 'barang_titipan') !== false) ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-slate-500 hover:bg-slate-100' ?>">
-                <div class="w-8 h-8 flex items-center justify-center">
-                    <i class="fa-solid fa-store text-lg"></i>
-                </div>
-                <span class="font-bold text-sm">Barang Titipan</span>
+
+     <?php if (hasPermission('master_titipan')): ?>
+            <a href="<?= BASE_URL ?>owner/barang_titipan/" title="Barang Titipan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/barang_titipan/', $current_uri) ?>">
+                <i class="fa-solid fa-store w-6 text-center text-lg shrink-0"></i>
+                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Barang Titipan</span>
             </a>
         <?php endif; ?>
 
@@ -156,6 +154,13 @@ function getNavClass($path, $current_uri)
             </a>
         <?php endif; ?>
 
+        <?php if (hasPermission('lap_keluar_titipan')): ?>
+            <a href="<?= BASE_URL ?>owner/lap_keluar_titipan/" title="Lap. Keluar Titipan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/lap_keluar_titipan/', $current_uri) ?>">
+                <i class="fa-solid fa-file-export w-6 text-center text-lg shrink-0"></i>
+                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Lap. Keluar Titipan</span>
+            </a>
+        <?php endif; ?>
+
         <?php if (hasPermission('audit_logs')): ?>
             <a href="<?= BASE_URL ?>owner/audit_logs/" title="Audit Logs (Lacak)" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/audit_logs/', $current_uri) ?>">
                 <i class="fa-solid fa-shoe-prints w-6 text-center text-lg shrink-0 text-indigo-500"></i>
@@ -199,13 +204,11 @@ function getNavClass($path, $current_uri)
         <?php endif; ?>
 
             <?php if (hasPermission('laporan_titipan')): ?>
-        <a href="<?= BASE_URL ?>owner/laporan_titipan/" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= (strpos($_SERVER['PHP_SELF'], 'laporan_titipan') !== false) ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-slate-500 hover:bg-slate-100' ?>">
-    <div class="w-8 h-8 flex items-center justify-center">
-        <i class="fa-solid fa-chart-line text-lg"></i>
-    </div>
-    <span class="font-bold text-sm">Laporan Titipan UMKM</span>
-</a>
-  <?php endif; ?>
+            <a href="<?= BASE_URL ?>owner/laporan_titipan/" title="Laporan Titipan UMKM" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_titipan/', $current_uri) ?>">
+                <i class="fa-solid fa-chart-line w-6 text-center text-lg shrink-0"></i>
+                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Laporan Titipan UMKM</span>
+            </a>
+        <?php endif; ?>
 
     </nav>
 </aside>

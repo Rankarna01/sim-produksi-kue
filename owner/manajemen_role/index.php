@@ -186,6 +186,7 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                 <?= renderCheckbox('laporan_produksi', 'Laporan Produksi', 'fa-chart-line') ?>
                                 <?= renderCheckbox('laporan_keluar', 'Laporan Produk Keluar', 'fa-box-open') ?>
+                                <?= renderCheckbox('lap_keluar_titipan', 'Laporan Keluar Titipan UMKM', 'fa-file-export') ?>
                                 <?= renderCheckbox('audit_logs', 'Audit Logs (Lacak)', 'fa-shoe-prints') ?>
                                 <?= renderCheckbox('analisa_produk', 'Analisa Performa', 'fa-chart-simple') ?>
                                 <?= renderCheckbox('laporan_bahan', 'Laporan Bahan Baku', 'fa-wheat-awn-circle-exclamation') ?>
