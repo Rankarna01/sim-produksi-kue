@@ -175,6 +175,7 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3"><i class="fa-solid fa-industry mr-1"></i> Operasional & Transaksi</p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                                 <?= renderCheckbox('view_dashboard', 'Akses Dashboard', 'fa-chart-pie') ?>
+                                <?= renderCheckbox('persetujuan_owner', 'Persetujuan Owner (Resep/BOM)', 'fa-clipboard-check') ?>
                                 <?= renderCheckbox('stok_opname', 'Stok Opname', 'fa-scale-balanced') ?>
                                 <?= renderCheckbox('otorisasi', 'Otorisasi Akses PIN', 'fa-key') ?>
                             </div>

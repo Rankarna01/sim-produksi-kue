@@ -18,20 +18,20 @@ checkPermission('master_resep');
             <div class="mb-6 flex justify-between items-end">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Resep Produk (BOM)</h2>
-                    <p class="text-sm text-secondary mt-1">Atur komposisi bahan baku untuk setiap 1 Pcs produk jadi.</p>
+                    <p class="text-sm text-secondary mt-1">Atur komposisi bahan baku untuk setiap 1 Pcs produk jadi. (Butuh Persetujuan Owner)</p>
                 </div>
             </div>
 
             <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 <th class="p-4 text-center w-16">No</th>
                                 <th class="p-4">Nama Produk</th>
                                 <th class="p-4">Kategori</th>
                                 <th class="p-4 text-center">Status Resep</th>
-                                <th class="p-4 text-center w-32">Aksi</th>
+                                <th class="p-4 text-center w-40">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-products" class="text-sm divide-y divide-slate-100">
@@ -47,14 +47,14 @@ checkPermission('master_resep');
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-resep')"></div>
         <div class="bg-surface w-full max-w-2xl rounded-3xl shadow-2xl z-10 transform transition-all flex flex-col max-h-[90vh] overflow-hidden">
             
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
                 <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center text-xl">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl">
                         <i class="fa-solid fa-mortar-pestle"></i>
                     </div>
                     <div>
-                        <h3 class="text-lg font-black text-slate-800 uppercase tracking-tight">Komposisi Resep</h3>
-                        <p id="modal-product-name" class="text-xs text-primary font-bold mt-0.5 tracking-wide">Nama Produk</p>
+                        <h3 class="text-lg font-black text-slate-800 uppercase tracking-tight">Racik Resep Baru</h3>
+                        <p id="modal-product-name" class="text-xs text-blue-600 font-bold mt-0.5 tracking-wide">Nama Produk</p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-resep')" class="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all">
@@ -62,15 +62,15 @@ checkPermission('master_resep');
                 </button>
             </div>
             
-            <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50/30">
+            <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50/30 flex-1">
                 
-                <form id="formTambahBahan" class="mb-8 p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <form id="formTambahBahan" class="mb-6 p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-4">
                     <input type="hidden" id="bom_product_id" name="product_id">
                     
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <div class="md:col-span-6">
                             <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Pilih Bahan Baku</label>
-                            <select id="pilar_material_id" name="material_id" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:border-primary outline-none text-sm font-bold text-slate-700 bg-slate-50">
+                            <select id="pilar_material_id" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:border-blue-600 outline-none text-sm font-bold text-slate-700 bg-slate-50">
                                 <option value="">-- Pilih Bahan --</option>
                             </select>
                         </div>
@@ -78,7 +78,7 @@ checkPermission('master_resep');
                         <div class="md:col-span-3">
                             <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Takaran (1 Pcs)</label>
                             <div class="relative">
-                                <input type="number" step="any" id="quantity" name="quantity_needed" required min="0.0001" class="w-full pl-4 pr-10 py-2.5 border border-slate-200 rounded-xl focus:border-primary outline-none text-sm font-black text-primary bg-slate-50" placeholder="0.00">
+                                <input type="number" step="any" id="quantity" required min="0.0001" class="w-full pl-4 pr-10 py-2.5 border border-slate-200 rounded-xl focus:border-blue-600 outline-none text-sm font-black text-blue-600 bg-slate-50" placeholder="0.00">
                                 <button type="button" onclick="toggleKalkulator()" class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center hover:bg-amber-500 hover:text-white transition-all" title="Gunakan Kalkulator Konversi">
                                     <i class="fa-solid fa-calculator text-xs"></i>
                                 </button>
@@ -87,7 +87,7 @@ checkPermission('master_resep');
 
                         <div class="md:col-span-3">
                             <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Satuan</label>
-                            <select id="unit_used" name="unit_used" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:border-primary outline-none text-sm font-bold text-slate-700 bg-slate-50">
+                            <select id="unit_used" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:border-blue-600 outline-none text-sm font-bold text-slate-700 bg-slate-50">
                                 <option value="">Satuan</option>
                             </select>
                         </div>
@@ -115,16 +115,16 @@ checkPermission('master_resep');
                     </div>
 
                     <div class="pt-2">
-                        <button type="submit" class="w-full bg-primary hover:bg-blue-700 text-white py-3 rounded-xl text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-100">
-                            <i class="fa-solid fa-save"></i> SIMPAN KE DAFTAR RESEP
+                        <button type="submit" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-slate-300 border-dashed">
+                            <i class="fa-solid fa-plus"></i> Tambah Ke Draft Racikan
                         </button>
                     </div>
                 </form>
 
-                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm mb-6">
                     <div class="bg-slate-50 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
-                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bahan Terdaftar (Untuk 1 Pcs)</h4>
-                        <span id="total-item-badge" class="bg-primary/10 text-primary text-[10px] font-black px-2 py-0.5 rounded-full">0 BAHAN</span>
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daftar Racikan (Draft)</h4>
+                        <span id="total-item-badge" class="bg-blue-100 text-blue-600 text-[10px] font-black px-2 py-0.5 rounded-full">0 BAHAN</span>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
@@ -133,6 +133,19 @@ checkPermission('master_resep');
                         </table>
                     </div>
                 </div>
+
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Catatan / Alasan Perubahan <span class="text-rose-500">*</span></label>
+                    <input type="text" id="req_notes" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-blue-600 outline-none text-sm font-medium text-slate-700 bg-white" placeholder="Contoh: Menyesuaikan resep baru dari RnD, lebih manis...">
+                </div>
+
+            </div>
+
+            <div class="p-6 border-t border-slate-100 bg-white flex justify-end gap-3 shrink-0 rounded-b-3xl">
+                <button type="button" onclick="closeModal('modal-resep')" class="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-all text-sm">Batal</button>
+                <button type="button" onclick="ajukanResep()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-blue-200 flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> Kirim Pengajuan Ke Owner
+                </button>
             </div>
         </div>
     </div>

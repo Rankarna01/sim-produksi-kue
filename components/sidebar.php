@@ -47,6 +47,13 @@ function getNavClass($path, $current_uri)
             </a>
         <?php endif; ?>
 
+        <?php if (hasPermission('persetujuan_owner')): ?>
+            <a href="<?= BASE_URL ?>owner/persetujuan/" title="Persetujuan Owner" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/persetujuan/', $current_uri) ?>">
+                <i class="fa-solid fa-clipboard-check w-6 text-center text-lg shrink-0"></i>
+                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Persetujuan Owner</span>
+            </a>
+        <?php endif; ?>
+
         <?php if (hasPermission('manajemen_dapur')): ?>
             <a href="<?= BASE_URL ?>owner/manajemen_dapur/" title="Manajemen Dapur" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/manajemen_dapur/', $current_uri) ?>">
                 <i class="fa-solid fa-store w-6 text-center text-lg shrink-0"></i>
