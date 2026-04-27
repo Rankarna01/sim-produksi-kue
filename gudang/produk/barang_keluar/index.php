@@ -57,7 +57,7 @@ checkPermission('trx_barang_keluar');
 
             <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
+                    <table class="w-full text-left text-sm min-w-[900px]">
                         <thead class="bg-slate-50 border-b border-slate-100">
                             <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                 <th class="p-5">Tanggal & Waktu (TRX)</th>
@@ -81,69 +81,109 @@ checkPermission('trx_barang_keluar');
         </main>
     </div>
 
-    <div id="modal-keluar" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4">
+    <div id="modal-keluar" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4 py-6">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModalKeluar()"></div>
-        <div class="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl z-10 transform transition-all flex flex-col overflow-hidden max-h-[95vh]">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                <h3 class="text-xl font-black text-slate-800 tracking-tighter">Input Barang Keluar</h3>
-                <button onclick="closeModalKeluar()" class="text-slate-400 hover:text-rose-500 transition-colors">
+        <div class="relative bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl z-10 flex flex-col overflow-hidden max-h-full">
+            
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
+                <div>
+                    <h3 class="text-xl font-black text-slate-800 tracking-tighter">Input Barang Keluar</h3>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Tambahkan beberapa barang ke daftar sebelum memotong stok.</p>
+                </div>
+                <button onclick="closeModalKeluar()" class="text-slate-400 hover:bg-rose-50 hover:text-rose-500 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
-            <div class="p-6 overflow-y-auto custom-scrollbar">
-                <div class="mb-4 text-xs font-bold text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                    <i class="fa-solid fa-circle-info mr-1"></i> Data barang keluar membutuhkan persetujuan Owner untuk memotong stok Gudang.
+            
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50/30">
+                <div class="mb-6 text-xs font-bold text-amber-600 bg-amber-50 p-3.5 rounded-xl border border-amber-200 flex items-start gap-2">
+                    <i class="fa-solid fa-circle-info mt-0.5"></i>
+                    <span>Data barang keluar membutuhkan persetujuan Owner untuk memotong stok Gudang (Tergantung SOP Toko).</span>
                 </div>
-                <form id="formKeluar" class="space-y-5">
-                    
-                    <div>
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pilih Barang <span class="text-rose-500">*</span></label>
-                        <select id="material_id" name="material_id" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-rose-600 outline-none transition-all font-bold text-slate-700 bg-slate-50" onchange="updateSatuan()">
-                            <option value="">-- Pilih Barang --</option>
-                        </select>
-                        <p class="text-[10px] text-slate-400 mt-1 pl-1" id="stock_info">Pilih barang untuk melihat sisa stok.</p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Jumlah Keluar <span class="text-rose-500">*</span></label>
-                            <input type="number" step="any" id="qty" name="qty" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-rose-600 outline-none transition-all font-black text-rose-600 bg-slate-50">
+                
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div class="md:col-span-6 relative">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Cari & Pilih Barang <span class="text-rose-500">*</span></label>
+                            
+                            <input type="text" id="search_material" placeholder="Ketik nama bahan..." autocomplete="off" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:border-rose-600 outline-none transition-all font-bold text-slate-700 bg-slate-50" onkeyup="filterMaterialList()">
+                            <input type="hidden" id="material_id">
+                            
+                            <div id="material_list" class="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto hidden custom-scrollbar"></div>
+                            
+                            <p id="stock_info" class="text-[10px] text-slate-400 mt-1 pl-1 font-bold">Pilih barang untuk melihat sisa stok.</p>
+                            <input type="hidden" id="max_stock" value="0">
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Satuan</label>
-                            <input type="text" id="satuan_label" readonly class="w-full px-4 py-3 border border-slate-200 rounded-xl outline-none font-bold text-slate-400 bg-slate-100 cursor-not-allowed" placeholder="-">
+
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Jumlah Keluar <span class="text-rose-500">*</span></label>
+                            <input type="number" step="any" id="qty" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:border-rose-600 outline-none transition-all font-black text-rose-600 bg-slate-50">
+                        </div>
+
+                        <div class="md:col-span-3">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Satuan</label>
+                            <input type="text" id="satuan_label" readonly class="w-full px-3 py-2.5 border border-slate-200 rounded-xl outline-none font-bold text-slate-400 bg-slate-100 cursor-not-allowed" placeholder="-">
                         </div>
                     </div>
+                    <div class="mt-4 flex justify-end">
+                        <button type="button" onclick="tambahKeDraft()" class="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-sm flex items-center gap-2">
+                            <i class="fa-solid fa-plus"></i> Tambah ke Daftar
+                        </button>
+                    </div>
+                </div>
 
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+                    <div class="bg-slate-50 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Daftar Barang Keluar</h4>
+                        <span id="draft-count" class="bg-rose-100 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded-full">0 ITEM</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm min-w-[600px]">
+                            <thead class="bg-white border-b border-slate-100">
+                                <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    <th class="p-3 pl-5 text-center w-12">No</th>
+                                    <th class="p-3">Nama Bahan Baku</th>
+                                    <th class="p-3 text-right">Jumlah Keluar</th>
+                                    <th class="p-3 pr-5 text-center w-16">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-draft" class="divide-y divide-slate-50">
+                                <tr><td colspan="4" class="p-6 text-center text-slate-400 italic font-bold text-xs">Belum ada barang ditambahkan.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status Keluar <span class="text-rose-500">*</span></label>
-                        <select id="status" name="status" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-rose-600 outline-none transition-all font-bold text-slate-700 bg-slate-50">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Alasan Keluar Global <span class="text-rose-500">*</span></label>
+                        <select id="status" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-rose-600 outline-none transition-all font-bold text-slate-700 bg-slate-50">
                             <option value="Rusak">Rusak / Cacat</option>
                             <option value="Expired">Kadaluarsa (Expired)</option>
                             <option value="Lainnya">Alasan Lainnya</option>
                         </select>
                     </div>
-
                     <div>
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Keterangan / Alasan</label>
-                        <textarea id="notes" name="notes" rows="2" placeholder="Contoh: Terjatuh saat pemindahan, Uji coba, dll" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-rose-600 outline-none transition-all font-medium text-slate-700 bg-slate-50 custom-scrollbar"></textarea>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Catatan / Keterangan</label>
+                        <input type="text" id="notes" placeholder="Contoh: Jatuh saat angkat barang..." class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-rose-600 outline-none transition-all font-medium text-slate-700 bg-slate-50">
                     </div>
-                    
-                    <div class="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100">
-                        <button type="button" onclick="closeModalKeluar()" class="px-6 py-3 text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">Batal</button>
-                        <button type="submit" class="px-6 py-3 text-xs font-black uppercase tracking-widest text-white bg-rose-500 hover:bg-rose-600 rounded-xl transition-all shadow-md shadow-rose-200">
-                            Ajukan Keluar
-                        </button>
-                    </div>
-                </form>
+                </div>
+
+            </div>
+
+            <div class="p-5 border-t border-slate-100 bg-white flex justify-end gap-3 shrink-0 rounded-b-[2.5rem]">
+                <button type="button" onclick="closeModalKeluar()" class="px-6 py-3 text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">Batal</button>
+                <button type="button" onclick="simpanTransaksi()" class="px-8 py-3 text-xs font-black uppercase tracking-widest text-white bg-rose-500 hover:bg-rose-600 rounded-xl transition-all shadow-md shadow-rose-200 flex items-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> Ajukan Keluar
+                </button>
             </div>
         </div>
     </div>
 
     <style>
         [x-cloak] { display: none !important; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px;}
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 

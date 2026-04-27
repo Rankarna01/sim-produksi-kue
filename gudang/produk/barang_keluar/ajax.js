@@ -2,6 +2,7 @@ let currentTab = 'semua';
 let currentPage = 1;
 let searchTimeout = null;
 let materialsData = [];
+let draftKeluar = []; // Array keranjang barang keluar
 
 document.addEventListener("DOMContentLoaded", async () => {
     await initFormDropdowns();
@@ -12,54 +13,215 @@ async function initFormDropdowns() {
     const res = await fetchAjax('logic.php?action=init_form', 'GET');
     if (res.status === 'success') {
         materialsData = res.materials;
-
-        let optMat = '<option value="">-- Pilih Barang --</option>';
-        res.materials.forEach(m => { 
-            optMat += `<option value="${m.id}">${m.sku_code} - ${m.material_name}</option>`; 
-        });
-        document.getElementById('material_id').innerHTML = optMat;
     }
 }
 
-function updateSatuan() {
-    const matId = document.getElementById('material_id').value;
-    const labelSatuan = document.getElementById('satuan_label');
-    const infoStok = document.getElementById('stock_info');
+// ===============================================
+// FITUR AUTOCOMPLETE PENCARIAN BARANG
+// ===============================================
+function filterMaterialList() {
+    const keyword = document.getElementById('search_material').value.toLowerCase();
+    const listContainer = document.getElementById('material_list');
     
-    if(!matId) {
-        labelSatuan.value = '-';
-        infoStok.innerText = 'Pilih barang untuk melihat sisa stok.';
-        infoStok.className = 'text-[10px] text-slate-400 mt-1 pl-1';
+    listContainer.innerHTML = '';
+    
+    if (keyword.length < 1) {
+        listContainer.classList.add('hidden');
+        resetInputBahan();
         return;
     }
-    const mat = materialsData.find(m => m.id == matId);
-    if(mat) {
-        const currentStock = parseFloat(mat.stock);
-        labelSatuan.value = mat.unit;
-        infoStok.innerText = `Sisa Stok saat ini: ${currentStock} ${mat.unit}`;
+
+    const filtered = materialsData.filter(m => 
+        m.material_name.toLowerCase().includes(keyword) || 
+        m.sku_code.toLowerCase().includes(keyword)
+    );
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = `<div class="p-3 text-xs text-slate-400 italic font-bold">Barang tidak ditemukan.</div>`;
+        listContainer.classList.remove('hidden');
+        return;
+    }
+
+    filtered.forEach(m => {
+        const div = document.createElement('div');
+        div.className = "p-3 border-b border-slate-50 hover:bg-rose-50 cursor-pointer transition-colors";
+        div.innerHTML = `
+            <div class="font-black text-slate-800 text-xs">${m.material_name}</div>
+            <div class="text-[10px] text-slate-500 font-mono font-bold mt-0.5">[${m.sku_code}] • Sisa Stok: <span class="${m.stock <= 0 ? 'text-rose-500' : 'text-emerald-500'}">${m.stock} ${m.unit}</span></div>
+        `;
+        div.onclick = () => { pilihMaterial(m.id, m.material_name, m.unit, m.stock); };
+        listContainer.appendChild(div);
+    });
+
+    listContainer.classList.remove('hidden');
+}
+
+function pilihMaterial(id, name, unit, stock) {
+    document.getElementById('material_id').value = id;
+    document.getElementById('search_material').value = name;
+    document.getElementById('satuan_label').value = unit;
+    
+    // Tampilkan Stok Info
+    document.getElementById('max_stock').value = stock;
+    const infoStok = document.getElementById('stock_info');
+    infoStok.innerText = `Sisa Stok saat ini: ${stock} ${unit}`;
+    infoStok.className = stock <= 0 ? 'text-[10px] text-rose-500 font-bold mt-1 pl-1' : 'text-[10px] text-emerald-600 font-bold mt-1 pl-1';
+    
+    document.getElementById('material_list').classList.add('hidden');
+}
+
+function resetInputBahan() {
+    document.getElementById('material_id').value = '';
+    document.getElementById('satuan_label').value = '-';
+    document.getElementById('max_stock').value = '0';
+    document.getElementById('stock_info').innerText = 'Pilih barang untuk melihat sisa stok.';
+    document.getElementById('stock_info').className = 'text-[10px] text-slate-400 mt-1 pl-1 font-bold';
+}
+
+document.addEventListener('click', function(e) {
+    const searchInput = document.getElementById('search_material');
+    const listContainer = document.getElementById('material_list');
+    if (e.target !== searchInput && !listContainer.contains(e.target)) {
+        listContainer.classList.add('hidden');
+    }
+});
+
+// ===============================================
+// FITUR KERANJANG DRAFT KELUAR
+// ===============================================
+function tambahKeDraft() {
+    const matId = document.getElementById('material_id').value;
+    const matName = document.getElementById('search_material').value;
+    const unit = document.getElementById('satuan_label').value;
+    const qty = parseFloat(document.getElementById('qty').value);
+    const maxStock = parseFloat(document.getElementById('max_stock').value);
+
+    if (!matId || isNaN(qty) || qty <= 0) {
+        Swal.fire('Ups!', 'Silakan pilih barang dan isi jumlah keluar dengan benar!', 'warning');
+        return;
+    }
+
+    // Validasi Stok Awal
+    if (qty > maxStock) {
+        Swal.fire('Stok Tidak Cukup!', `Anda ingin mengeluarkan ${qty}, tapi stok ${matName} hanya tersisa ${maxStock} ${unit}.`, 'error');
+        return;
+    }
+
+    // Gabungkan jika barang yang sama sudah ada di keranjang, lalu validasi totalnya
+    const existIdx = draftKeluar.findIndex(d => d.material_id == matId);
+    if (existIdx !== -1) {
+        const totalQty = draftKeluar[existIdx].qty + qty;
+        if(totalQty > maxStock) {
+            Swal.fire('Stok Tidak Cukup!', `Total ${matName} di daftar Anda (${totalQty}) melebihi stok yang ada (${maxStock} ${unit}).`, 'error');
+            return;
+        }
+        draftKeluar[existIdx].qty = totalQty;
+    } else {
+        draftKeluar.push({ material_id: matId, material_name: matName, unit: unit, qty: qty });
+    }
+
+    // Reset Inputan
+    document.getElementById('search_material').value = '';
+    document.getElementById('qty').value = '';
+    resetInputBahan();
+    
+    renderDraft();
+}
+
+function hapusDraft(index) {
+    draftKeluar.splice(index, 1);
+    renderDraft();
+}
+
+function renderDraft() {
+    const tbody = document.getElementById('table-draft');
+    document.getElementById('draft-count').innerText = `${draftKeluar.length} ITEM`;
+
+    if (draftKeluar.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-slate-400 italic font-bold text-xs">Belum ada barang ditambahkan.</td></tr>';
+        return;
+    }
+
+    let html = '';
+    draftKeluar.forEach((item, idx) => {
+        html += `
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="p-3 pl-5 text-center text-xs font-bold text-slate-400">${idx + 1}</td>
+                <td class="p-3 font-black text-slate-700 text-xs">${item.material_name}</td>
+                <td class="p-3 text-right">
+                    <span class="font-black text-rose-600 text-sm">-${item.qty}</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase ml-1">${item.unit}</span>
+                </td>
+                <td class="p-3 pr-5 text-center">
+                    <button type="button" onclick="hapusDraft(${idx})" class="w-7 h-7 rounded bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all mx-auto flex items-center justify-center">
+                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+async function simpanTransaksi() {
+    if (draftKeluar.length === 0) {
+        Swal.fire('Ups!', 'Daftar barang keluar masih kosong. Tambahkan minimal 1 barang ke daftar.', 'warning');
+        return;
+    }
+
+    const confirm = await Swal.fire({
+        title: 'Ajukan Keluar Barang?',
+        text: "Pastikan data barang, jumlah, dan alasan sudah benar.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#f43f5e',
+        confirmButtonText: 'Ya, Ajukan Keluar!'
+    });
+
+    if (confirm.isConfirmed) {
+        Swal.fire({ title: 'Memproses...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
+
+        const status = document.getElementById('status').value;
+        const notes = document.getElementById('notes').value;
+
+        const formData = new FormData();
+        formData.append('status', status);
+        formData.append('notes', notes);
+        formData.append('drafts', JSON.stringify(draftKeluar));
+
+        const res = await fetchAjax('logic.php?action=save', 'POST', formData);
         
-        if (currentStock <= 0) {
-            infoStok.className = 'text-[10px] text-rose-500 font-bold mt-1 pl-1';
+        if (res.status === 'success') {
+            closeModalKeluar();
+            await initFormDropdowns(); // Tarik ulang data stok material terbaru
+            loadData(1); 
+            Swal.fire({ title: 'Berhasil!', text: res.message, icon: 'success', timer: 2500, showConfirmButton: false });
         } else {
-            infoStok.className = 'text-[10px] text-slate-500 font-medium mt-1 pl-1';
+            Swal.fire('Gagal!', res.message, 'error');
         }
     }
 }
 
+// ===============================================
+// GLOBAL LOGIC LAMA
+// ===============================================
 function openModalKeluar() {
-    document.getElementById('formKeluar').reset();
-    document.getElementById('satuan_label').value = '-';
-    document.getElementById('stock_info').innerText = 'Pilih barang untuk melihat sisa stok.';
+    draftKeluar = []; // Reset keranjang
+    renderDraft();
+    
+    document.getElementById('search_material').value = '';
+    document.getElementById('qty').value = '';
+    document.getElementById('status').value = 'Rusak';
+    document.getElementById('notes').value = '';
+    resetInputBahan();
+    
     openModal('modal-keluar');
 }
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 function closeModalKeluar() { closeModal('modal-keluar'); }
 
-function switchTab(tab) {
-    currentTab = tab;
-    loadData(currentPage);
-}
+function switchTab(tab) { currentTab = tab; loadData(currentPage); }
 
 function cariData() {
     clearTimeout(searchTimeout);
@@ -86,14 +248,12 @@ async function loadData(page = 1) {
                 const d = new Date(item.created_at);
                 const tgl = d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
                 
-                // Status Kondisi Barang (Rusak / Expired / Lainnya)
                 let statusBadge = '';
                 if(item.status === 'Rusak') statusBadge = '<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border border-rose-200 shadow-inner">Rusak</span>';
                 else if(item.status === 'Expired') statusBadge = '<span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border border-amber-200 shadow-inner">Expired</span>';
                 else statusBadge = '<span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border border-slate-200 shadow-inner">Lainnya</span>';
 
-                // Lencana Approval Status
-                let approvalVal = item.approval_status || 'approved'; // default if missing from old data
+                let approvalVal = item.approval_status || 'approved'; 
                 let approvalBadge = '';
                 if(approvalVal === 'pending') approvalBadge = '<span class="bg-amber-100 text-amber-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"><i class="fa-solid fa-hourglass-half mr-1"></i> Pending</span>';
                 else if(approvalVal === 'rejected') approvalBadge = '<span class="bg-rose-100 text-rose-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"><i class="fa-solid fa-xmark mr-1"></i> Ditolak</span>';
@@ -136,40 +296,6 @@ function renderPagination(totalPages, current) {
     }
     container.innerHTML = html;
 }
-
-document.getElementById('formKeluar').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const matId = document.getElementById('material_id').value;
-    const qtyInput = parseFloat(document.getElementById('qty').value);
-    const mat = materialsData.find(m => m.id == matId);
-
-    if(!mat) { Swal.fire('Error', 'Pilih barang terlebih dahulu!', 'error'); return; }
-    
-    if (qtyInput > parseFloat(mat.stock)) {
-        Swal.fire({
-            title: 'Stok Tidak Cukup!',
-            text: `Kamu ingin mengeluarkan ${qtyInput} ${mat.unit}, tapi stok ${mat.material_name} saat ini hanya sisa ${parseFloat(mat.stock)} ${mat.unit}.`,
-            icon: 'error',
-            confirmButtonColor: '#F43F5E',
-        });
-        return;
-    }
-
-    Swal.fire({ title: 'Memproses...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
-
-    const formData = new FormData(this);
-    const res = await fetchAjax('logic.php?action=save', 'POST', formData);
-    
-    if (res.status === 'success') {
-        closeModalKeluar();
-        await initFormDropdowns();
-        loadData(1); 
-        Swal.fire({ title: 'Berhasil!', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false });
-    } else {
-        Swal.fire('Gagal!', res.message, 'error');
-    }
-});
 
 function cetakLaporan() {
     const search = document.getElementById('search').value;

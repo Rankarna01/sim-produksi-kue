@@ -2,6 +2,7 @@ let currentTab = 'semua';
 let currentPage = 1;
 let searchTimeout = null;
 let materialsData = [];
+let draftMasuk = []; // Array penampung keranjang barang masuk
 
 document.addEventListener("DOMContentLoaded", async () => {
     await initFormDropdowns();
@@ -13,37 +14,199 @@ async function initFormDropdowns() {
     if (res.status === 'success') {
         materialsData = res.materials;
 
-        let optMat = '<option value="">-- Pilih Barang --</option>';
-        res.materials.forEach(m => { optMat += `<option value="${m.id}">${m.sku_code} - ${m.material_name}</option>`; });
-        document.getElementById('material_id').innerHTML = optMat;
-
-        let optSupp = '<option value="">Tanpa Supplier (Lain-lain)</option>';
+        let optSupp = '<option value="">Tanpa Supplier (Lain-lain / Bonus)</option>';
         res.suppliers.forEach(s => { optSupp += `<option value="${s.id}">${s.name}</option>`; });
         document.getElementById('supplier_id').innerHTML = optSupp;
     }
 }
 
-function updateSatuan() {
-    const matId = document.getElementById('material_id').value;
-    const label = document.getElementById('satuan_label');
+// ===============================================
+// FITUR AUTOCOMPLETE PENCARIAN BARANG
+// ===============================================
+function filterMaterialList() {
+    const keyword = document.getElementById('search_material').value.toLowerCase();
+    const listContainer = document.getElementById('material_list');
     
-    if(!matId) { label.value = '-'; return; }
-    const mat = materialsData.find(m => m.id == matId);
-    if(mat) label.value = mat.unit;
+    listContainer.innerHTML = '';
+    
+    if (keyword.length < 1) {
+        listContainer.classList.add('hidden');
+        document.getElementById('material_id').value = '';
+        document.getElementById('satuan_label').value = '-';
+        return;
+    }
+
+    const filtered = materialsData.filter(m => 
+        m.material_name.toLowerCase().includes(keyword) || 
+        m.sku_code.toLowerCase().includes(keyword)
+    );
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = `<div class="p-3 text-xs text-slate-400 italic font-bold">Barang tidak ditemukan.</div>`;
+        listContainer.classList.remove('hidden');
+        return;
+    }
+
+    filtered.forEach(m => {
+        const div = document.createElement('div');
+        div.className = "p-3 border-b border-slate-50 hover:bg-blue-50 cursor-pointer transition-colors";
+        div.innerHTML = `
+            <div class="font-black text-slate-800 text-xs">${m.material_name}</div>
+            <div class="text-[10px] text-slate-500 font-mono font-bold mt-0.5">[${m.sku_code}] • Beli: ${m.unit}</div>
+        `;
+        div.onclick = () => { pilihMaterial(m.id, m.material_name, m.unit); };
+        listContainer.appendChild(div);
+    });
+
+    listContainer.classList.remove('hidden');
 }
 
-function openModalMasuk() {
-    document.getElementById('formMasuk').reset();
+function pilihMaterial(id, name, unit) {
+    document.getElementById('material_id').value = id;
+    document.getElementById('search_material').value = name;
+    document.getElementById('satuan_label').value = unit;
+    document.getElementById('material_list').classList.add('hidden');
+}
+
+document.addEventListener('click', function(e) {
+    const searchInput = document.getElementById('search_material');
+    const listContainer = document.getElementById('material_list');
+    if (e.target !== searchInput && !listContainer.contains(e.target)) {
+        listContainer.classList.add('hidden');
+    }
+});
+
+// ===============================================
+// FITUR KERANJANG DRAFT
+// ===============================================
+function tambahKeDraft() {
+    const matId = document.getElementById('material_id').value;
+    const matName = document.getElementById('search_material').value;
+    const unit = document.getElementById('satuan_label').value;
+    const qty = parseFloat(document.getElementById('qty').value);
+    const expDate = document.getElementById('expiry_date').value;
+
+    if (!matId || isNaN(qty) || qty <= 0 || !expDate) {
+        Swal.fire('Ups!', 'Silakan pilih barang, isi jumlah masuk, dan tanggal kadaluarsa terlebih dahulu!', 'warning');
+        return;
+    }
+
+    // Gabungkan jika barang yang sama dengan expired date yang sama sudah ada di keranjang
+    const existIdx = draftMasuk.findIndex(d => d.material_id == matId && d.expiry_date == expDate);
+    if (existIdx !== -1) {
+        draftMasuk[existIdx].qty += qty;
+    } else {
+        draftMasuk.push({ material_id: matId, material_name: matName, unit: unit, qty: qty, expiry_date: expDate });
+    }
+
+    // Reset Inputan
+    document.getElementById('material_id').value = '';
+    document.getElementById('search_material').value = '';
+    document.getElementById('qty').value = '';
     document.getElementById('satuan_label').value = '-';
+    // Expiry date tidak direset, biar user gampang kalau barang selanjutnya punya tgl exp sama
+    
+    renderDraft();
+}
+
+function hapusDraft(index) {
+    draftMasuk.splice(index, 1);
+    renderDraft();
+}
+
+function renderDraft() {
+    const tbody = document.getElementById('table-draft');
+    document.getElementById('draft-count').innerText = `${draftMasuk.length} ITEM`;
+
+    if (draftMasuk.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-slate-400 italic font-bold text-xs">Belum ada barang ditambahkan.</td></tr>';
+        return;
+    }
+
+    let html = '';
+    draftMasuk.forEach((item, idx) => {
+        const d = new Date(item.expiry_date);
+        const tglExp = d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+
+        html += `
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="p-3 pl-5 text-center text-xs font-bold text-slate-400">${idx + 1}</td>
+                <td class="p-3 font-black text-slate-700 text-xs">${item.material_name}</td>
+                <td class="p-3 text-xs font-bold text-rose-500">${tglExp}</td>
+                <td class="p-3 text-right">
+                    <span class="font-black text-emerald-600 text-sm">+${item.qty}</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase ml-1">${item.unit}</span>
+                </td>
+                <td class="p-3 pr-5 text-center">
+                    <button type="button" onclick="hapusDraft(${idx})" class="w-7 h-7 rounded bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all mx-auto flex items-center justify-center">
+                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+async function simpanTransaksi() {
+    if (draftMasuk.length === 0) {
+        Swal.fire('Ups!', 'Daftar barang masuk masih kosong. Tambahkan minimal 1 barang ke daftar.', 'warning');
+        return;
+    }
+
+    const confirm = await Swal.fire({
+        title: 'Ajukan Transaksi?',
+        text: "Pastikan data barang, jumlah, dan tanggal kadaluarsa sudah benar.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#10b981',
+        confirmButtonText: 'Ya, Ajukan!'
+    });
+
+    if (confirm.isConfirmed) {
+        Swal.fire({ title: 'Menyimpan...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
+
+        const supplier_id = document.getElementById('supplier_id').value;
+        const notes = document.getElementById('notes').value;
+
+        const formData = new FormData();
+        formData.append('supplier_id', supplier_id);
+        formData.append('notes', notes);
+        formData.append('drafts', JSON.stringify(draftMasuk));
+
+        const res = await fetchAjax('logic.php?action=save', 'POST', formData);
+        
+        if (res.status === 'success') {
+            closeModal('modal-masuk');
+            loadData(1); 
+            Swal.fire({ title: 'Berhasil!', text: res.message, icon: 'success', timer: 2500, showConfirmButton: false });
+        } else {
+            Swal.fire('Gagal!', res.message, 'error');
+        }
+    }
+}
+
+// ===============================================
+// GLOBAL LOGIC LAMA (TETAP AMAN)
+// ===============================================
+function openModalMasuk() {
+    draftMasuk = []; // Reset keranjang
+    renderDraft();
+    
+    document.getElementById('material_id').value = '';
+    document.getElementById('search_material').value = '';
+    document.getElementById('qty').value = '';
+    document.getElementById('satuan_label').value = '-';
+    document.getElementById('expiry_date').value = '';
+    document.getElementById('supplier_id').value = '';
+    document.getElementById('notes').value = '';
+    
     openModal('modal-masuk');
 }
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-function switchTab(tab) {
-    currentTab = tab;
-    loadData(1);
-}
+function switchTab(tab) { currentTab = tab; loadData(1); }
 
 function cariData() {
     clearTimeout(searchTimeout);
@@ -74,8 +237,7 @@ async function loadData(page = 1) {
                     '<span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">PO System</span>' : 
                     '<span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest">Manual</span>';
 
-                // Lencana Status Transaksi
-                let statusVal = item.status || 'approved'; // default if missing
+                let statusVal = item.status || 'approved'; 
                 let statusBadge = '';
                 if(statusVal === 'pending') statusBadge = '<span class="bg-amber-100 text-amber-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"><i class="fa-solid fa-hourglass-half mr-1"></i> Pending</span>';
                 else if(statusVal === 'rejected') statusBadge = '<span class="bg-rose-100 text-rose-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"><i class="fa-solid fa-xmark mr-1"></i> Ditolak</span>';
@@ -158,22 +320,6 @@ function renderPagination(totalPages, current) {
     }
     container.innerHTML = html;
 }
-
-document.getElementById('formMasuk').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    Swal.fire({ title: 'Menyimpan...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
-
-    const formData = new FormData(this);
-    const res = await fetchAjax('logic.php?action=save', 'POST', formData);
-    
-    if (res.status === 'success') {
-        closeModal('modal-masuk');
-        loadData(1); 
-        Swal.fire({ title: 'Berhasil!', text: res.message, icon: 'success', timer: 2000, showConfirmButton: false });
-    } else {
-        Swal.fire('Gagal!', res.message, 'error');
-    }
-});
 
 function cetakLaporan() {
     const search = document.getElementById('search').value;

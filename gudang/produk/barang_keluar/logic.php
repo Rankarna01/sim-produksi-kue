@@ -72,56 +72,60 @@ try {
         exit;
     }
 
-    // 3. CREATE DATA (STATUS PENDING - TANPA KURANGI STOK)
+    // 3. CREATE DATA MANUAL BATCH (DENGAN STATUS PENDING)
     if ($action === 'save') {
-        $material_id = $_POST['material_id'] ?? '';
-        $qty = (float)($_POST['qty'] ?? 0);
+        $drafts = json_decode($_POST['drafts'] ?? '[]', true);
         $status_keluar = $_POST['status'] ?? 'Rusak';
         $notes = trim($_POST['notes'] ?? '');
         $user_id = $_SESSION['user_id'] ?? 1;
 
-        if (empty($material_id) || $qty <= 0) {
-            echo json_encode(['status' => 'error', 'message' => 'Barang dan Jumlah Keluar wajib diisi dengan benar!']); exit;
+        if (empty($drafts)) {
+            echo json_encode(['status' => 'error', 'message' => 'Daftar barang keluar tidak boleh kosong!']); exit;
         }
 
         $pdo->beginTransaction();
 
-        // A. Cek Stok Saat Ini 
-        // (Kita tetap biarkan validasi stok awal di sini, agar user tidak asal menginput lebih besar dari stok fisik saat ini)
-        $stmtCek = $pdo->prepare("SELECT stock, material_name FROM materials_stocks WHERE id = ? FOR UPDATE");
-        $stmtCek->execute([$material_id]);
-        $curr = $stmtCek->fetch(PDO::FETCH_ASSOC);
-
-        if (!$curr) {
-            $pdo->rollBack();
-            echo json_encode(['status' => 'error', 'message' => 'Barang tidak ditemukan!']); exit;
-        }
-
-        if ($qty > (float)$curr['stock']) {
-            $pdo->rollBack();
-            echo json_encode(['status' => 'error', 'message' => "Stok tidak cukup! Sisa stok {$curr['material_name']} saat ini hanya ". (float)$curr['stock']]); exit;
-        }
-
-        // B. Generate TRX No (OUT-...)
-        $trx_no = "OUT-" . date('YmdHis') . "-" . rand(10,99);
-
         $stmtSetting = $pdo->query("SELECT req_approval_out FROM store_profile WHERE id = 1");
         $req_approval = $stmtSetting->fetchColumn() ?? 1;
-
         $status_app = ($req_approval == 1) ? 'pending' : 'approved';
 
-        // C. Insert Riwayat Keluar DENGAN STATUS PENDING
-        $stmtIns = $pdo->prepare("INSERT INTO barang_keluar (transaction_no, material_id, qty, status, notes, user_id, approval_status) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmtIns->execute([$trx_no, $material_id, $qty, $status_keluar, $notes, $user_id, $status_app]);
+        $trx_no_base = "OUT-" . date('YmdHis') . "-";
 
-        // Jika SOP Approve DIMATIKAN, langsung potong stok
-        if ($req_approval == 0) {
-            $stmtUpd = $pdo->prepare("UPDATE materials_stocks SET stock = stock - ? WHERE id = ?");
-            $stmtUpd->execute([$qty, $material_id]);
-            $msg = 'Barang Keluar disimpan dan stok langsung dikurangi (Auto-Approve)!';
-        } else {
-            $msg = 'Pengajuan Keluar berhasil dicatat! Menunggu persetujuan Owner.';
+        $stmtCek = $pdo->prepare("SELECT stock, material_name FROM materials_stocks WHERE id = ? FOR UPDATE");
+        $stmtIns = $pdo->prepare("INSERT INTO barang_keluar (transaction_no, material_id, qty, status, notes, user_id, approval_status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmtUpd = $pdo->prepare("UPDATE materials_stocks SET stock = stock - ? WHERE id = ?");
+
+        foreach ($drafts as $item) {
+            $material_id = $item['material_id'];
+            $qty = (float)$item['qty'];
+
+            // A. Cek Stok Saat Ini 
+            $stmtCek->execute([$material_id]);
+            $curr = $stmtCek->fetch(PDO::FETCH_ASSOC);
+
+            if (!$curr) {
+                $pdo->rollBack();
+                echo json_encode(['status' => 'error', 'message' => "Barang dengan ID {$material_id} tidak ditemukan!"]); exit;
+            }
+
+            if ($qty > (float)$curr['stock']) {
+                $pdo->rollBack();
+                echo json_encode(['status' => 'error', 'message' => "Stok tidak cukup! Sisa stok {$curr['material_name']} saat ini hanya ". (float)$curr['stock']]); exit;
+            }
+
+            // B. Generate unique TRX No per item 
+            $trx_no = $trx_no_base . rand(10,99);
+
+            // C. Insert Riwayat Keluar
+            $stmtIns->execute([$trx_no, $material_id, $qty, $status_keluar, $notes, $user_id, $status_app]);
+
+            // Jika SOP Approve DIMATIKAN, langsung potong stok
+            if ($req_approval == 0) {
+                $stmtUpd->execute([$qty, $material_id]);
+            }
         }
+
+        $msg = ($req_approval == 0) ? 'Barang Keluar disimpan dan stok langsung dikurangi (Auto-Approve)!' : 'Pengajuan Keluar berhasil dicatat! Menunggu persetujuan Owner.';
 
         $pdo->commit(); 
         echo json_encode(['status' => 'success', 'message' => $msg]);
