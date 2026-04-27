@@ -10,6 +10,11 @@ $today = date('Y-m-d');
 
 try {
     if ($action === 'dashboard_data') {
+        
+        // --- AMBIL PENGUMUMAN DARI STORE PROFILE ---
+        $stmt_pengumuman = $pdo->query("SELECT dashboard_announcement FROM store_profile WHERE id = 1");
+        $pengumuman = $stmt_pengumuman->fetchColumn() ?: 'Selamat datang di Sistem Produksi. Tidak ada pengumuman saat ini.';
+
         // 1. STATISTIK ANGKA 
         $stmt_total = $pdo->prepare("SELECT IFNULL(SUM(d.quantity), 0) as total FROM productions p JOIN production_details d ON p.id = d.production_id WHERE p.user_id = ? AND DATE(p.created_at) = ?");
         $stmt_total->execute([$user_id, $today]);
@@ -21,7 +26,7 @@ try {
         $res_pending = $stmt_pending->fetch();
         $pending = $res_pending ? $res_pending['pending'] : 0;
 
-        // TAMBAHAN: Tarik Data Ditolak / Revisi
+        // Tarik Data Ditolak / Revisi
         $stmt_ditolak = $pdo->prepare("SELECT IFNULL(SUM(d.quantity), 0) as ditolak FROM productions p JOIN production_details d ON p.id = d.production_id WHERE p.user_id = ? AND p.status = 'ditolak' AND DATE(p.created_at) = ?");
         $stmt_ditolak->execute([$user_id, $today]);
         $res_ditolak = $stmt_ditolak->fetch();
@@ -39,10 +44,11 @@ try {
 
         echo json_encode([
             'status' => 'success',
+            'pengumuman' => $pengumuman, // Masukkan pengumuman ke JSON
             'stats' => [
                 'total' => $total, 
                 'pending' => $pending, 
-                'ditolak' => $ditolak, // Masukkan ke response
+                'ditolak' => $ditolak, 
                 'valid' => $valid
             ],
             'recent' => $recent

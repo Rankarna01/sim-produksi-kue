@@ -4,25 +4,45 @@ require_once '../../config/database.php';
 checkPermission('view_dashboard');
 
 header('Content-Type: application/json');
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
+    
+    // --- FITUR BARU: UPDATE PENGUMUMAN ---
+    if ($action === 'update_pengumuman') {
+        checkPermission('edit_pengumuman_dashboard'); // Pastikan cuma yang berhak yang bisa ngedit
+        
+        $teks = trim($_POST['pengumuman'] ?? '');
+        if(empty($teks)) {
+            $teks = 'Selamat datang di Sistem Produksi.'; // Default kalau dikosongin
+        }
+
+        // Kita simpan di tabel store_profile (karena biasanya cuma ada 1 baris pengaturan toko)
+        $stmt = $pdo->prepare("UPDATE store_profile SET dashboard_announcement = ? WHERE id = 1");
+        $stmt->execute([$teks]);
+
+        echo json_encode(['status' => 'success', 'message' => 'Pengumuman berhasil diupdate!']);
+        exit;
+    }
+
+    // --- LOGIKA BAWAAN: RENDER DASHBOARD ---
     $today = date('Y-m-d');
 
+    // Ambil teks pengumuman dari pengaturan toko
+    $stmt_pengumuman = $pdo->query("SELECT dashboard_announcement FROM store_profile WHERE id = 1");
+    $pengumuman = $stmt_pengumuman->fetchColumn() ?: 'Selamat datang di Sistem Produksi. Tidak ada pengumuman saat ini.';
+
     // 1. STATISTIK ANGKA (KPI)
-    // Produksi Hari Ini
     $stmt_prod = $pdo->prepare("SELECT IFNULL(SUM(d.quantity), 0) as total FROM productions p JOIN production_details d ON p.id = d.production_id WHERE DATE(p.created_at) = ?");
     $stmt_prod->execute([$today]);
     $produksi_hari_ini = $stmt_prod->fetch()['total'] ?? 0;
 
-    // Bahan Baku Kritis (Stok <= 10)
     $stmt_bahan = $pdo->query("SELECT COUNT(id) as total FROM materials WHERE stock <= 10");
     $bahan_kritis = $stmt_bahan->fetch()['total'] ?? 0;
 
-    // Total Produk Master
     $stmt_produk = $pdo->query("SELECT COUNT(id) as total FROM products");
     $total_produk = $stmt_produk->fetch()['total'] ?? 0;
 
-    // Total User Terdaftar
     $stmt_user = $pdo->query("SELECT COUNT(id) as total FROM users");
     $total_user = $stmt_user->fetch()['total'] ?? 0;
 
@@ -51,6 +71,7 @@ try {
     // Kirim Balasan JSON
     echo json_encode([
         'status' => 'success',
+        'pengumuman' => $pengumuman,
         'stats' => [
             'produksi' => $produksi_hari_ini,
             'bahan_kritis' => $bahan_kritis,

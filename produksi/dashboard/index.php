@@ -7,6 +7,26 @@ checkRole(['produksi']);
 <head>
     <?php include '../../components/head.php'; ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Animasi khusus untuk pengumuman berjalan */
+        .marquee-container {
+            display: flex;
+            overflow: hidden;
+            white-space: nowrap;
+            width: 100%;
+        }
+        .marquee-content {
+            animation: marquee 25s linear infinite;
+            display: inline-block;
+        }
+        .marquee-container:hover .marquee-content {
+            animation-play-state: paused;
+        }
+        @keyframes marquee {
+            0%   { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+    </style>
 </head>
 <body class="text-slate-800 antialiased h-screen flex overflow-hidden">
     <?php include '../../components/sidebar_produksi.php'; ?>
@@ -14,6 +34,16 @@ checkRole(['produksi']);
         <?php include '../../components/header.php'; ?>
         
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
+            
+            <div class="bg-blue-600 rounded-2xl shadow-sm mb-6 flex items-center overflow-hidden text-white relative h-12 shrink-0">
+                <div class="bg-blue-800 px-4 h-full flex items-center justify-center font-black text-xs uppercase tracking-widest z-10 shrink-0 gap-2">
+                    <i class="fa-solid fa-bullhorn"></i> Info
+                </div>
+                <div class="marquee-container flex-1 mx-4 text-sm font-bold opacity-90" id="marquee-text">
+                    <span class="marquee-content" id="pengumuman-text">Memuat pengumuman...</span>
+                </div>
+            </div>
+
             <div class="mb-6 sm:mb-8 flex justify-between items-center">
                 <div>
                     <h2 class="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">Dashboard Produksi</h2>

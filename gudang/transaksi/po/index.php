@@ -102,15 +102,18 @@ checkPermission('trx_po');
                         <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200">
                             <h4 class="font-black text-slate-700 text-sm mb-4">Item Barang (Manual)</h4>
                             <div class="flex flex-col md:flex-row gap-4 items-end">
-                                <div class="flex-1 w-full">
-                                    <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Nama Barang</label>
-                                    <select id="item_material" class="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none bg-white font-bold text-slate-700">
-                                        <option value="">-- Pilih Barang --</option>
-                                    </select>
+                                
+                                <div class="flex-1 w-full relative">
+                                    <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Cari Nama Barang <span class="text-rose-500">*</span></label>
+                                    <input type="text" id="search_material" placeholder="Ketik nama atau SKU bahan..." autocomplete="off" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-blue-600 outline-none transition-all font-bold text-slate-700 bg-white shadow-sm" onkeyup="filterMaterialList()">
+                                    <input type="hidden" id="item_material_id">
+                                    
+                                    <div id="material_list" class="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto hidden custom-scrollbar"></div>
                                 </div>
+
                                 <div class="w-full md:w-32">
-                                    <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Jumlah</label>
-                                    <input type="number" step="any" id="item_qty" value="1" class="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none bg-white font-black text-blue-600 text-center">
+                                    <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Jumlah <span class="text-rose-500">*</span></label>
+                                    <input type="number" step="any" id="item_qty" value="1" class="w-full px-4 py-3 border border-slate-300 rounded-xl outline-none bg-white font-black text-blue-600 text-center shadow-sm">
                                 </div>
                                 <button type="button" onclick="tambahItemManual()" class="w-full md:w-auto bg-slate-800 hover:bg-black text-white px-8 py-3 rounded-xl font-black transition-all shadow-sm">
                                     Tambah
@@ -131,7 +134,7 @@ checkPermission('trx_po');
                                 <thead class="bg-slate-50 border-b border-slate-100">
                                     <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                         <th class="p-5">Nama Barang</th>
-                                        <th class="p-5 text-center">Qty / Satuan</th>
+                                        <th class="p-5 text-center w-40">Qty / Satuan</th>
                                         <th class="p-5 text-center w-20">Aksi</th>
                                     </tr>
                                 </thead>
@@ -148,12 +151,12 @@ checkPermission('trx_po');
         </main>
     </div>
 
-    <div id="modal-terima-barang" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4">
+    <div id="modal-terima-barang" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4 py-6">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-terima-barang')"></div>
-        <div class="relative bg-white w-full max-w-5xl rounded-3xl shadow-xl z-10 flex flex-col overflow-hidden max-h-[90vh]">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <div class="relative bg-white w-full max-w-5xl rounded-3xl shadow-xl z-10 flex flex-col overflow-hidden max-h-full">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
                 <h3 class="text-lg font-black text-slate-800" id="terima-po-title">Penerimaan Barang PO: ---</h3>
-                <button onclick="closeModal('modal-terima-barang')" class="text-slate-400 hover:text-rose-500 transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <button onclick="closeModal('modal-terima-barang')" class="text-slate-400 hover:text-rose-500 transition-colors w-8 h-8 flex items-center justify-center rounded-full"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1 bg-slate-50/30">
@@ -166,7 +169,6 @@ checkPermission('trx_po');
                             <th class="p-4 w-24 text-center">Satuan</th>
                             <th class="p-4 w-32">Harga Satuan (Total)</th>
                             <th class="p-4 w-40">Expired Date</th>
-                            <th class="p-4 text-center w-16">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="terima-po-items" class="divide-y divide-slate-100">
@@ -174,31 +176,32 @@ checkPermission('trx_po');
                     </tbody>
                 </table>
 
-                <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex items-end gap-4">
-                    <div class="flex-1">
+                <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex flex-col sm:flex-row items-end gap-4">
+                    <div class="flex-1 w-full">
                         <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Tambah Barang Lain (Opsional)</label>
                         <select id="terima_extra_item" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none font-bold text-slate-700 bg-white">
                             <option value="">-- Pilih Barang --</option>
                         </select>
                     </div>
-                    <button type="button" onclick="addExtraTerimaItem()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition-all">Tambah</button>
+                    <button type="button" onclick="addExtraTerimaItem()" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold text-xs hover:bg-blue-700 transition-all">Tambah</button>
                 </div>
             </div>
-            <div class="p-6 border-t border-slate-100 bg-white flex justify-end gap-3">
+            <div class="p-6 border-t border-slate-100 bg-white flex justify-end gap-3 shrink-0 rounded-b-3xl">
                 <button onclick="closeModal('modal-terima-barang')" class="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-all text-xs uppercase tracking-widest">Batal</button>
-                <button onclick="submitTerimaBarang()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-emerald-200">Simpan & Terima Barang</button>
+                <button onclick="submitTerimaBarang()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-md shadow-emerald-200 flex items-center gap-2"><i class="fa-solid fa-check"></i> Simpan & Terima Barang</button>
             </div>
         </div>
     </div>
 
     <style>
-        .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         [x-cloak] { display: none !important; }
     </style>
 
     <?php include '../../../components/footer.php'; ?>
-    <script src="ajax.js?v=<?= time() ?>"></script>
+    <script src="ajax_list.js?v=<?= time() ?>"></script>
+    <script src="ajax_form.js?v=<?= time() ?>"></script>
 </body>
 </html>

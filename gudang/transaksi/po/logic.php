@@ -179,18 +179,22 @@ try {
     // ==========================================
 
     // A. KUNCI SAAT DICETAK 1X
+    // A. KUNCI SAAT DICETAK & TAMBAH HITUNGAN (COUNTER)
     if ($action === 'mark_printed') {
         $id = $_POST['id'] ?? '';
         $tipe = $_POST['tipe'] ?? ''; // 'po' atau 'terima'
         
-        $column = ($tipe === 'terima') ? 'print_terima_status' : 'print_po_status';
+        // Tentukan kolom mana yang mau diupdate
+        $col_status = ($tipe === 'terima') ? 'print_terima_status' : 'print_po_status';
+        $col_count  = ($tipe === 'terima') ? 'print_terima_count' : 'print_po_count';
 
-        $stmt = $pdo->prepare("SELECT $column FROM purchase_orders WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT $col_status FROM purchase_orders WHERE id = ?");
         $stmt->execute([$id]);
         $status_cetak = $stmt->fetchColumn();
 
         if ($status_cetak === 'unlocked') {
-            $update = $pdo->prepare("UPDATE purchase_orders SET $column = 'locked' WHERE id = ?");
+            // Update status jadi locked DAN tambah hitungan cetak + 1
+            $update = $pdo->prepare("UPDATE purchase_orders SET $col_status = 'locked', $col_count = COALESCE($col_count, 0) + 1 WHERE id = ?");
             $update->execute([$id]);
             echo json_encode(['status' => 'success', 'message' => 'Dokumen terkunci setelah dicetak.']);
         } else {

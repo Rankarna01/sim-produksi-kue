@@ -10,13 +10,18 @@ async function loadDashboard() {
     const res = await fetchAjax('logic.php?action=dashboard_data', 'GET');
     
     if (res.status === 'success') {
+        
+        // Render Teks Pengumuman
+        const elPengumuman = document.getElementById('pengumuman-text');
+        if(elPengumuman) elPengumuman.innerHTML = res.pengumuman;
+
         // 1. Isi Angka Ringkasan (KPI)
         document.getElementById('stat-total').innerText = res.stats.total;
         document.getElementById('stat-pending').innerText = res.stats.pending;
-        document.getElementById('stat-ditolak').innerText = res.stats.ditolak; // Update kotak baru
+        document.getElementById('stat-ditolak').innerText = res.stats.ditolak; 
         document.getElementById('stat-valid').innerText = res.stats.valid;
 
-        // 2. Render Chart Lingkaran (Tambahkan data ditolak)
+        // 2. Render Chart Lingkaran 
         renderChart(res.stats.pending, res.stats.valid, res.stats.ditolak);
 
         // 3. Render 5 Log Aktivitas Terakhir
@@ -33,12 +38,10 @@ function renderChart(pending, valid, ditolak) {
         myChart.destroy();
     }
 
-    // Masukkan 3 Dataset: Pending (Kuning), Valid (Hijau), Ditolak (Merah)
     let dataValues = [pending, valid, ditolak];
     let bgColors = ['#F59E0B', '#10B981', '#EF4444']; 
     let labels = ['Pending', 'Masuk Gudang (Valid)', 'Perlu Revisi'];
     
-    // Jika kosong semua
     if(pending == 0 && valid == 0 && ditolak == 0) {
         dataValues = [1];
         bgColors = ['#E2E8F0']; 
