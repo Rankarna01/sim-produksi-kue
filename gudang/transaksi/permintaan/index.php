@@ -60,7 +60,7 @@ checkPermission('trx_permintaan_barang');
 
                 <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
+                        <table class="w-full text-left text-sm min-w-[900px]">
                             <thead class="bg-white border-b border-slate-100">
                                 <tr class="text-[11px] font-bold text-slate-500">
                                     <th class="p-5 font-medium">Tanggal</th>
@@ -69,11 +69,10 @@ checkPermission('trx_permintaan_barang');
                                     <th class="p-5 font-medium">Pengirim</th>
                                     <th class="p-5 font-medium text-center">Status</th>
                                     <th class="p-5 font-medium">Catatan</th>
-                                    <th class="p-5 font-medium text-center w-16">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="table-data" class="divide-y divide-slate-50 text-slate-700">
-                                <tr><td colspan="7" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>
+                                <tr><td colspan="6" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -100,17 +99,19 @@ checkPermission('trx_permintaan_barang');
                             <h3 class="font-black text-slate-800 text-lg mb-6">Form Permintaan Barang</h3>
                             
                             <form id="form-item" class="space-y-5" onsubmit="event.preventDefault(); addToCart();">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-600 mb-2">Nama Barang</label>
-                                    <select id="material_id" required class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-blue-600 outline-none transition-all font-bold text-slate-700 bg-white shadow-sm" onchange="updateSatuan()">
-                                        <option value="">-- Pilih Barang dari Inventory --</option>
-                                    </select>
+                                
+                                <div class="relative">
+                                    <label class="block text-xs font-bold text-slate-600 mb-2">Cari Nama Barang <span class="text-rose-500">*</span></label>
+                                    <input type="text" id="search_material" placeholder="Ketik nama atau SKU bahan..." autocomplete="off" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-blue-600 outline-none transition-all font-bold text-slate-700 bg-white shadow-sm" onkeyup="filterMaterialList()">
+                                    <input type="hidden" id="material_id" name="material_id" required>
+                                    
+                                    <div id="material_list" class="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto hidden custom-scrollbar"></div>
                                 </div>
 
                                 <div class="grid grid-cols-2 gap-5">
                                     <div>
-                                        <label class="block text-xs font-bold text-slate-600 mb-2">Jumlah</label>
-                                        <input type="number" step="any" id="qty" required placeholder="0" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-blue-600 outline-none transition-all font-bold text-slate-700 bg-white shadow-sm">
+                                        <label class="block text-xs font-bold text-slate-600 mb-2">Jumlah Diminta <span class="text-rose-500">*</span></label>
+                                        <input type="number" step="any" id="qty" required placeholder="0" class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-blue-600 outline-none transition-all font-bold text-blue-600 bg-white shadow-sm">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-600 mb-2">Satuan</label>
@@ -119,12 +120,12 @@ checkPermission('trx_permintaan_barang');
                                 </div>
 
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-600 mb-2">Catatan (Opsional)</label>
-                                    <textarea id="notes" rows="2" placeholder="Contoh: Stok habis, butuh cepat untuk pesanan besok..." class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-blue-600 outline-none transition-all font-medium text-slate-700 bg-white shadow-sm custom-scrollbar"></textarea>
+                                    <label class="block text-xs font-bold text-slate-600 mb-2">Catatan / Urgensi (Opsional)</label>
+                                    <textarea id="notes" rows="2" placeholder="Contoh: Stok menipis, butuh cepat untuk pesanan besok..." class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:border-blue-600 outline-none transition-all font-medium text-slate-700 bg-white shadow-sm custom-scrollbar"></textarea>
                                 </div>
 
-                                <button type="submit" class="w-full bg-slate-800 hover:bg-black text-white py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-4">
-                                    <i class="fa-solid fa-plus"></i> Tambah ke Daftar
+                                <button type="submit" class="w-full bg-slate-800 hover:bg-black text-white py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-4 shadow-md">
+                                    <i class="fa-solid fa-plus"></i> Tambah ke Daftar Permintaan
                                 </button>
                             </form>
                         </div>
@@ -139,23 +140,22 @@ checkPermission('trx_permintaan_barang');
                             
                             <div class="flex-1 overflow-y-auto p-0 custom-scrollbar">
                                 <table class="w-full text-left text-sm">
-                                    <thead class="bg-white border-b border-slate-100 sticky top-0">
-                                        <tr class="text-[10px] font-bold text-slate-500">
+                                    <thead class="bg-white border-b border-slate-100 sticky top-0 z-10">
+                                        <tr class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                                             <th class="p-4">Barang</th>
                                             <th class="p-4">Jml</th>
-                                            <th class="p-4">Catatan</th>
                                             <th class="p-4 text-center">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody id="cart-table" class="divide-y divide-slate-50">
-                                        <tr><td colspan="4" class="p-10 text-center text-slate-400 italic text-xs">Belum ada barang di daftar.</td></tr>
+                                        <tr><td colspan="3" class="p-10 text-center text-slate-400 italic text-xs font-bold">Belum ada barang di daftar.</td></tr>
                                     </tbody>
                                 </table>
                             </div>
                             
                             <div class="p-5 border-t border-slate-100 bg-white">
-                                <button onclick="submitCart()" class="w-full bg-blue-700 hover:bg-blue-800 text-white py-3.5 rounded-xl font-black transition-all shadow-lg shadow-blue-200">
-                                    Kirim Semua Permintaan
+                                <button onclick="submitCart()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-paper-plane"></i> Kirim Permintaan
                                 </button>
                             </div>
                         </div>

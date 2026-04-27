@@ -13,46 +13,82 @@ async function initFormDropdowns() {
     const res = await fetchAjax('logic.php?action=init_form', 'GET');
     if (res.status === 'success') {
         materialsData = res.materials;
-
-        let optMat = '<option value="">-- Pilih Barang dari Inventory --</option>';
-        res.materials.forEach(m => { 
-            // Format dropdown sesuai gambar: Nama Barang (Stok: Satuan)
-            const currentStock = parseFloat(m.stock);
-            optMat += `<option value="${m.id}" data-unit="${m.unit}">
-                ${m.material_name} (Stok: ${currentStock} ${m.unit})
-            </option>`; 
-        });
-        document.getElementById('material_id').innerHTML = optMat;
     }
 }
 
-function updateSatuan() {
-    const select = document.getElementById('material_id');
-    const labelSatuan = document.getElementById('unit_label');
+// ===============================================
+// FITUR AUTOCOMPLETE PENCARIAN BARANG
+// ===============================================
+function filterMaterialList() {
+    const keyword = document.getElementById('search_material').value.toLowerCase();
+    const listContainer = document.getElementById('material_list');
     
-    if(!select.value) {
-        labelSatuan.value = '';
+    listContainer.innerHTML = '';
+    
+    if (keyword.length < 1) {
+        listContainer.classList.add('hidden');
+        document.getElementById('material_id').value = '';
+        document.getElementById('unit_label').value = '';
         return;
     }
-    const selectedOption = select.options[select.selectedIndex];
-    labelSatuan.value = selectedOption.dataset.unit;
+
+    const filtered = materialsData.filter(m => 
+        m.material_name.toLowerCase().includes(keyword) || 
+        m.sku_code.toLowerCase().includes(keyword)
+    );
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = `<div class="p-3 text-xs text-slate-400 italic font-bold">Barang tidak ditemukan di Inventory.</div>`;
+        listContainer.classList.remove('hidden');
+        return;
+    }
+
+    filtered.forEach(m => {
+        const div = document.createElement('div');
+        div.className = "p-3 border-b border-slate-50 hover:bg-blue-50 cursor-pointer transition-colors";
+        div.innerHTML = `
+            <div class="font-black text-slate-800 text-xs">${m.material_name}</div>
+            <div class="text-[10px] text-slate-500 font-mono font-bold mt-0.5">[${m.sku_code}] • Stok Gudang: ${parseFloat(m.stock)} ${m.unit}</div>
+        `;
+        div.onclick = () => { pilihMaterial(m.id, m.material_name, m.unit); };
+        listContainer.appendChild(div);
+    });
+
+    listContainer.classList.remove('hidden');
 }
+
+function pilihMaterial(id, name, unit) {
+    document.getElementById('material_id').value = id;
+    document.getElementById('search_material').value = name;
+    document.getElementById('unit_label').value = unit;
+    
+    // Tutup list
+    document.getElementById('material_list').classList.add('hidden');
+}
+
+// Tutup list autocomplete jika user klik sembarangan di luar input
+document.addEventListener('click', function(e) {
+    const searchInput = document.getElementById('search_material');
+    const listContainer = document.getElementById('material_list');
+    if (e.target !== searchInput && !listContainer.contains(e.target)) {
+        listContainer.classList.add('hidden');
+    }
+});
 
 // ==========================================
 // LOGIC CART (KERANJANG)
 // ==========================================
 function addToCart() {
-    const select = document.getElementById('material_id');
-    const mat_id = select.value;
+    const mat_id = document.getElementById('material_id').value;
+    const mat_name = document.getElementById('search_material').value; 
     const qty = parseFloat(document.getElementById('qty').value);
     const notes = document.getElementById('notes').value;
+    const unit = document.getElementById('unit_label').value;
 
     if (!mat_id || qty <= 0 || isNaN(qty)) {
-        Swal.fire('Ups!', 'Pilih barang dan masukkan jumlah yang benar.', 'warning'); return;
+        Swal.fire('Ups!', 'Pilih barang dari daftar pencarian dan masukkan jumlah yang benar.', 'warning'); 
+        return;
     }
-
-    const mat_name = select.options[select.selectedIndex].text.split(' (Stok:')[0]; // Ambil nama saja
-    const unit = select.options[select.selectedIndex].dataset.unit;
 
     // Cek apakah barang sudah ada di keranjang
     const existIdx = cart.findIndex(c => c.material_id == mat_id);
@@ -63,9 +99,10 @@ function addToCart() {
         cart.push({ material_id: mat_id, name: mat_name, qty: qty, unit: unit, notes: notes });
     }
 
-    // Reset Form
+    // Reset Form Input (Kecuali form action)
     document.getElementById('form-item').reset();
-    updateSatuan();
+    document.getElementById('material_id').value = '';
+    document.getElementById('unit_label').value = '';
     
     renderCart();
 }
@@ -85,20 +122,24 @@ function renderCart() {
     document.getElementById('cart-count').innerText = cart.length;
 
     if (cart.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="p-10 text-center text-slate-400 italic text-xs">Belum ada barang di daftar.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="p-10 text-center text-slate-400 italic text-xs font-bold">Belum ada barang di daftar.</td></tr>';
         return;
     }
 
     let html = '';
     cart.forEach((item, idx) => {
         html += `
-            <tr class="hover:bg-slate-50">
-                <td class="p-4 text-xs font-bold text-slate-700">${item.name}</td>
-                <td class="p-4 text-xs font-black text-blue-600">${item.qty} <span class="font-bold text-slate-400 text-[10px]">${item.unit}</span></td>
-                <td class="p-4 text-[10px] text-slate-500 italic max-w-[120px] truncate">${item.notes || '-'}</td>
+            <tr class="hover:bg-slate-50 transition-colors">
+                <td class="p-4">
+                    <div class="text-xs font-black text-slate-800">${item.name}</div>
+                    ${item.notes ? `<div class="text-[10px] text-slate-500 italic mt-1 max-w-[150px] truncate" title="${item.notes}">Catatan: ${item.notes}</div>` : ''}
+                </td>
+                <td class="p-4 text-sm font-black text-blue-600 whitespace-nowrap">
+                    ${item.qty} <span class="font-bold text-slate-400 text-[10px] uppercase tracking-widest">${item.unit}</span>
+                </td>
                 <td class="p-4 text-center">
-                    <button type="button" onclick="removeFromCart(${idx})" class="w-6 h-6 rounded bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all">
-                        <i class="fa-solid fa-trash text-[10px]"></i>
+                    <button type="button" onclick="removeFromCart(${idx})" class="w-8 h-8 rounded-lg bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center mx-auto shadow-sm">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
                     </button>
                 </td>
             </tr>
@@ -147,7 +188,7 @@ function cariData() {
 async function loadData(page = 1) {
     currentPage = page;
     const tbody = document.getElementById('table-data');
-    tbody.innerHTML = '<tr><td colspan="7" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="p-10 text-center"><i class="fa-solid fa-circle-notch fa-spin text-blue-600 text-2xl"></i></td></tr>';
     
     const search = document.getElementById('search').value;
     const start_date = document.getElementById('start_date').value;
@@ -158,11 +199,10 @@ async function loadData(page = 1) {
     if (res.status === 'success') {
         let html = '';
         if (res.data.length === 0) {
-            html = `<tr><td colspan="7" class="p-10 text-center text-slate-400 italic text-sm">Belum ada transaksi di tab ini.</td></tr>`;
+            html = `<tr><td colspan="6" class="p-10 text-center text-slate-400 italic text-sm font-bold">Belum ada transaksi di filter ini.</td></tr>`;
         } else {
             res.data.forEach((item) => {
                 const d = new Date(item.created_at);
-                // Format: 16 Apr 2026, 12.15
                 const tgl = d.toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'}) + ', ' + d.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
                 
                 // Styling Badge Sesuai Gambar
@@ -170,27 +210,25 @@ async function loadData(page = 1) {
                 if(item.status === 'pending') {
                     statusBadge = '<span class="text-amber-500 font-bold text-xs"><i class="fa-regular fa-clock"></i> Menunggu</span>';
                 } else if(item.status === 'processing') {
-                    statusBadge = '<span class="bg-blue-50 text-blue-500 px-3 py-1.5 rounded-full text-xs font-black flex items-center justify-center gap-1 w-max mx-auto"><i class="fa-solid fa-cart-shopping"></i> Diproses PO</span>';
+                    statusBadge = '<span class="bg-blue-50 text-blue-500 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1 w-max mx-auto"><i class="fa-solid fa-cart-shopping"></i> Diproses PO</span>';
                 } else if(item.status === 'rejected') {
-                    statusBadge = '<span class="bg-rose-50 text-rose-500 px-3 py-1.5 rounded-full text-xs font-black flex items-center justify-center gap-1 w-max mx-auto"><i class="fa-regular fa-circle-xmark"></i> Ditolak/Batal</span>';
+                    statusBadge = '<span class="bg-rose-50 text-rose-500 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1 w-max mx-auto"><i class="fa-solid fa-xmark"></i> Ditolak/Batal</span>';
                 }
 
                 html += `
                     <tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="p-5 text-xs text-slate-500 font-medium">${tgl}</td>
-                        <td class="p-5 font-black text-slate-800 text-xs">${item.material_name}</td>
-                        <td class="p-5 text-center text-xs font-medium text-slate-600">${parseFloat(item.qty).toFixed(2)} ${item.unit}</td>
+                        <td class="p-5 text-xs text-slate-500 font-bold">${tgl}</td>
+                        <td class="p-5 font-black text-slate-800 text-xs uppercase">${item.material_name}</td>
+                        <td class="p-5 text-center text-xs font-black text-blue-600">${parseFloat(item.qty)} <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${item.unit}</span></td>
                         <td class="p-5">
                             <div class="text-xs font-bold text-slate-600">${item.requester_name}</div>
-                            <div class="text-[9px] text-slate-400 font-bold uppercase">Gudang</div>
+                            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Gudang Admin</div>
                         </td>
                         <td class="p-5 text-center">${statusBadge}</td>
                         <td class="p-5">
-                            <div class="text-xs text-slate-600">${item.notes || '-'}</div>
-                            ${item.po_id ? `<div class="text-[9px] font-bold text-blue-500 mt-1 uppercase">PO: PR-${item.po_id}</div>` : ''}
+                            <div class="text-xs text-slate-600 italic truncate max-w-[150px]" title="${item.notes || '-'}">${item.notes || '-'}</div>
+                            ${item.po_id ? `<div class="text-[9px] font-bold text-blue-500 mt-1 uppercase tracking-widest">Terkait PO: PR-${item.po_id}</div>` : ''}
                         </td>
-                        <td class="p-5 text-center">
-                            </td>
                     </tr>
                 `;
             });

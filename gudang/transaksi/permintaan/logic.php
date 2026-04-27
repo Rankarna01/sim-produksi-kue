@@ -9,7 +9,7 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 try {
     // 1. INIT FORM (Tarik Barang)
     if ($action === 'init_form') {
-        $materials = $pdo->query("SELECT id, material_name, unit, stock FROM materials_stocks WHERE status = 'active' ORDER BY material_name ASC")->fetchAll(PDO::FETCH_ASSOC);
+        $materials = $pdo->query("SELECT id, material_name, unit, stock, sku_code FROM materials_stocks WHERE status = 'active' ORDER BY material_name ASC")->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['status' => 'success', 'materials' => $materials]);
         exit;
     }
@@ -84,7 +84,7 @@ try {
         $pdo->beginTransaction();
         
         // Generate nomor batch request untuk kemudahan tracking
-        $batch_no = "PR-" . date('YmdHis');
+        $batch_no = "PR-" . date('YmdHis') . rand(10,99);
 
         $stmt = $pdo->prepare("INSERT INTO purchase_requests (request_no, material_id, qty, notes, status, user_id) VALUES (?, ?, ?, ?, 'pending', ?)");
 
@@ -99,7 +99,7 @@ try {
         }
 
         $pdo->commit();
-        echo json_encode(['status' => 'success', 'message' => 'Semua permintaan berhasil dikirim!']);
+        echo json_encode(['status' => 'success', 'message' => 'Semua permintaan berhasil dikirim ke Owner/Purchasing!']);
         exit;
     }
 
