@@ -25,6 +25,10 @@ function getNavClass($path, $current_uri)
             <i class="fa-solid fa-chart-pie w-5 text-center"></i> <span class="text-sm">Dashboard</span>
         </a>
 
+        <a href="<?= BASE_URL ?>produksi/rencana_harian/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/rencana_harian/', $current_uri) ?>">
+            <i class="fa-solid fa-clipboard-list w-5 text-center"></i> <span class="text-sm">Rencana Harian</span>
+        </a>
+
         <a href="<?= BASE_URL ?>produksi/input_produksi/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/input_produksi/', $current_uri) ?>">
             <i class="fa-solid fa-fire-burner w-5 text-center"></i> <span class="text-sm">Input Produksi</span>
         </a>

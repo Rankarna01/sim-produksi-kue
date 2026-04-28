@@ -4,10 +4,10 @@ require_once '../../config/database.php';
 checkRole(['produksi']); 
 
 header('Content-Type: application/json');
-$action = $_GET['action'] ?? '';
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
-   if ($action === 'init_form') {
+    if ($action === 'init_form') {
         $products = $pdo->query("SELECT id, name, code FROM products ORDER BY name ASC")->fetchAll();
         $warehouses = $pdo->query("SELECT id, name FROM warehouses ORDER BY name ASC")->fetchAll();
         
@@ -48,6 +48,26 @@ try {
         exit;
     }
 
+    // --- FITUR BARU: CEK APAKAH KARYAWAN SUDAH BUAT RENCANA HARIAN ---
+    if ($action === 'check_plan') {
+        $employee_id = $_GET['employee_id'] ?? '';
+        $today = date('Y-m-d');
+
+        if (empty($employee_id)) {
+            echo json_encode(['status' => 'error', 'message' => 'Pilih karyawan!']); exit;
+        }
+
+        $cek = $pdo->prepare("SELECT id FROM production_plans WHERE karyawan_id = ? AND plan_date = ?");
+        $cek->execute([$employee_id, $today]);
+
+        if ($cek->rowCount() > 0) {
+            echo json_encode(['status' => 'success', 'has_plan' => true]);
+        } else {
+            echo json_encode(['status' => 'success', 'has_plan' => false]);
+        }
+        exit;
+    }
+
     if ($action === 'save') {
         $user_id = $_SESSION['user_id'];
         $warehouse_id = $_POST['warehouse_id']; 
@@ -57,10 +77,19 @@ try {
         
         $product_ids = $_POST['product_id']; 
         $quantities = $_POST['quantity'];
+        $today = date('Y-m-d');
 
         if (empty($employee_id)) {
             echo json_encode(['status' => 'error', 'message' => 'Pilih Karyawan terlebih dahulu!']); exit;
         }
+
+        // --- GEMBOK BACKEND: PASTIKAN KARYAWAN SUDAH BIKIN PLAN ---
+        $cekPlan = $pdo->prepare("SELECT id FROM production_plans WHERE karyawan_id = ? AND plan_date = ?");
+        $cekPlan->execute([$employee_id, $today]);
+        if ($cekPlan->rowCount() == 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Akses Ditolak! Karyawan belum membuat Rencana Harian.']); exit;
+        }
+
         if (empty($pin_input)) {
             echo json_encode(['status' => 'error', 'message' => 'PIN Otorisasi wajib diisi!']); exit;
         }

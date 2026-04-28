@@ -16,13 +16,37 @@ async function initForm() {
 
         let optEmployee = '<option value="">-- Pilih Nama Anda --</option>';
         res.employees.forEach(e => {
-            // Karena datanya sudah difilter oleh backend, kita tampilkan lebih rapi
             const dapurInfo = e.kitchen_name ? e.kitchen_name : "Belum diatur";
             optEmployee += `<option value="${e.id}">${e.emp_name} (${dapurInfo})</option>`;
         });
         document.getElementById('employee_id').innerHTML = optEmployee;
 
         addProductRow();
+    }
+}
+
+// --- FITUR BARU: CEK PLAN KARYAWAN ---
+async function checkEmployeePlan(employee_id) {
+    const inputArea = document.getElementById('form-input-area');
+    const lockedArea = document.getElementById('form-locked-area');
+    
+    if (!employee_id) {
+        inputArea.classList.remove('hidden');
+        lockedArea.classList.add('hidden');
+        return;
+    }
+
+    const res = await fetchAjax(`logic.php?action=check_plan&employee_id=${employee_id}`, 'GET');
+    if (res.status === 'success') {
+        if (res.has_plan) {
+            // Karyawan sudah buat rencana -> Buka Form
+            inputArea.classList.remove('hidden');
+            lockedArea.classList.add('hidden');
+        } else {
+            // Karyawan BELUM buat rencana -> Gembok Form
+            inputArea.classList.add('hidden');
+            lockedArea.classList.remove('hidden');
+        }
     }
 }
 
@@ -210,4 +234,5 @@ function selesaiProduksi() {
     document.getElementById('formProduksi').reset();
     document.getElementById('product-container').innerHTML = '';
     addProductRow();
+    checkEmployeePlan(''); // Reset view agar form terkunci kembali ke awal
 }
