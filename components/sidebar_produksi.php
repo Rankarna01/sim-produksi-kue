@@ -28,33 +28,29 @@ function getNavClass($path, $current_uri)
         <a href="<?= BASE_URL ?>produksi/input_produksi/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/input_produksi/', $current_uri) ?>">
             <i class="fa-solid fa-fire-burner w-5 text-center"></i> <span class="text-sm">Input Produksi</span>
         </a>
-        <a href="<?= BASE_URL ?>produksi/input_titipan/" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= (strpos($_SERVER['PHP_SELF'], 'input_titipan') !== false) ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100' ?>">
-            <div class="w-8 h-8 flex items-center justify-center">
-                <i class="fa-solid fa-store text-lg"></i>
-            </div>
-            <span class="font-bold text-sm">Input Produk Titipan</span>
+        
+        <a href="<?= BASE_URL ?>produksi/input_titipan/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/input_titipan/', $current_uri) ?>">
+            <i class="fa-solid fa-store w-5 text-center"></i> <span class="text-sm">Input Produk Titipan</span>
         </a>
 
         <a href="<?= BASE_URL ?>produksi/riwayat_produksi/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/riwayat_produksi/', $current_uri) ?>">
             <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> <span class="text-sm">Riwayat & Filter</span>
         </a>
-        <a href="<?= BASE_URL ?>produksi/riwayat_titipan/" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= (strpos($_SERVER['PHP_SELF'], 'riwayat_titipan') !== false) ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100' ?>">
-            <div class="w-8 h-8 flex items-center justify-center">
-                <i class="fa-solid fa-clock-rotate-left text-lg"></i>
-            </div>
-            <span class="font-bold text-sm">Riwayat Titipan</span>
+        
+        <a href="<?= BASE_URL ?>produksi/riwayat_titipan/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/riwayat_titipan/', $current_uri) ?>">
+            <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> <span class="text-sm">Riwayat Titipan</span>
         </a>
-        <a href="<?= BASE_URL ?>produksi/produk_keluar/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors <?= getNavClass('/produksi/produk_keluar/', $current_uri) ?>">
+        
+        <a href="<?= BASE_URL ?>produksi/produk_keluar/" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/produk_keluar/', $current_uri) ?>">
             <i class="fa-solid fa-box-open w-5 text-center text-danger"></i> <span class="text-sm">Produk Keluar (Expired)</span>
         </a>
 
-        <a href="<?= BASE_URL ?>produksi/keluar_titipan/" title="Keluar Titipan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/produksi/keluar_titipan/', $current_uri) ?>">
-                <i class="fa-solid fa-box-open w-6 text-center text-lg shrink-0"></i>
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Produk Keluar (Titipan)</span>
-            </a>
-        <a href="<?= BASE_URL ?>produksi/riwayat_status/" title="Riwayat & Status" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/produksi/riwayat_status/', $current_uri) ?>">
-            <i class="fa-solid fa-clock-rotate-left w-6 text-center text-lg shrink-0"></i>
-            <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Riwayat & Status</span>
+        <a href="<?= BASE_URL ?>produksi/keluar_titipan/" title="Keluar Titipan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/keluar_titipan/', $current_uri) ?>">
+            <i class="fa-solid fa-box-open w-5 text-center text-danger"></i> <span class="text-sm">Produk Keluar (Titipan)</span>
+        </a>
+        
+        <a href="<?= BASE_URL ?>produksi/riwayat_status/" title="Riwayat & Status" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/produksi/riwayat_status/', $current_uri) ?>">
+            <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> <span class="text-sm">Riwayat & Status</span>
         </a>
     </nav>
 </aside>
