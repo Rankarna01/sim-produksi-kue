@@ -209,6 +209,12 @@ function getNavClass($path, $current_uri)
                 <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Laporan Titipan UMKM</span>
             </a>
         <?php endif; ?>
+        <?php if (hasPermission('lap_target_produksi')): ?>
+            <a href="<?= BASE_URL ?>owner/laporan_target_produksi/" title="Target vs Realisasi" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_target_produksi/', $current_uri) ?>">
+                <i class="fa-solid fa-bullseye w-6 text-center text-lg shrink-0"></i>
+                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Target vs Realisasi</span>
+            </a>
+        <?php endif; ?>
 
     </nav>
 </aside>

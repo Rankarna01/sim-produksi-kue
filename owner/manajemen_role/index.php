@@ -193,7 +193,7 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
                                 <?= renderCheckbox('laporan_produk_jadi', 'Laporan Produk Jadi', 'fa-boxes-stacked') ?>
                                 <?= renderCheckbox('laporan_bom', 'Laporan Resep (BOM)', 'fa-clipboard-list') ?>
                                 <?= renderCheckbox('laporan_titipan', 'Laporan Titipan UMKM', 'fa-chart-line') ?>
-                                <?= renderCheckbox('laporan_opname', 'Laporan Opname', 'fa-clipboard-check') ?>
+                                <?= renderCheckbox('lap_target_produksi', 'Laporan Target vs Realisasi', 'fa-bullseye') ?>
                             </div>
                         </div>
 
