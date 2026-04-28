@@ -22,7 +22,6 @@ async function loadDraftPO() {
         res.suppliers.forEach(s => { optSupp += `<option value="${s.id}">${s.name}</option>`; });
         document.getElementById('supplier_id').innerHTML = optSupp;
 
-        // Render Permintaan (PR) Pending
         const tbodyPR = document.getElementById('list-pr-pending');
         let htmlPR = '';
         if (res.pr_pending.length === 0) {
@@ -64,7 +63,6 @@ function masukkanKePO(btn, encodedData) {
     const item = JSON.parse(decodeURIComponent(encodedData));
     const exist = cartPO.findIndex(c => c.material_id === item.material_id);
     
-    // Kalau dari PR (Pending Request), qty nya kita gabung otomatis
     if (exist !== -1) cartPO[exist].qty += item.qty;
     else cartPO.push(item); 
     
@@ -75,14 +73,13 @@ function masukkanKePO(btn, encodedData) {
 }
 
 // ===============================================
-// AUTOCOMPLETE INPUT ITEM MANUAL
+// AUTOCOMPLETE INPUT ITEM MANUAL (DRAFT PO)
 // ===============================================
 function filterMaterialList() {
     const keyword = document.getElementById('search_material').value.toLowerCase();
     const listContainer = document.getElementById('material_list');
     
     listContainer.innerHTML = '';
-    
     if (keyword.length < 1) {
         listContainer.classList.add('hidden');
         document.getElementById('item_material_id').value = '';
@@ -114,16 +111,20 @@ function filterMaterialList() {
         };
         listContainer.appendChild(div);
     });
-
     listContainer.classList.remove('hidden');
 }
 
-// Tutup list jika klik di luar
 document.addEventListener('click', function(e) {
     const searchInput = document.getElementById('search_material');
     const listContainer = document.getElementById('material_list');
     if (searchInput && listContainer && e.target !== searchInput && !listContainer.contains(e.target)) {
         listContainer.classList.add('hidden');
+    }
+    
+    const searchTerima = document.getElementById('search_extra_terima');
+    const listTerima = document.getElementById('extra_terima_list');
+    if (searchTerima && listTerima && e.target !== searchTerima && !listTerima.contains(e.target)) {
+        listTerima.classList.add('hidden');
     }
 });
 
@@ -139,17 +140,13 @@ function tambahItemManual() {
     const mat = materialsData.find(m => m.id == material_id);
     const exist = cartPO.findIndex(c => c.material_id == material_id);
     
-    // PENCEGAHAN DUPLIKAT
     if (exist !== -1) {
         Swal.fire('Sudah Ada!', 'Barang ini sudah ada di daftar PO. Silakan edit jumlah (QTY)-nya langsung di tabel bawah.', 'warning');
     } else {
         cartPO.push({ pr_id: null, material_id: mat.id, material_name: mat.material_name, qty: qty, unit: mat.unit });
-        
-        // Reset input
         document.getElementById('item_material_id').value = '';
         document.getElementById('search_material').value = '';
         document.getElementById('item_qty').value = 1;
-        
         renderCart();
     }
 }
@@ -163,7 +160,7 @@ function updateCartQty(index, newQty) {
     let val = parseFloat(newQty);
     if(isNaN(val) || val <= 0) {
         Swal.fire('Ups!', 'Jumlah tidak valid!', 'error');
-        renderCart(); // kembalikan ke UI sebelumnya
+        renderCart(); 
         return;
     }
     cartPO[index].qty = val;
@@ -218,11 +215,18 @@ async function simpanPO() {
 }
 
 // ===============================================
-// MODAL TERIMA BARANG
+// MODAL TERIMA BARANG (REVISI AUTOCOMPLETE)
 // ===============================================
+let terimaMaterialsData = [];
+
 async function openModalTerima(po_id, po_no) {
     activeReceivePoId = po_id;
     document.getElementById('terima-po-title').innerText = 'Penerimaan Barang PO: ' + po_no;
+    
+    // Reset autocomplete input
+    document.getElementById('search_extra_terima').value = '';
+    document.getElementById('terima_extra_item_id').value = '';
+    
     openModal('modal-terima-barang');
 
     const res = await fetchAjax(`logic.php?action=get_po_receive&po_id=${po_id}`, 'GET');
@@ -230,9 +234,9 @@ async function openModalTerima(po_id, po_no) {
         receiveItems = res.items.map(item => ({
             material_id: item.material_id, material_name: item.material_name, qty_po: parseFloat(item.qty), qty_terima: parseFloat(item.qty), unit: item.unit, price: '', exp_date: ''
         }));
-        let optMat = '<option value="">-- Pilih Barang Lain --</option>';
-        res.materials.forEach(m => { optMat += `<option value="${m.id}" data-name="${m.material_name}" data-unit="${m.unit}">${m.material_name}</option>`; });
-        document.getElementById('terima_extra_item').innerHTML = optMat;
+        
+        // Simpan data master bahan baku untuk pencarian
+        terimaMaterialsData = res.materials;
         renderTerimaItems();
     }
 }
@@ -249,22 +253,81 @@ function renderTerimaItems() {
                 <td class="p-4 text-center text-xs font-bold text-slate-500">${item.unit}</td>
                 <td class="p-4"><input type="number" step="any" placeholder="Harga Satuan..." class="w-full px-2 py-1.5 border border-slate-300 rounded font-bold text-emerald-600 outline-none" value="${item.price}" onchange="receiveItems[${idx}].price = this.value"></td>
                 <td class="p-4"><input type="date" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs font-bold text-slate-700 outline-none" value="${item.exp_date}" onchange="receiveItems[${idx}].exp_date = this.value"></td>
-               
+                <td class="p-4 text-center"><button type="button" onclick="removeTerimaItem(${idx})" class="w-6 h-6 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center mx-auto"><i class="fa-solid fa-xmark text-[10px]"></i></button></td>
             </tr>
         `;
     });
     tbody.innerHTML = html;
 }
 
+// LOGIKA AUTOCOMPLETE TAMBAH BARANG LAIN (TERIMA PO)
+function filterExtraTerimaList() {
+    const keyword = document.getElementById('search_extra_terima').value.toLowerCase();
+    const listContainer = document.getElementById('extra_terima_list');
+    
+    listContainer.innerHTML = '';
+    if (keyword.length < 1) {
+        listContainer.classList.add('hidden');
+        document.getElementById('terima_extra_item_id').value = '';
+        return;
+    }
+
+    const filtered = terimaMaterialsData.filter(m => 
+        m.material_name.toLowerCase().includes(keyword) || 
+        m.sku_code.toLowerCase().includes(keyword)
+    );
+
+    if (filtered.length === 0) {
+        listContainer.innerHTML = `<div class="p-3 text-xs text-slate-400 italic font-bold">Barang tidak ditemukan.</div>`;
+        listContainer.classList.remove('hidden');
+        return;
+    }
+
+    filtered.forEach(m => {
+        const div = document.createElement('div');
+        div.className = "p-3 border-b border-slate-50 hover:bg-blue-50 cursor-pointer transition-colors";
+        div.innerHTML = `
+            <div class="font-black text-slate-800 text-xs">${m.material_name}</div>
+            <div class="text-[10px] text-slate-500 font-mono font-bold mt-0.5">[${m.sku_code}] • Satuan: ${m.unit}</div>
+        `;
+        div.onclick = () => {
+            document.getElementById('terima_extra_item_id').value = m.id;
+            document.getElementById('terima_extra_item_name').value = m.material_name;
+            document.getElementById('terima_extra_item_unit').value = m.unit;
+            document.getElementById('search_extra_terima').value = m.material_name;
+            listContainer.classList.add('hidden');
+        };
+        listContainer.appendChild(div);
+    });
+    listContainer.classList.remove('hidden');
+}
+
 async function addExtraTerimaItem() {
-    const select = document.getElementById('terima_extra_item');
-    if (!select.value) return;
+    const mat_id = document.getElementById('terima_extra_item_id').value;
+    const mat_name = document.getElementById('terima_extra_item_name').value;
+    const mat_unit = document.getElementById('terima_extra_item_unit').value;
+
+    if (!mat_id) {
+        Swal.fire('Ups!', 'Silakan cari dan pilih barang terlebih dahulu.', 'warning');
+        return;
+    }
+
     const { value: code } = await Swal.fire({ title: 'Otorisasi Dibutuhkan', text: 'Masukkan kode Manager/Admin.', input: 'text', inputPlaceholder: 'Kode Otorisasi', showCancelButton: true, confirmButtonColor: '#2563EB' });
     if (code) {
-        const selectedOpt = select.options[select.selectedIndex];
-        receiveItems.push({ material_id: select.value, material_name: selectedOpt.dataset.name, qty_po: 0, qty_terima: 1, unit: selectedOpt.dataset.unit, price: '', exp_date: '' });
-        renderTerimaItems(); select.value = '';
-        Swal.fire({ title: 'Otorisasi Berhasil', text: 'Barang ditambahkan.', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+        // Cek jika barang sudah ada di list terima
+        const exist = receiveItems.findIndex(i => i.material_id == mat_id);
+        if (exist !== -1) {
+            Swal.fire('Info', 'Barang tersebut sudah ada di daftar penerimaan.', 'info');
+        } else {
+            receiveItems.push({ material_id: mat_id, material_name: mat_name, qty_po: 0, qty_terima: 1, unit: mat_unit, price: '', exp_date: '' });
+            renderTerimaItems(); 
+            
+            // Reset input
+            document.getElementById('search_extra_terima').value = '';
+            document.getElementById('terima_extra_item_id').value = '';
+            
+            Swal.fire({ title: 'Otorisasi Berhasil', text: 'Barang tambahan dimasukkan ke daftar.', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+        }
     }
 }
 
@@ -286,4 +349,4 @@ async function submitTerimaBarang() {
             closeModal('modal-terima-barang'); Swal.fire('Berhasil!', res.message, 'success'); loadDataPO(); 
         } else { Swal.fire('Gagal!', res.message, 'error'); }
     }
-} 
+}

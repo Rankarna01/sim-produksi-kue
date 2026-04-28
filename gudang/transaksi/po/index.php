@@ -173,11 +173,13 @@ checkPermission('trx_po');
                 </table>
 
                 <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex flex-col sm:flex-row items-end gap-4">
-                    <div class="flex-1 w-full">
+                    <div class="flex-1 w-full relative">
                         <label class="block text-[10px] font-black text-slate-400 mb-1 uppercase tracking-widest">Tambah Barang Lain (Opsional)</label>
-                        <select id="terima_extra_item" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none font-bold text-slate-700 bg-white">
-                            <option value="">-- Pilih Barang --</option>
-                        </select>
+                        <input type="text" id="search_extra_terima" placeholder="Cari nama barang..." autocomplete="off" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none font-bold text-slate-700 bg-white" onkeyup="filterExtraTerimaList()">
+                        <input type="hidden" id="terima_extra_item_id">
+                        <input type="hidden" id="terima_extra_item_name">
+                        <input type="hidden" id="terima_extra_item_unit">
+                        <div id="extra_terima_list" class="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-40 overflow-y-auto hidden custom-scrollbar"></div>
                     </div>
                     <button type="button" onclick="addExtraTerimaItem()" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-2.5 rounded-lg font-bold text-xs hover:bg-blue-700 transition-all">Tambah</button>
                 </div>

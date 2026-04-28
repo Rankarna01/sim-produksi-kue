@@ -11,6 +11,35 @@ $showOpname = hasPermission('data_opname') || hasPermission('otorisasi_opname') 
 $showTransaksi = hasPermission('trx_permintaan_dapur') || hasPermission('trx_permintaan_barang') || hasPermission('trx_po') || hasPermission('trx_pembayaran') || hasPermission('trx_supplier');
 $showLaporan = hasPermission('lap_barang_masuk') || hasPermission('lap_barang_keluar') || hasPermission('lap_po') || hasPermission('lap_pembayaran_po') || hasPermission('lap_stok_opname') || hasPermission('lap_kartu_stok') || hasPermission('lap_stok_menipis') || hasPermission('lap_stok_terbanyak') || hasPermission('lap_perbandingan_harga') || hasPermission('lap_supplier');
 $showPengaturan = hasPermission('pengaturan_karyawan') || hasPermission('pengaturan_pembayaran') || hasPermission('manage_users') || hasPermission('manage_roles') || hasPermission('pengaturan_profil');
+
+
+$total_pending_approval = 0;
+        if(hasPermission('persetujuan')) {
+            try {
+                global $pdo; // Pastikan koneksi database terbaca
+                
+                // Hitung PR (Permintaan Barang)
+                $total_pending_approval += $pdo->query("SELECT COUNT(id) FROM purchase_requests WHERE status = 'pending'")->fetchColumn();
+                
+                // Hitung PO Baru
+                $total_pending_approval += $pdo->query("SELECT COUNT(id) FROM purchase_orders WHERE status = 'waiting_approval'")->fetchColumn();
+                
+                // Hitung Barang Masuk Manual
+                $total_pending_approval += $pdo->query("SELECT COUNT(id) FROM barang_masuk WHERE status = 'pending' AND source = 'Manual'")->fetchColumn();
+                
+                // Hitung Barang Keluar
+                $total_pending_approval += $pdo->query("SELECT COUNT(id) FROM barang_keluar WHERE approval_status = 'pending'")->fetchColumn();
+                
+                // Hitung Izin Cetak (PO & Terima)
+                $total_pending_approval += $pdo->query("SELECT COUNT(id) FROM purchase_orders WHERE print_po_status = 'pending_approval' OR print_terima_status = 'pending_approval'")->fetchColumn();
+                
+                // Hitung Retur PO
+                $total_pending_approval += $pdo->query("SELECT COUNT(id) FROM po_returns WHERE status = 'pending'")->fetchColumn();
+
+            } catch(Exception $e) {
+                // Abaikan jika ada error query agar sidebar tidak crash
+            }
+        }
 ?>
 
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -34,9 +63,18 @@ $showPengaturan = hasPermission('pengaturan_karyawan') || hasPermission('pengatu
         </a>
         <?php endif; ?>
 
-        <?php if(hasPermission('persetujuan')): ?>
-        <a href="<?= BASE_URL ?>gudang/persetujuan/" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all <?= getNavClass('/gudang/persetujuan/', $current_uri) ?>">
-            <i class="fa-solid fa-file-circle-check w-5 text-center text-amber-500"></i> <span class="text-sm">Persetujuan</span>
+       <?php if(hasPermission('persetujuan')): ?>
+        <a href="<?= BASE_URL ?>gudang/persetujuan/" class="flex items-center justify-between px-4 py-3 rounded-xl transition-all <?= getNavClass('/gudang/persetujuan/', $current_uri) ?>">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-file-circle-check w-5 text-center text-amber-500"></i> 
+                <span class="text-sm">Persetujuan</span>
+            </div>
+            
+            <?php if($total_pending_approval > 0): ?>
+            <span class="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                <?= $total_pending_approval ?>
+            </span>
+            <?php endif; ?>
         </a>
         <?php endif; ?>
 
@@ -149,11 +187,6 @@ $showPengaturan = hasPermission('pengaturan_karyawan') || hasPermission('pengatu
                 <a href="<?= BASE_URL ?>gudang/transaksi/po/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/transaksi/po/', $current_uri) ?>">
                     <i class="fa-solid fa-cart-flatbed text-slate-400 w-4 text-center"></i> Purchase Order (PO)
                 </a>
-                <?php if(hasPermission('lap_retur_po')): ?>
-                <a href="<?= BASE_URL ?>gudang/transaksi/laporan_retur_po/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/transaksi/laporan_retur_po/', $current_uri) ?>">
-                    <i class="fa-solid fa-rotate-left text-slate-400 w-4 text-center"></i> Laporan Retur PO
-                </a>
-                <?php endif; ?>
                 <?php endif; ?>
                 <?php if(hasPermission('trx_pembayaran')): ?>
                 <a href="<?= BASE_URL ?>gudang/transaksi/pembayaran/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/transaksi/pembayaran/', $current_uri) ?>">
@@ -227,6 +260,11 @@ $showPengaturan = hasPermission('pengaturan_karyawan') || hasPermission('pengatu
                 <?php if(hasPermission('lap_supplier')): ?>
                 <a href="<?= BASE_URL ?>gudang/laporan/supplier-terakhir/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/laporan/supplier-terakhir/', $current_uri) ?>">
                     <i class="fa-solid fa-building-user text-slate-400 w-4 text-center"></i> Laporan Supplier
+                </a>
+                <?php endif; ?>
+                 <?php if(hasPermission('lap_retur_po')): ?>
+                <a href="<?= BASE_URL ?>gudang/transaksi/laporan_retur_po/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold transition-colors <?= getNavClass('/transaksi/laporan_retur_po/', $current_uri) ?>">
+                    <i class="fa-solid fa-rotate-left text-slate-400 w-4 text-center"></i> Laporan Retur PO
                 </a>
                 <?php endif; ?>
             </div>
