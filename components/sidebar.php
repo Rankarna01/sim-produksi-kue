@@ -11,6 +11,23 @@ function getNavClass($path, $current_uri)
     return 'text-secondary hover:bg-slate-50 hover:text-primary font-medium';
 }
 
+$total_pending_owner = 0;
+        if(hasPermission('persetujuan_owner')) {
+            try {
+                global $pdo; 
+                
+                // Menghitung data pengajuan resep (BOM) yang masih pending
+                $stmtCount = $pdo->query("SELECT COUNT(*) FROM bom_requests WHERE status = 'pending'");
+                
+                if($stmtCount) {
+                    $total_pending_owner = $stmtCount->fetchColumn();
+                }
+
+            } catch(Exception $e) {
+                // Abaikan jika error agar tidak merusak tampilan sidebar
+            }
+        }
+
 ?>
 
 <aside id="main-sidebar" class="w-64 shrink-0 bg-surface border-r border-slate-200 flex-col shadow-sm fixed inset-y-0 left-0 z-[70] transform -translate-x-full md:relative md:translate-x-0 transition-all duration-300 flex">
@@ -47,10 +64,18 @@ function getNavClass($path, $current_uri)
             </a>
         <?php endif; ?>
 
-        <?php if (hasPermission('persetujuan_owner')): ?>
-            <a href="<?= BASE_URL ?>owner/persetujuan/" title="Persetujuan Owner" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/persetujuan/', $current_uri) ?>">
-                <i class="fa-solid fa-clipboard-check w-6 text-center text-lg shrink-0"></i>
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Persetujuan Owner</span>
+       <?php if (hasPermission('persetujuan_owner')): ?>
+            <a href="<?= BASE_URL ?>owner/persetujuan/" title="Persetujuan Owner" onclick="closeSidebarMobile()" class="flex items-center justify-between px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/persetujuan/', $current_uri) ?>">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-clipboard-check w-6 text-center text-lg shrink-0 text-amber-500"></i>
+                    <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Persetujuan Owner</span>
+                </div>
+
+                <?php if($total_pending_owner > 0): ?>
+                <span class="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse shrink-0">
+                    <?= $total_pending_owner ?>
+                </span>
+                <?php endif; ?>
             </a>
         <?php endif; ?>
 
