@@ -71,11 +71,18 @@ require_once '../../../config/auth.php';
                     let priceHTML = (!set.h_price && item.type !== 'rack') ? `<div class="price-tag">Rp -</div>` : '';
                     
                     let rackTextHTML = (set.rack_text && item.type !== 'rack') ? `<div class="rack-info">Rak: ${item.rack_name || '-'}</div>` : '';
-                    let rackBcHTML = (set.rack_bc && item.type !== 'rack' && item.rack_name) ? `<svg class="barcode-rack" jsbarcode-value="RACK-${item.rack_id}" jsbarcode-height="15" jsbarcode-width="1" jsbarcode-displayvalue="false" jsbarcode-margin="0"></svg>` : '';
+                    let rackBcHTML = (set.rack_bc && item.type !== 'rack' && item.rack_name) ? `<svg class="barcode-rack" jsbarcode-value="RACK-${item.rack_name}" jsbarcode-height="15" jsbarcode-width="1" jsbarcode-displayvalue="false" jsbarcode-margin="0"></svg>` : '';
                     
-                    let boxStyle = set.is_custom 
-                        ? `width: ${set.c_w}px; height: ${set.c_h}px; margin: ${set.c_m}px; padding: ${set.c_p}px;` 
-                        : `padding: 10px; margin: 5px; border: 1px dashed #ccc; border-radius: 8px; width: max-content;`;
+                    let boxStyle = '';
+                    if (set.is_custom) {
+                        boxStyle = `width: ${set.c_w}px; height: ${set.c_h}px; margin: ${set.c_m}px; padding: ${set.c_p}px;`;
+                    } else if (set.paper === 'tj107') {
+                        boxStyle = `width: 50mm; height: 18mm; margin: 1mm; padding: 1mm; border: 1px dashed #ccc;`;
+                    } else if (set.paper === 'tj108') {
+                        boxStyle = `width: 38mm; height: 18mm; margin: 1mm; padding: 1mm; border: 1px dashed #ccc;`;
+                    } else { // Auto Fit
+                        boxStyle = `padding: 10px; margin: 5px; border: 1px dashed #ccc; border-radius: 8px; width: max-content;`;
+                    }
 
                     html += `<div class="sticker-box" style="${boxStyle}">
                                 ${skuTopHTML}
@@ -97,8 +104,16 @@ require_once '../../../config/auth.php';
             });
 
             container.innerHTML = html;
-            JsBarcode(".barcode-render").init();
-            if(set.rack_bc) JsBarcode(".barcode-rack").init();
+            
+            try {
+                JsBarcode(".barcode-render").init();
+                if(set.rack_bc) JsBarcode(".barcode-rack").init();
+            } catch(e) {
+                // Fallback jika Code93/Extended tidak terbaca browser
+                document.querySelectorAll(".barcode-render").forEach(el => {
+                    JsBarcode(el, el.getAttribute("jsbarcode-value"), { format: "CODE128", displayValue: el.getAttribute("jsbarcode-displayvalue") === "true", height: set.h, width: set.w });
+                });
+            }
 
             setTimeout(() => { window.print(); }, 800);
         });
