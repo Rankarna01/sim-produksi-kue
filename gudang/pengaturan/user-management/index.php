@@ -1,6 +1,6 @@
 <?php
 require_once '../../../config/auth.php';
-checkPermission('manage_users'); // Uncomment jika slug permission-nya sudah kamu daftarkan
+checkPermission('manage_users'); 
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -39,12 +39,12 @@ checkPermission('manage_users'); // Uncomment jika slug permission-nya sudah kam
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-slate-50 border-b border-slate-100">
-                            <tr class="text-xs font-black text-slate-500 uppercase tracking-widest">
+                            <tr class="text-[11px] font-black text-slate-400 uppercase tracking-widest">
                                 <th class="p-5 w-16 text-center">No</th>
                                 <th class="p-5">Nama Lengkap</th>
                                 <th class="p-5">Username</th>
-                                <th class="p-5">Jabatan (Role)</th>
-                                <th class="p-5 text-center">Status</th>
+                                <th class="p-5 text-center">Jabatan (Role)</th>
+                                <th class="p-5 text-center">Hak Akses</th>
                                 <th class="p-5 text-center w-32">Aksi</th>
                             </tr>
                         </thead>

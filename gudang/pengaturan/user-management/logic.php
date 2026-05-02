@@ -113,6 +113,16 @@ try {
             echo json_encode(['status' => 'error', 'message' => 'Anda tidak bisa menghapus akun Anda sendiri yang sedang aktif!']); exit;
         }
 
+        // --- PENJAGAAN BACKEND: CEK ROLE USER SEBELUM DIHAPUS ---
+        $checkRoleStmt = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+        $checkRoleStmt->execute([$id]);
+        $userRole = $checkRoleStmt->fetchColumn();
+
+        if ($userRole === 'owner-gudang') {
+            echo json_encode(['status' => 'error', 'message' => 'Akses Ditolak! Akun dengan jabatan Owner Gudang tidak boleh dihapus.']); exit;
+        }
+        // ---------------------------------------------------------
+
         $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
         $stmt->execute([$id]);
         echo json_encode(['status' => 'success', 'message' => 'Akun user berhasil dihapus!']);
