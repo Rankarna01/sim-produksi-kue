@@ -60,6 +60,29 @@ async function loadDataPO() {
                     else payBadge = '<span class="bg-rose-50 text-rose-500 border border-rose-200 px-3 py-1 rounded-full text-[10px] font-black uppercase ml-2">Belum Bayar</span>';
                 }
 
+                // SUNTIKAN: Badge Indikator Retur Pending
+                let returnBadge = '';
+                if (item.has_pending_return > 0) {
+                    returnBadge = '<span class="bg-rose-100 text-rose-600 border border-rose-300 px-3 py-1 rounded-full text-[10px] font-black uppercase ml-2 animate-pulse shadow-sm"><i class="fa-solid fa-rotate-left mr-1"></i> Retur Pending Owner</span>';
+                }
+
+                // SUNTIKAN INFO TOTAL RETUR (Akan Muncul Jika Ada Retur Yang Disetujui)
+                let qtyRetur = parseFloat(item.total_qty_return) || 0;
+                let nominalRetur = parseFloat(item.total_amount_return) || 0;
+                let infoReturHtml = '';
+                
+                if (qtyRetur > 0) {
+                    infoReturHtml = `
+                        <div class="mt-4 bg-rose-50/80 border border-rose-200 rounded-xl p-3 flex items-center justify-between w-full max-w-sm transition-all hover:bg-rose-100">
+                            <div class="flex items-center gap-2 text-rose-600">
+                                <div class="w-7 h-7 rounded-lg bg-white flex items-center justify-center shadow-sm"><i class="fa-solid fa-rotate-left text-[10px]"></i></div>
+                                <span class="text-[10px] font-black uppercase tracking-widest">Telah Diretur: ${qtyRetur} Item</span>
+                            </div>
+                            <span class="text-xs font-black text-rose-700">- ${formatRupiah(nominalRetur)}</span>
+                        </div>
+                    `;
+                }
+
                 let extraItemText = item.total_items > 1 ? ` (+${item.total_items - 1} lainnya)` : '';
 
                 let tglHtml = `<p class="text-[10px] text-slate-400 font-bold mb-1">Dibuat: ${formatTglTime(item.created_at)} oleh ${item.admin_name}</p>`;
@@ -68,13 +91,9 @@ async function loadDataPO() {
                     tglHtml += `<p class="text-[10px] text-emerald-500 font-bold mb-1">Diterima: ${formatTglTime(item.updated_at)}</p>`;
                 }
 
-                // Hitungan Keterangan Cetak (Kalau nilainya null dari database, otomatis jadi 0)
                 let po_count = item.print_po_count || 0;
                 let terima_count = item.print_terima_count || 0;
 
-                // ==================================================
-                // LOGIKA TOMBOL PRINT PO (Kunci & Counter)
-                // ==================================================
                 let printPOBtn = '';
                 if (item.print_po_status === 'locked') {
                     printPOBtn = `<button onclick="ajukanIzinCetak(${item.id}, 'po')" class="w-full bg-slate-100 text-slate-400 px-4 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-200 hover:text-slate-600 transition-colors" title="Klik untuk mengajukan izin cetak PO"><i class="fa-solid fa-lock"></i> PO Terkunci (${po_count}x Cetak)</button>`;
@@ -84,9 +103,6 @@ async function loadDataPO() {
                     printPOBtn = `<button onclick="cetakDokumen(${item.id}, 'po', 'print.php')" class="w-full bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-600 px-4 py-2.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 border border-blue-200 shadow-sm"><i class="fa-solid fa-print"></i> Print PO (${po_count}x)</button>`;
                 }
 
-                // ==================================================
-                // LOGIKA TOMBOL PRINT TERIMA (Kunci & Counter)
-                // ==================================================
                 let printTerimaBtn = '';
                 if (item.print_terima_status === 'locked') {
                     printTerimaBtn = `<button onclick="ajukanIzinCetak(${item.id}, 'terima')" class="flex-1 bg-slate-100 text-slate-400 border border-slate-200 px-2 py-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 shadow-sm hover:bg-slate-200 transition-colors" title="Klik untuk mengajukan izin cetak Terima"><i class="fa-solid fa-lock"></i> Terima Terkunci (${terima_count}x)</button>`;
@@ -96,20 +112,25 @@ async function loadDataPO() {
                     printTerimaBtn = `<button onclick="cetakDokumen(${item.id}, 'terima', 'print_po.php')" class="flex-1 bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-600 border border-emerald-200 px-2 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1 shadow-sm"><i class="fa-solid fa-print"></i> Print Terima (${terima_count}x)</button>`;
                 }
 
-                // ==================================================
-                // MENYUSUN TOMBOL AKSI KANAN (TERMASUK TOMBOL RETUR)
-                // ==================================================
                 let actionButtons = '';
                 if (item.status === 'received') {
                     
-                    // SUNTIKAN FITUR: TOMBOL RETUR MUNCUL JIKA BELUM LUNAS
                     let btnRetur = '';
                     if (item.payment_status !== 'paid') {
-                        btnRetur = `
-                            <button onclick="openModalRetur(${item.id}, '${item.po_no}')" class="bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 px-3 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1 shadow-sm mt-2 w-full uppercase tracking-widest">
-                                <i class="fa-solid fa-rotate-left"></i> Ajukan Retur
-                            </button>
-                        `;
+                        // Jika masih ada retur pending, disable tombol pengajuan baru
+                        if (item.has_pending_return > 0) {
+                            btnRetur = `
+                                <button disabled class="bg-slate-50 text-slate-400 border border-slate-200 px-3 py-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 shadow-sm mt-2 w-full uppercase tracking-widest cursor-not-allowed">
+                                    <i class="fa-solid fa-clock"></i> Retur Sedang Diproses
+                                </button>
+                            `;
+                        } else {
+                            btnRetur = `
+                                <button onclick="openModalRetur(${item.id}, '${item.po_no}')" class="bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 px-3 py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1 shadow-sm mt-2 w-full uppercase tracking-widest">
+                                    <i class="fa-solid fa-rotate-left"></i> Ajukan Retur
+                                </button>
+                            `;
+                        }
                     }
 
                     actionButtons = `
@@ -140,7 +161,7 @@ async function loadDataPO() {
                     <div class="flex-1">
                         <div class="flex items-center gap-3 mb-2">
                             <h4 class="font-black text-blue-700 text-lg">${item.po_no}</h4>
-                            ${statusBadge} ${payBadge}
+                            ${statusBadge} ${payBadge} ${returnBadge}
                         </div>
                         <h3 class="font-black text-slate-800 text-base mb-2">${item.supplier_name}</h3>
                         ${tglHtml}
@@ -157,6 +178,9 @@ async function loadDataPO() {
                             <div><p class="text-[9px] font-black text-emerald-400 uppercase">Dibayar</p><p class="text-sm font-black text-emerald-600">${formatRupiah(paid)}</p></div>
                             <div><p class="text-[9px] font-black text-rose-400 uppercase">Sisa</p><p class="text-sm font-black text-rose-600">${formatRupiah(sisa)}</p></div>
                         </div>
+
+                        ${infoReturHtml}
+                        
                     </div>
                     <div class="flex flex-col w-full md:w-64 mt-4 md:mt-0 justify-center">
                         ${actionButtons}
@@ -184,7 +208,7 @@ async function lihatDetailPO(po_id, po_no) {
                     <thead class="bg-slate-100 border-b border-slate-200 sticky top-0">
                         <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                             <th class="p-3">Nama Barang</th>
-                            <th class="p-3 text-center">Qty</th>
+                            <th class="p-3 text-center">Qty Terima</th>
                             <th class="p-3 text-right">Harga Satuan</th>
                         </tr>
                     </thead>
@@ -192,10 +216,20 @@ async function lihatDetailPO(po_id, po_no) {
         `;
         
         res.items.forEach(i => {
+            // MENAMPILKAN QTY RETUR JIKA ADA
+            let returInfo = '';
+            let returQty = parseFloat(i.returned_qty) || 0;
+            if(returQty > 0) {
+                returInfo = `<div class="mt-1"><span class="text-[9px] bg-rose-50 text-rose-600 border border-rose-200 px-1.5 py-0.5 rounded font-black uppercase tracking-widest inline-block shadow-sm"><i class="fa-solid fa-rotate-left"></i> Diretur: ${returQty} ${i.unit}</span></div>`;
+            }
+
             htmlTabel += `
                 <tr class="hover:bg-white transition-colors">
                     <td class="p-3 font-bold text-slate-700 text-xs">${i.material_name}</td>
-                    <td class="p-3 text-center font-black text-blue-600 text-xs">${parseFloat(i.qty)} <span class="text-[9px] font-bold text-slate-400 uppercase">${i.unit}</span></td>
+                    <td class="p-3 text-center font-black text-blue-600 text-xs">
+                        ${parseFloat(i.qty)} <span class="text-[9px] font-bold text-slate-400 uppercase">${i.unit}</span>
+                        ${returInfo}
+                    </td>
                     <td class="p-3 text-right font-bold text-emerald-600 text-xs">${formatRupiah(i.price)}</td>
                 </tr>
             `;
@@ -214,11 +248,6 @@ async function lihatDetailPO(po_id, po_no) {
     } else {
         Swal.fire('Gagal!', 'Tidak dapat memuat detail item.', 'error');
     }
-}
-
-
-function dummyFitur(namaFitur) {
-    Swal.fire('Fitur Mendatang', `${namaFitur} akan diaktifkan segera!`, 'info');
 }
 
 // ==================================================
@@ -281,7 +310,7 @@ async function ajukanIzinCetak(po_id, tipe) {
 }
 
 // ==================================================
-// FITUR BARU: MODAL RETUR PO & PENGAJUAN RETUR
+// FITUR MODAL RETUR PO & PENGAJUAN RETUR
 // ==================================================
 let returItems = [];
 let activeReturPoId = null;
@@ -290,7 +319,7 @@ async function openModalRetur(po_id, po_no) {
     activeReturPoId = po_id;
     document.getElementById('retur-po-title').innerText = 'Pengajuan Retur PO: ' + po_no;
     document.getElementById('retur_reason').value = '';
-    openModal('modal-retur-po'); // Pastikan fungsi openModal() ada di ajax_form.js atau file global
+    openModal('modal-retur-po'); 
 
     const res = await fetchAjax(`logic.php?action=get_po_retur&po_id=${po_id}`, 'GET');
     
@@ -372,6 +401,7 @@ async function submitReturPO() {
         if (res.status === 'success') {
             closeModal('modal-retur-po'); 
             Swal.fire('Berhasil Diajukan!', res.message, 'success'); 
+            loadDataPO(); // Refresh daftar agar badge muncul
         } else { 
             Swal.fire('Gagal!', res.message, 'error'); 
         }

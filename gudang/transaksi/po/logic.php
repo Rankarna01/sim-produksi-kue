@@ -90,10 +90,14 @@ try {
             $params[] = "%$search%";
         }
 
-        $sql = "
+        // PENAMBAHAN SUB-QUERY UNTUK CEK APAKAH ADA RETUR PENDING
+     $sql = "
             SELECT p.*, s.name as supplier_name, u.name as admin_name,
                    (SELECT COUNT(*) FROM purchase_order_details WHERE po_id = p.id) as total_items,
-                   (SELECT material_name FROM materials_stocks WHERE id = (SELECT material_id FROM purchase_order_details WHERE po_id = p.id LIMIT 1)) as sample_item
+                   (SELECT material_name FROM materials_stocks WHERE id = (SELECT material_id FROM purchase_order_details WHERE po_id = p.id LIMIT 1)) as sample_item,
+                   (SELECT COUNT(id) FROM po_returns WHERE po_id = p.id AND status = 'pending') as has_pending_return,
+                   (SELECT COALESCE(SUM(qty_return), 0) FROM po_returns WHERE po_id = p.id AND status = 'approved') as total_qty_return,
+                   (SELECT COALESCE(SUM(qty_return * price), 0) FROM po_returns WHERE po_id = p.id AND status = 'approved') as total_amount_return
             FROM purchase_orders p
             JOIN suppliers s ON p.supplier_id = s.id
             JOIN users u ON p.created_by = u.id
@@ -109,11 +113,18 @@ try {
         exit;
     }
 
-    // 4. AMBIL DATA PO UNTUK MODAL TERIMA BARANG
+    // 4. AMBIL DATA PO UNTUK MODAL TERIMA BARANG / DETAIL
     if ($action === 'get_po_receive') {
         $po_id = $_GET['po_id'] ?? '';
         
-        $sqlDetail = "SELECT pod.*, ms.material_name, ms.sku_code, ms.unit FROM purchase_order_details pod JOIN materials_stocks ms ON pod.material_id = ms.id WHERE pod.po_id = ?";
+        // PENAMBAHAN SUB-QUERY UNTUK MENGHITUNG QTY YANG TELAH DI-RETUR (APPROVED/PENDING)
+        $sqlDetail = "
+            SELECT pod.*, ms.material_name, ms.sku_code, ms.unit,
+                   (SELECT COALESCE(SUM(qty_return), 0) FROM po_returns WHERE po_id = pod.po_id AND material_id = pod.material_id AND status != 'rejected') as returned_qty
+            FROM purchase_order_details pod 
+            JOIN materials_stocks ms ON pod.material_id = ms.id 
+            WHERE pod.po_id = ?
+        ";
         $stmtDetail = $pdo->prepare($sqlDetail);
         $stmtDetail->execute([$po_id]);
         $items = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
@@ -178,13 +189,10 @@ try {
     // LOGIC KUNCI CETAK & IZIN CETAK (TERPISAH PO & TERIMA)
     // ==========================================
 
-    // A. KUNCI SAAT DICETAK 1X
-    // A. KUNCI SAAT DICETAK & TAMBAH HITUNGAN (COUNTER)
     if ($action === 'mark_printed') {
         $id = $_POST['id'] ?? '';
-        $tipe = $_POST['tipe'] ?? ''; // 'po' atau 'terima'
+        $tipe = $_POST['tipe'] ?? ''; 
         
-        // Tentukan kolom mana yang mau diupdate
         $col_status = ($tipe === 'terima') ? 'print_terima_status' : 'print_po_status';
         $col_count  = ($tipe === 'terima') ? 'print_terima_count' : 'print_po_count';
 
@@ -193,7 +201,6 @@ try {
         $status_cetak = $stmt->fetchColumn();
 
         if ($status_cetak === 'unlocked') {
-            // Update status jadi locked DAN tambah hitungan cetak + 1
             $update = $pdo->prepare("UPDATE purchase_orders SET $col_status = 'locked', $col_count = COALESCE($col_count, 0) + 1 WHERE id = ?");
             $update->execute([$id]);
             echo json_encode(['status' => 'success', 'message' => 'Dokumen terkunci setelah dicetak.']);
@@ -203,12 +210,10 @@ try {
         exit;
     }
 
-    // B. AJUKAN IZIN CETAK ULANG
     if ($action === 'request_print') {
         $id = $_POST['id'] ?? '';
         $tipe = $_POST['tipe'] ?? ''; 
         
-        // Cek SOP Toko
         $stmtSetting = $pdo->query("SELECT req_approval_print FROM store_profile WHERE id = 1");
         $req_approval = $stmtSetting->fetchColumn() ?? 1;
 
@@ -296,5 +301,4 @@ try {
     if ($pdo->inTransaction()) $pdo->rollBack();
     echo json_encode(['status' => 'error', 'message' => 'Error: ' . $e->getMessage()]);
 }
-
 ?>

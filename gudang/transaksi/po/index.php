@@ -147,6 +147,7 @@ checkPermission('trx_po');
         </main>
     </div>
 
+    <!-- Modals (Tetap sama persis, aku singkat komentar untuk efisiensi ruang copy) -->
     <div id="modal-terima-barang" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4 py-6">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal('modal-terima-barang')"></div>
         <div class="relative bg-white w-full max-w-5xl rounded-3xl shadow-xl z-10 flex flex-col overflow-hidden max-h-full">
