@@ -11,6 +11,11 @@ checkRole(['produksi']);
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Tambahan CSS untuk iPhone/iOS Safe Area */
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
     </style>
 </head>
 <body class="text-slate-800 antialiased h-screen flex overflow-hidden bg-background" onclick="closeAllDropdowns(event)">
@@ -20,7 +25,8 @@ checkRole(['produksi']);
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
         <?php include '../../components/header.php'; ?>
         
-        <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <!-- Tambahkan class safe-area-bottom dan pastikan pb-20 agar tombol tidak mepet ke bawah di mobile -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 sm:pb-10 safe-area-bottom">
             
             <div class="w-full max-w-5xl mx-auto mt-2 sm:mt-4">
                 
@@ -96,9 +102,10 @@ checkRole(['produksi']);
                                 </div>
 
                                 <div class="mt-8 sm:mt-10 pt-6 sm:pt-8 border-t border-slate-100">
-                                    <button type="submit" class="w-full bg-primary hover:bg-blue-700 text-white py-4 sm:py-5 rounded-2xl text-lg sm:text-xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-3">
-                                        <i class="fa-solid fa-check-double text-2xl"></i> 
-                                        <span>Proses Produksi & Potong Stok</span>
+                                    <!-- Tombol dibuat flex-wrap agar jika teks terlalu panjang di HP kecil tidak berantakan -->
+                                    <button type="submit" class="w-full bg-primary hover:bg-blue-700 text-white p-4 sm:py-5 rounded-2xl text-base sm:text-xl font-bold transition-all shadow-lg hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2 sm:gap-3">
+                                        <i class="fa-solid fa-check-double text-xl sm:text-2xl"></i> 
+                                        <span class="whitespace-nowrap">Proses Produksi & Potong Stok</span>
                                     </button>
                                 </div>
                             </div>
@@ -110,6 +117,7 @@ checkRole(['produksi']);
         </main>
     </div>
 
+    <!-- Modal Sukses Tetap Menggunakan px-4 untuk menjaga jarak tepi di iPhone -->
     <div id="modal-sukses" class="fixed inset-0 z-[100] flex items-center justify-center hidden px-4">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
         <div class="relative bg-surface w-full max-w-sm rounded-3xl shadow-2xl z-[110] transform transition-all text-center p-6 sm:p-8">
@@ -117,7 +125,7 @@ checkRole(['produksi']);
                 <i class="fa-solid fa-check"></i>
             </div>
             <h3 class="text-2xl font-bold text-slate-800 mb-2">Berhasil!</h3>
-            <p class="text-sm text-secondary mb-8">Produksi dicatat dan bahan baku terpotong otomatis. Status saat ini: <strong class="text-accent bg-accent/10 px-2 py-0.5 rounded">Pending</strong>.</p>
+            <p class="text-sm text-secondary mb-8">Produksi dicatat dan bahan baku terpotong otomatis.</p>
             
             <div class="space-y-3 relative z-20">
                 <button id="btnCetak" onclick="" type="button" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer relative z-30">

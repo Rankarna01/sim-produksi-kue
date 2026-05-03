@@ -109,4 +109,4 @@ function getDangerNavClass($path, $current_uri)
     function closeSidebarMobile() {
         if (window.innerWidth < 768) toggleSidebar();
     }
-</script>ers
+</script>

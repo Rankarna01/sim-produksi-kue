@@ -18,7 +18,7 @@ checkPermission('master_produk');
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Data Produk</h2>
-                    <p class="text-sm text-secondary mt-1">Kelola daftar kue dan roti yang diproduksi.</p>
+                    <p class="text-sm text-secondary mt-1">Kelola daftar kue dan roti yang diproduksi beserta harga dan gambar untuk POS.</p>
                 </div>
                 <div class="flex gap-2 w-full sm:w-auto">
                     <?php if(hasPermission('edit_master_produk')): ?>
@@ -38,16 +38,18 @@ checkPermission('master_produk');
                         <thead>
                             <tr class="bg-background border-b border-slate-200 text-sm text-secondary uppercase tracking-wider">
                                 <th class="p-4 font-semibold text-center w-16">No</th>
+                                <th class="p-4 font-semibold text-center w-20">Gambar</th>
                                 <th class="p-4 font-semibold">Kode</th>
                                 <th class="p-4 font-semibold">Nama Produk</th>
                                 <th class="p-4 font-semibold">Kategori</th>
-                                <th class="p-4 font-semibold text-right">Harga (Rp)</th>
+                                <th class="p-4 font-semibold text-right">Harga Modal</th>
+                                <th class="p-4 font-semibold text-right">Harga Jual</th>
                                 <th class="p-4 font-semibold text-center">Stok Jadi</th>
                                 <th class="p-4 font-semibold text-center w-28">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="table-body" class="text-sm divide-y divide-slate-100">
-                            <tr><td colspan="7" class="p-8 text-center text-secondary">Memuat data...</td></tr>
+                            <tr><td colspan="9" class="p-8 text-center text-secondary">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -55,29 +57,35 @@ checkPermission('master_produk');
         </main>
     </div>
 
+    <!-- MODAL FORM PRODUK -->
     <div id="modal-produk" class="fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('modal-produk')"></div>
-        <div class="bg-surface w-full max-w-md rounded-2xl shadow-xl z-10 transform transition-all flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+        <div class="bg-surface w-full max-w-lg rounded-2xl shadow-xl z-10 transform transition-all flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
                 <h3 id="modal-title" class="text-lg font-bold text-slate-800">Tambah Produk Baru</h3>
                 <button onclick="closeModal('modal-produk')" class="text-secondary hover:text-danger transition-colors">
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
             </div>
             
-            <div class="p-6 overflow-y-auto">
-                <form id="formProduk" class="space-y-4">
+            <div class="p-6 overflow-y-auto custom-scrollbar">
+                <form id="formProduk" class="space-y-4" enctype="multipart/form-data">
                     <input type="hidden" id="product_id" name="id">
+                    <input type="hidden" id="old_image" name="old_image">
                     
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Kode Produk <span class="text-danger">*</span></label>
-                        <input type="text" id="code" name="code" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface uppercase" placeholder="Contoh: RCK-01">
+                    <div class="flex flex-col items-center justify-center mb-4">
+                        <img id="image_preview" src="../../assets/img/no-image.png" alt="Preview" class="w-32 h-32 object-cover rounded-2xl border-4 border-slate-100 shadow-sm mb-3 bg-slate-50">
+                        <div class="w-full relative">
+                            <label class="block text-sm font-medium text-slate-700 mb-1 text-center">Gambar Produk (Opsional)</label>
+                            <input type="file" id="image" name="image" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" onchange="previewImage(event)">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Nama Produk <span class="text-danger">*</span></label>
-                        <input type="text" id="name" name="name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface" placeholder="Contoh: Roti Coklat Keju">
-                    </div>
+
                     <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Kode Produk <span class="text-danger">*</span></label>
+                            <input type="text" id="code" name="code" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface uppercase" placeholder="Cth: RCK-01">
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Kategori</label>
                             <select id="category" name="category" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface">
@@ -87,9 +95,21 @@ checkPermission('master_produk');
                                 <option value="Bolu">Bolu</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nama Produk <span class="text-danger">*</span></label>
+                        <input type="text" id="name" name="name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface" placeholder="Contoh: Roti Coklat Keju">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Harga (Rp)</label>
-                            <input type="number" id="price" name="price" value="0" min="0" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Harga Modal (Rp)</label>
+                            <input type="number" id="modal_price" name="modal_price" value="0" min="0" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface text-rose-600 font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Harga Jual (Rp) <span class="text-danger">*</span></label>
+                            <input type="number" id="price" name="price" value="0" min="0" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface text-emerald-600 font-bold">
                         </div>
                     </div>
                     
@@ -104,6 +124,7 @@ checkPermission('master_produk');
         </div>
     </div>
 
+    <!-- MODAL IMPORT (Sama, tidak saya ubah alurnya) -->
     <div id="modal-import" class="fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('modal-import')"></div>
         <div class="bg-surface w-full max-w-md rounded-2xl shadow-xl z-10 transform transition-all flex flex-col">
@@ -142,6 +163,12 @@ checkPermission('master_produk');
             </div>
         </div>
     </div>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
 
     <script>
         const canEdit = <?= hasPermission('edit_master_produk') ? 'true' : 'false' ?>;
