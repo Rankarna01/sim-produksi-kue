@@ -90,10 +90,11 @@ try {
             $params[] = "%$search%";
         }
 
-        // PENAMBAHAN SUB-QUERY UNTUK CEK APAKAH ADA RETUR PENDING
-     $sql = "
+        // PENAMBAHAN total_qty_awal agar kita bisa memilah mana yang sudah diretur habis
+        $sql = "
             SELECT p.*, s.name as supplier_name, u.name as admin_name,
                    (SELECT COUNT(*) FROM purchase_order_details WHERE po_id = p.id) as total_items,
+                   (SELECT COALESCE(SUM(qty), 0) FROM purchase_order_details WHERE po_id = p.id) as total_qty_awal,
                    (SELECT material_name FROM materials_stocks WHERE id = (SELECT material_id FROM purchase_order_details WHERE po_id = p.id LIMIT 1)) as sample_item,
                    (SELECT COUNT(id) FROM po_returns WHERE po_id = p.id AND status = 'pending') as has_pending_return,
                    (SELECT COALESCE(SUM(qty_return), 0) FROM po_returns WHERE po_id = p.id AND status = 'approved') as total_qty_return,
@@ -117,7 +118,6 @@ try {
     if ($action === 'get_po_receive') {
         $po_id = $_GET['po_id'] ?? '';
         
-        // PENAMBAHAN SUB-QUERY UNTUK MENGHITUNG QTY YANG TELAH DI-RETUR (APPROVED/PENDING)
         $sqlDetail = "
             SELECT pod.*, ms.material_name, ms.sku_code, ms.unit,
                    (SELECT COALESCE(SUM(qty_return), 0) FROM po_returns WHERE po_id = pod.po_id AND material_id = pod.material_id AND status != 'rejected') as returned_qty
@@ -185,10 +185,7 @@ try {
         exit;
     }
 
-    // ==========================================
-    // LOGIC KUNCI CETAK & IZIN CETAK (TERPISAH PO & TERIMA)
-    // ==========================================
-
+    // LOGIC KUNCI CETAK & IZIN CETAK
     if ($action === 'mark_printed') {
         $id = $_POST['id'] ?? '';
         $tipe = $_POST['tipe'] ?? ''; 
@@ -228,16 +225,16 @@ try {
         exit;
     }
 
-
     // ==========================================
-    // 6. LOGIC RETUR PO (FITUR BARU)
+    // 6. LOGIC RETUR PO
     // ==========================================
     
     // A. Ambil Item PO yang sudah di-receive untuk di-retur
     if ($action === 'get_po_retur') {
         $po_id = $_GET['po_id'] ?? '';
         
-        $sqlDetail = "SELECT pod.material_id, pod.qty, pod.price, ms.material_name, ms.unit 
+        $sqlDetail = "SELECT pod.material_id, pod.qty as qty_awal, pod.price, ms.material_name, ms.unit,
+                      (SELECT COALESCE(SUM(qty_return), 0) FROM po_returns WHERE po_id = pod.po_id AND material_id = pod.material_id AND status != 'rejected') as qty_sudah_retur
                       FROM purchase_order_details pod 
                       JOIN materials_stocks ms ON pod.material_id = ms.id 
                       WHERE pod.po_id = ?";
@@ -249,7 +246,7 @@ try {
         exit;
     }
 
-    // B. Simpan Draft Pengajuan Retur ke tabel po_returns
+    // B. Simpan Draft Pengajuan Retur
     if ($action === 'save_retur_po') {
         $po_id = $_POST['po_id'] ?? '';
         $reason = $_POST['reason'] ?? '';
@@ -268,11 +265,10 @@ try {
         foreach ($items as $item) {
             $qty_return = (float)$item['qty_return'];
             
-            // Jika ada isian angka retur > 0, baru kita simpan ke database
             if ($qty_return > 0) {
                 if ($qty_return > (float)$item['qty_terima']) {
                     $pdo->rollBack();
-                    echo json_encode(['status' => 'error', 'message' => "Barang {$item['material_name']} tidak bisa diretur melebihi jumlah yang diterima!"]); exit;
+                    echo json_encode(['status' => 'error', 'message' => "Barang {$item['material_name']} tidak bisa diretur melebihi jumlah sisa!"]); exit;
                 }
 
                 $stmtIns->execute([

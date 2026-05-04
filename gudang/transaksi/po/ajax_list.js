@@ -40,37 +40,54 @@ async function loadDataPO() {
     
     if (res.status === 'success') {
         let html = '';
-        if (res.data.length === 0) {
-            html = '<div class="p-10 text-center bg-white rounded-3xl border border-slate-200 text-slate-400 font-bold italic">Belum ada dokumen PO di filter ini.</div>';
-        } else {
+        
+        let renderedCount = 0; // Hitungan PO yang lolos filter
+
+        if (res.data.length > 0) {
             res.data.forEach(item => {
+                
+                // MENGHITUNG QTY UNTUK HILANGKAN PO
+                let qtyAwal = parseFloat(item.total_qty_awal) || 0;
+                let qtyRetur = parseFloat(item.total_qty_return) || 0;
+                let sisaQty = qtyAwal - qtyRetur;
+
+                // PO INI AKAN HILANG JIKA SISA QTY SUDAH 0 DAN TIDAK ADA PENDING
+                if (sisaQty <= 0 && item.status === 'received' && item.has_pending_return == 0) {
+                    return; // Skip (PO ini akan hilang dari tampilan)
+                }
+
+                renderedCount++; // PO ini akan dimunculkan
+
+                // MENGHITUNG RUPIAH UNTUK TAMPILAN
+                let totalAwal = parseFloat(item.total_amount) || 0;
+                let nominalRetur = parseFloat(item.total_amount_return) || 0;
+                
+                let total = totalAwal - nominalRetur;
+                if (total < 0) total = 0; // Jaga-jaga agar tidak minus
+
+                let paid = parseFloat(item.paid_amount) || 0;
+                let sisa = total - paid;
+                if (sisa < 0) sisa = 0;
+
                 let statusBadge = '';
                 if (item.status === 'waiting_approval') statusBadge = '<span class="bg-amber-50 text-amber-600 border border-amber-200 px-3 py-1 rounded-full text-[10px] font-black uppercase"><i class="fa-regular fa-clock mr-1"></i> Menunggu Persetujuan</span>';
                 else if (item.status === 'approved') statusBadge = '<span class="bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1 rounded-full text-[10px] font-black uppercase"><i class="fa-solid fa-check-double mr-1"></i> Disetujui (Open)</span>';
                 else if (item.status === 'received') statusBadge = '<span class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1 rounded-full text-[10px] font-black uppercase"><i class="fa-solid fa-box-open mr-1"></i> Diterima</span>';
                 else statusBadge = '<span class="bg-rose-50 text-rose-500 border border-rose-200 px-3 py-1 rounded-full text-[10px] font-black uppercase"><i class="fa-solid fa-ban mr-1"></i> Ditolak</span>';
 
-                let total = parseFloat(item.total_amount) || 0;
-                let paid = parseFloat(item.paid_amount) || 0;
-                let sisa = total - paid;
-
                 let payBadge = '';
                 if(item.status === 'received') {
+                    // BUG FIX LUNAS: Hanya lunas jika status dari DB adalah 'paid'
                     if(item.payment_status === 'paid') payBadge = '<span class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1 rounded-full text-[10px] font-black uppercase ml-2">Lunas</span>';
                     else payBadge = '<span class="bg-rose-50 text-rose-500 border border-rose-200 px-3 py-1 rounded-full text-[10px] font-black uppercase ml-2">Belum Bayar</span>';
                 }
 
-                // SUNTIKAN: Badge Indikator Retur Pending
                 let returnBadge = '';
                 if (item.has_pending_return > 0) {
                     returnBadge = '<span class="bg-rose-100 text-rose-600 border border-rose-300 px-3 py-1 rounded-full text-[10px] font-black uppercase ml-2 animate-pulse shadow-sm"><i class="fa-solid fa-rotate-left mr-1"></i> Retur Pending Owner</span>';
                 }
 
-                // SUNTIKAN INFO TOTAL RETUR (Akan Muncul Jika Ada Retur Yang Disetujui)
-                let qtyRetur = parseFloat(item.total_qty_return) || 0;
-                let nominalRetur = parseFloat(item.total_amount_return) || 0;
                 let infoReturHtml = '';
-                
                 if (qtyRetur > 0) {
                     infoReturHtml = `
                         <div class="mt-4 bg-rose-50/80 border border-rose-200 rounded-xl p-3 flex items-center justify-between w-full max-w-sm transition-all hover:bg-rose-100">
@@ -116,8 +133,8 @@ async function loadDataPO() {
                 if (item.status === 'received') {
                     
                     let btnRetur = '';
-                    if (item.payment_status !== 'paid') {
-                        // Jika masih ada retur pending, disable tombol pengajuan baru
+                    // Tampilkan tombol retur jika Sisa QTY masih ada (> 0)
+                    if (item.payment_status !== 'paid' && sisaQty > 0) { 
                         if (item.has_pending_return > 0) {
                             btnRetur = `
                                 <button disabled class="bg-slate-50 text-slate-400 border border-slate-200 px-3 py-2 rounded-xl text-[10px] font-black flex items-center justify-center gap-1 shadow-sm mt-2 w-full uppercase tracking-widest cursor-not-allowed">
@@ -189,6 +206,11 @@ async function loadDataPO() {
                 `;
             });
         }
+        
+        if (renderedCount === 0) {
+            html = '<div class="p-10 text-center bg-white rounded-3xl border border-slate-200 text-slate-400 font-bold italic">Belum ada dokumen PO aktif di filter ini.</div>';
+        }
+
         container.innerHTML = html;
     }
 }
@@ -216,7 +238,6 @@ async function lihatDetailPO(po_id, po_no) {
         `;
         
         res.items.forEach(i => {
-            // MENAMPILKAN QTY RETUR JIKA ADA
             let returInfo = '';
             let returQty = parseFloat(i.returned_qty) || 0;
             if(returQty > 0) {
@@ -310,28 +331,47 @@ async function ajukanIzinCetak(po_id, tipe) {
 }
 
 // ==================================================
-// FITUR MODAL RETUR PO & PENGAJUAN RETUR
+// FITUR MODAL RETUR PO & PENGAJUAN RETUR (FIX BUG BATASAN)
 // ==================================================
 let returItems = [];
 let activeReturPoId = null;
 
 async function openModalRetur(po_id, po_no) {
     activeReturPoId = po_id;
-    document.getElementById('retur-po-title').innerText = 'Pengajuan Retur PO: ' + po_no;
-    document.getElementById('retur_reason').value = '';
-    openModal('modal-retur-po'); 
-
+    
     const res = await fetchAjax(`logic.php?action=get_po_retur&po_id=${po_id}`, 'GET');
     
     if (res.status === 'success') {
-        returItems = res.items.map(item => ({
-            material_id: item.material_id, 
-            material_name: item.material_name, 
-            unit: item.unit,
-            price: item.price,
-            qty_terima: parseFloat(item.qty), 
-            qty_return: 0 
-        }));
+        returItems = [];
+        
+        // BUG FIX: Menghitung sisa yang bisa di-retur
+        res.items.forEach(item => {
+            let qtyAwal = parseFloat(item.qty_awal) || 0;
+            let qtySudahRetur = parseFloat(item.qty_sudah_retur) || 0;
+            let sisaBisaRetur = qtyAwal - qtySudahRetur;
+            
+            // Hanya masukkan item yang sisanya masih > 0
+            if (sisaBisaRetur > 0) {
+                returItems.push({
+                    material_id: item.material_id, 
+                    material_name: item.material_name, 
+                    unit: item.unit,
+                    price: item.price,
+                    qty_terima: sisaBisaRetur, // BATASAN DIUBAH JADI SISA
+                    qty_return: 0 
+                });
+            }
+        });
+
+        // Cegah modal terbuka jika semua item sudah habis
+        if (returItems.length === 0) {
+            Swal.fire('Info', 'Semua item pada PO ini sudah diretur habis atau sedang diajukan.', 'info');
+            return; 
+        }
+
+        document.getElementById('retur-po-title').innerText = 'Pengajuan Retur PO: ' + po_no;
+        document.getElementById('retur_reason').value = '';
+        openModal('modal-retur-po'); 
         renderReturItems();
     }
 }
@@ -344,7 +384,7 @@ function renderReturItems() {
             <tr class="hover:bg-slate-50 transition-colors">
                 <td class="p-4 font-bold text-slate-700 text-xs">${item.material_name} <span class="text-[9px] uppercase text-slate-400 font-bold ml-1">${item.unit}</span></td>
                 <td class="p-4 text-center text-xs font-bold text-slate-500">${formatRupiah(item.price)}</td>
-                <td class="p-4 text-center font-black text-blue-600 bg-blue-50/30">${item.qty_terima}</td>
+                <td class="p-4 text-center font-black text-blue-600 bg-blue-50/30">Max: ${item.qty_terima}</td>
                 <td class="p-4 bg-rose-50/30">
                     <input type="number" step="any" min="0" max="${item.qty_terima}" class="w-full px-2 py-1.5 border border-rose-300 rounded font-black text-rose-600 text-center outline-none focus:border-rose-500" value="${item.qty_return}" onchange="updateReturQty(${idx}, this.value, ${item.qty_terima})">
                 </td>
@@ -357,10 +397,13 @@ function renderReturItems() {
 function updateReturQty(idx, val, maxVal) {
     let num = parseFloat(val);
     if (isNaN(num) || num < 0) num = 0;
+    
+    // Validasi super ketat agar tidak tembus limit
     if (num > maxVal) {
-        Swal.fire('Tidak Valid!', 'Jumlah retur tidak boleh melebihi jumlah yang diterima.', 'error');
+        Swal.fire('Tidak Valid!', `Jumlah retur tidak boleh melebihi sisa barang (${maxVal}).`, 'error');
         num = 0;
     }
+    
     returItems[idx].qty_return = num;
     renderReturItems();
 }
@@ -401,7 +444,7 @@ async function submitReturPO() {
         if (res.status === 'success') {
             closeModal('modal-retur-po'); 
             Swal.fire('Berhasil Diajukan!', res.message, 'success'); 
-            loadDataPO(); // Refresh daftar agar badge muncul
+            loadDataPO(); 
         } else { 
             Swal.fire('Gagal!', res.message, 'error'); 
         }
