@@ -2,7 +2,7 @@
 // config/database.php
 
 $host = 'localhost';
-$dbname = 'sim_produksi_kue';
+$dbname = 'sim-kue';
 $user = 'root'; // Sesuaikan dengan user MySQL kamu (biasanya 'root' di XAMPP/Laragon)
 $pass = '';     // Sesuaikan dengan password MySQL kamu (biasanya kosong)
 
