@@ -6,9 +6,9 @@ header("Access-Control-Allow-Methods: GET");
 
 // KONEKSI DATABASE HOSTINGER
 $host = 'localhost';
-$db   = 'u672726995_sim_kue'; // Sesuai nama database di phpMyAdmin Hostinger kamu
-$user = 'u672726995_sim_kue'; // Biasanya username DB di Hostinger diawali kode yang sama
-$pass = 'Randy2005_';         // Password database kamu
+$dbname = 'u672726995_sim_kue';
+$user = 'u672726995_sim_kue'; // Sesuaikan dengan user MySQL kamu (biasanya 'root' di XAMPP/Laragon)
+$pass = 'Randy2005_';     // Sesuaikan dengan password MySQL kamu (biasanya kosong)
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
