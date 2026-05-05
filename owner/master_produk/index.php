@@ -43,7 +43,7 @@ checkPermission('master_produk');
                                 <th class="p-4 font-semibold">Nama Produk</th>
                                 <th class="p-4 font-semibold">Kategori</th>
                                 <th class="p-4 font-semibold text-right">Harga Modal</th>
-                                <th class="p-4 font-semibold text-right">Harga Jual</th>
+                                <th class="p-4 font-semibold text-right">Harga Jual (OFF / ON)</th>
                                 <th class="p-4 font-semibold text-center">Stok Jadi</th>
                                 <th class="p-4 font-semibold text-center w-28">Aksi</th>
                             </tr>
@@ -102,14 +102,19 @@ checkPermission('master_produk');
                         <input type="text" id="name" name="name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface" placeholder="Contoh: Roti Coklat Keju">
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <!-- INPUT HARGA 3 KOLOM -->
+                    <div class="grid grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Harga Modal (Rp)</label>
-                            <input type="number" id="modal_price" name="modal_price" value="0" min="0" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface text-rose-600 font-bold">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Modal (Rp)</label>
+                            <input type="number" id="modal_price" name="modal_price" value="0" min="0" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface text-rose-600 font-bold">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Harga Jual (Rp) <span class="text-danger">*</span></label>
-                            <input type="number" id="price" name="price" value="0" min="0" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface text-emerald-600 font-bold">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Jual Off (Rp) <span class="text-danger">*</span></label>
+                            <input type="number" id="price" name="price" value="0" min="0" required class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface text-emerald-600 font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Jual On (Rp)</label>
+                            <input type="number" id="online_price" name="online_price" value="0" min="0" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface text-blue-600 font-bold">
                         </div>
                     </div>
                     
@@ -124,7 +129,7 @@ checkPermission('master_produk');
         </div>
     </div>
 
-    <!-- MODAL IMPORT (Sama, tidak saya ubah alurnya) -->
+    <!-- MODAL IMPORT -->
     <div id="modal-import" class="fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('modal-import')"></div>
         <div class="bg-surface w-full max-w-md rounded-2xl shadow-xl z-10 transform transition-all flex flex-col">
