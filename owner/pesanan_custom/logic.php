@@ -1,6 +1,5 @@
 <?php
 require_once '../../config/database.php';
-checkPermission('pesanan_custom');
 session_start();
 
 header('Content-Type: application/json');

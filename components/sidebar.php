@@ -197,6 +197,12 @@ $total_pending_owner = 0;
                 <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Lap. Keluar Titipan</span>
             </a>
         <?php endif; ?>
+        <?php if (hasPermission('laporan_pesanan_custom')): ?>
+            <a href="<?= BASE_URL ?>owner/laporan_pesanan_custom/" title="Laporan Pesanan Custom" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/laporan_pesanan_custom/', $current_uri) ?>">
+                <i class="fa-solid fa-cake-candles w-6 text-center text-lg shrink-0"></i>
+                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Laporan Pesanan Custom</span>
+            </a>
+        <?php endif; ?>
 
         <?php if (hasPermission('audit_logs')): ?>
             <a href="<?= BASE_URL ?>owner/audit_logs/" title="Audit Logs (Lacak)" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/audit_logs/', $current_uri) ?>">
