@@ -163,6 +163,8 @@ $kitchens = $stmtKitchens->fetchAll(PDO::FETCH_ASSOC);
                                 <?= renderCheckboxGroup('master_bahan', 'Data Bahan Baku', 'fa-wheat-awn') ?>
 
                                 <?= renderCheckboxGroup('master_titipan', 'Master Barang Titipan UMKM', 'fa-store') ?>
+                                <?= renderCheckboxGroup('pesanan_custom', 'Pesanan Custom', 'fa-store') ?>
+
 
                                 <?= renderCheckboxGroup('master_satuan', 'Master Satuan', 'fa-weight-scale') ?>
                                 <?= renderCheckbox('master_resep', 'Data Resep (BOM)', 'fa-list-check') ?>

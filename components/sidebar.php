@@ -106,6 +106,18 @@ $total_pending_owner = 0;
                 <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Barang Titipan</span>
             </a>
         <?php endif; ?>
+        <?php if (hasPermission('pesanan_custom')): ?>
+            <a href="<?= BASE_URL ?>owner/pesanan_custom/" title="Pesanan Custom Dapur" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/pesanan_custom/', $current_uri) ?>">
+                <div class="relative">
+                    <i class="fa-solid fa-fire-burner w-6 text-center text-lg shrink-0 text-orange-500"></i>
+                    <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                    </span>
+                </div>
+                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 font-bold">Pesanan Dapur</span>
+            </a>
+        <?php endif; ?>
 
         <?php if (hasPermission('master_kategori')): ?>
             <a href="<?= BASE_URL ?>owner/master_kategori/" title="Kategori Produk" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_kategori/', $current_uri) ?>">
