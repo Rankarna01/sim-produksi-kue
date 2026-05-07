@@ -18,7 +18,6 @@ try {
 
         // 2. Ambil Karyawan HANYA dari Dapur tersebut
         if ($userKitchenId) {
-            // Jika dia Admin Dapur (punya kitchen_id), filter karyawannya!
             $stmtEmp = $pdo->prepare("
                 SELECT e.id, e.name as emp_name, k.name as kitchen_name 
                 FROM employees e 
@@ -28,7 +27,6 @@ try {
             ");
             $stmtEmp->execute([$userKitchenId]);
         } else {
-            // Jika dia Owner/Global (tidak punya kitchen_id), tampilkan semua
             $stmtEmp = $pdo->query("
                 SELECT e.id, e.name as emp_name, k.name as kitchen_name 
                 FROM employees e 
@@ -48,7 +46,6 @@ try {
         exit;
     }
 
-    // --- FITUR BARU: CEK APAKAH KARYAWAN SUDAH BUAT RENCANA HARIAN ---
     if ($action === 'check_plan') {
         $employee_id = $_GET['employee_id'] ?? '';
         $today = date('Y-m-d');
@@ -79,43 +76,24 @@ try {
         $quantities = $_POST['quantity'];
         $today = date('Y-m-d');
 
-        if (empty($employee_id)) {
-            echo json_encode(['status' => 'error', 'message' => 'Pilih Karyawan terlebih dahulu!']); exit;
-        }
+        if (empty($employee_id)) { echo json_encode(['status' => 'error', 'message' => 'Pilih Karyawan terlebih dahulu!']); exit; }
 
-        // --- GEMBOK BACKEND: PASTIKAN KARYAWAN SUDAH BIKIN PLAN ---
         $cekPlan = $pdo->prepare("SELECT id FROM production_plans WHERE karyawan_id = ? AND plan_date = ?");
         $cekPlan->execute([$employee_id, $today]);
         if ($cekPlan->rowCount() == 0) {
             echo json_encode(['status' => 'error', 'message' => 'Akses Ditolak! Karyawan belum membuat Rencana Harian.']); exit;
         }
 
-        if (empty($pin_input)) {
-            echo json_encode(['status' => 'error', 'message' => 'PIN Otorisasi wajib diisi!']); exit;
-        }
-        if (empty($product_ids) || count($product_ids) === 0) {
-            echo json_encode(['status' => 'error', 'message' => 'Harap tambahkan minimal 1 produk!']); exit;
-        }
+        if (empty($pin_input)) { echo json_encode(['status' => 'error', 'message' => 'PIN Otorisasi wajib diisi!']); exit; }
+        if (empty($product_ids) || count($product_ids) === 0) { echo json_encode(['status' => 'error', 'message' => 'Harap tambahkan minimal 1 produk!']); exit; }
 
-        // =========================================================
-        // VALIDASI PIN & LOKASI (DIPERKETAT)
-        // =========================================================
         $stmtEmp = $pdo->prepare("SELECT id, pin, kitchen_id, name FROM employees WHERE id = ?");
         $stmtEmp->execute([$employee_id]);
         $emp = $stmtEmp->fetch(PDO::FETCH_ASSOC);
 
-        if (!$emp) {
-            echo json_encode(['status' => 'error', 'message' => 'Karyawan tidak ditemukan!']); exit;
-        }
-
-        // Paksa menjadi string agar tidak ada anomali tipe data angka
-        if ((string)$emp['pin'] !== (string)$pin_input) {
-            echo json_encode(['status' => 'error', 'message' => 'PIN Salah! Otorisasi produksi ditolak.']); exit;
-        }
-        
-        if (empty($emp['kitchen_id'])) {
-            echo json_encode(['status' => 'error', 'message' => 'Karyawan ini belum diatur lokasi dapurnya oleh Owner.']); exit;
-        }
+        if (!$emp) { echo json_encode(['status' => 'error', 'message' => 'Karyawan tidak ditemukan!']); exit; }
+        if ((string)$emp['pin'] !== (string)$pin_input) { echo json_encode(['status' => 'error', 'message' => 'PIN Salah! Otorisasi produksi ditolak.']); exit; }
+        if (empty($emp['kitchen_id'])) { echo json_encode(['status' => 'error', 'message' => 'Karyawan ini belum diatur lokasi dapurnya oleh Owner.']); exit; }
 
         $kitchen_id = $emp['kitchen_id']; 
 
@@ -137,13 +115,13 @@ try {
         $prod_stmt->execute([$invoice_no, $user_id, $employee_id, $warehouse_id, $notes]);
         $production_id = $pdo->lastInsertId();
 
-        // POTONG STOK (ALLOW NEGATIVE & AUTO CREATE)
         for ($i = 0; $i < count($product_ids); $i++) {
             $product_id = $product_ids[$i];
             $quantity = (int)$quantities[$i];
 
             if (empty($product_id) || $quantity <= 0) continue; 
 
+            // 1. POTONG BAHAN BAKU (RAW MATERIALS)
             $bom_stmt = $pdo->prepare("SELECT material_id, quantity_needed, unit_used FROM bom WHERE product_id = ?");
             $bom_stmt->execute([$product_id]);
             $bom_list = $bom_stmt->fetchAll();
@@ -158,10 +136,7 @@ try {
                 $master_stmt->execute([$bom['material_id']]);
                 $masterMat = $master_stmt->fetch(PDO::FETCH_ASSOC);
 
-                if (!$masterMat) {
-                    $pdo->rollBack();
-                    echo json_encode(['status' => 'error', 'message' => 'Bahan Master tidak ditemukan di database.']); exit;
-                }
+                if (!$masterMat) { $pdo->rollBack(); echo json_encode(['status' => 'error', 'message' => 'Bahan Master tidak ditemukan.']); exit; }
 
                 $stokDapur_stmt = $pdo->prepare("SELECT id, unit FROM materials WHERE code = ? AND warehouse_id = ? FOR UPDATE");
                 $stokDapur_stmt->execute([$masterMat['sku_code'], $kitchen_id]);
@@ -169,12 +144,7 @@ try {
 
                 if (!$dapurMat) {
                     $insDapur = $pdo->prepare("INSERT INTO materials (code, name, unit, stock, min_stock, warehouse_id) VALUES (?, ?, ?, 0, 10, ?)");
-                    $insDapur->execute([
-                        $masterMat['sku_code'],
-                        $masterMat['material_name'],
-                        $masterMat['unit'],
-                        $kitchen_id
-                    ]);
+                    $insDapur->execute([$masterMat['sku_code'], $masterMat['material_name'], $masterMat['unit'], $kitchen_id]);
                     $dapurMatId = $pdo->lastInsertId();
                     $mat_u = strtolower(trim($masterMat['unit']));
                 } else {
@@ -201,6 +171,11 @@ try {
                 $update_stok->execute([$total_deducted, $dapurMatId]);
             }
 
+            // 2. TAMBAH STOK BARANG JADI (FINISHED GOODS) KE ETALASE POS
+            $add_finished_goods = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
+            $add_finished_goods->execute([$quantity, $product_id]);
+
+            // 3. CATAT DETAIL PRODUKSI
             $barcode = $invoice_no . "-" . ($i + 1);
             $detail_stmt = $pdo->prepare("INSERT INTO production_details (production_id, product_id, quantity, barcode) VALUES (?, ?, ?, ?)");
             $detail_stmt->execute([$production_id, $product_id, $quantity, $barcode]);
@@ -210,13 +185,12 @@ try {
 
         echo json_encode([
             'status' => 'success', 
-            'message' => 'Produksi dicatat dan bahan baku berhasil dipotong dari dapur Anda.',
+            'message' => 'Produksi dicatat! Bahan baku terpotong dan stok etalase Kasir bertambah.',
             'production_id' => $production_id
         ]);
         exit;
     }
 
-    // LOGIKA REVISI (AUTO REFUND & RE-DEDUCT)
     if ($action === 'revisi') {
         $production_id = $_POST['production_id'];
         $product_ids = $_POST['product_id']; 
@@ -238,6 +212,11 @@ try {
         $old_items = $old_details->fetchAll();
 
         foreach ($old_items as $old) {
+            // Refund Barang Jadi (Kurangi kembali dari etalase POS)
+            $refund_finished = $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ?");
+            $refund_finished->execute([$old['quantity'], $old['product_id']]);
+
+            // Refund Bahan Mentah
             $bom_stmt = $pdo->prepare("SELECT material_id, quantity_needed, unit_used FROM bom WHERE product_id = ?");
             $bom_stmt->execute([$old['product_id']]);
             $bom_list = $bom_stmt->fetchAll();
@@ -269,7 +248,7 @@ try {
         $del_stmt = $pdo->prepare("DELETE FROM production_details WHERE production_id = ?");
         $del_stmt->execute([$production_id]);
 
-        // 2. INSERT BARU DAN POTONG LAGI
+        // 2. INSERT BARU DAN UPDATE ULANG STOK
         $invoice_stmt = $pdo->prepare("SELECT invoice_no FROM productions WHERE id = ?");
         $invoice_stmt->execute([$production_id]);
         $invoice_no = $invoice_stmt->fetchColumn();
@@ -280,6 +259,7 @@ try {
 
             if (empty($product_id) || $quantity <= 0) continue; 
 
+            // Potong Bahan Mentah (Raw Materials)
             $bom_stmt = $pdo->prepare("SELECT material_id, quantity_needed, unit_used FROM bom WHERE product_id = ?");
             $bom_stmt->execute([$product_id]);
             $bom_list = $bom_stmt->fetchAll();
@@ -315,6 +295,10 @@ try {
                 $update_stok->execute([$total_deducted, $dapurMatId]);
             }
 
+            // Tambah Barang Jadi (Finished Goods) ke Etalase POS
+            $add_finished_goods = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
+            $add_finished_goods->execute([$quantity, $product_id]);
+
             $barcode = $invoice_no . "-" . ($i + 1);
             $detail_stmt = $pdo->prepare("INSERT INTO production_details (production_id, product_id, quantity, barcode) VALUES (?, ?, ?, ?)");
             $detail_stmt->execute([$production_id, $product_id, $quantity, $barcode]);
@@ -325,7 +309,7 @@ try {
 
         $pdo->commit();
 
-        echo json_encode(['status' => 'success', 'message' => 'Revisi berhasil. Stok telah disesuaikan ulang.']);
+        echo json_encode(['status' => 'success', 'message' => 'Revisi berhasil. Stok Bahan Mentah dan Barang Jadi telah disesuaikan ulang.']);
         exit;
     }
 
