@@ -69,9 +69,10 @@ try {
         $channel = $_POST['channel'];
         $pickup_date = !empty($_POST['pickup_date']) ? $_POST['pickup_date'] : null;
         $pickup_time = !empty($_POST['pickup_time']) ? $_POST['pickup_time'] : null;
+        $notes = !empty($_POST['notes']) ? $_POST['notes'] : null;
 
-        $stmt = $pdo->prepare("UPDATE sales_pos SET customer_id = ?, channel = ?, pickup_date = ?, pickup_time = ? WHERE id = ?");
-        $stmt->execute([$customer_id, $channel, $pickup_date, $pickup_time, $id]);
+        $stmt = $pdo->prepare("UPDATE sales_pos SET customer_id = ?, channel = ?, pickup_date = ?, pickup_time = ?, notes = ? WHERE id = ?");
+        $stmt->execute([$customer_id, $channel, $pickup_date, $pickup_time, $notes, $id]);
         echo json_encode(['status' => 'success', 'message' => 'Data pesanan berhasil diupdate!']);
         exit;
     }

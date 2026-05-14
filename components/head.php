@@ -46,7 +46,7 @@
         if(msgStr.includes('gagal') || msgStr.includes('error') || msgStr.includes('maaf')) type = 'error';
         if(msgStr.includes('pilih') || msgStr.includes('wajib') || msgStr.includes('harap')) type = 'warning';
 
-        // Tampilan Success (Toast di pojok kanan atas)
+        // Tampilan Success (Toast di pojok kaånan atas)
         if (type === 'success') {
             const Toast = Swal.mixin({
                 toast: true,

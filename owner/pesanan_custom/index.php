@@ -53,16 +53,26 @@ $page_title = "Pesanan Dapur - Produksi";
                                     <span class="bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded uppercase" x-text="order.channel || 'TOKO'"></span>
                                 </div>
                             </div>
-                            <!-- TOMBOL EDIT PO -->
-                            <button @click="openEditModal(order)" class="text-blue-500 bg-blue-50 hover:bg-blue-500 hover:text-white transition-colors w-7 h-7 rounded-lg flex items-center justify-center shadow-sm">
-                                <i class="fa-solid fa-pen text-[10px]"></i>
-                            </button>
+                            <div class="flex gap-1.5">
+                                <!-- TOMBOL PRINT -->
+                                <a :href="'print_receipt.php?invoice=' + order.invoice_no" target="_blank" class="text-slate-500 bg-slate-50 hover:bg-slate-500 hover:text-white transition-colors w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" title="Print Struk">
+                                    <i class="fa-solid fa-print text-[10px]"></i>
+                                </a>
+                                <!-- TOMBOL EDIT PO -->
+                                <button @click="openEditModal(order)" class="text-blue-500 bg-blue-50 hover:bg-blue-500 hover:text-white transition-colors w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" title="Edit PO">
+                                    <i class="fa-solid fa-pen text-[10px]"></i>
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Info Pelanggan & Pengambilan -->
                         <div class="text-[11px] font-bold text-slate-600 mb-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1.5">
                             <div class="flex items-center gap-2"><i class="fa-solid fa-user text-slate-400 w-3"></i> <span x-text="order.customer_name || 'Pelanggan Umum'"></span></div>
                             <div class="flex items-center gap-2 text-orange-600" x-show="order.pickup_date"><i class="fa-solid fa-calendar text-orange-400 w-3"></i> <span>Ambil: <span x-text="order.pickup_date"></span> (<span x-text="order.pickup_time"></span>)</span></div>
+                            <div x-show="order.notes" class="flex items-start gap-2 pt-1 border-t border-slate-200 mt-1">
+                                <i class="fa-solid fa-note-sticky text-slate-400 w-3 mt-0.5"></i>
+                                <span class="italic text-slate-500 leading-tight" x-text="order.notes"></span>
+                            </div>
                         </div>
 
                         <!-- Daftar Masakan -->
@@ -152,6 +162,10 @@ $page_title = "Pesanan Dapur - Produksi";
                         <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Jam Diambil</label>
                         <input type="time" x-model="editForm.pickup_time" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none font-bold text-sm text-slate-700">
                     </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Catatan / Note</label>
+                    <textarea x-model="editForm.notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-sm text-slate-700 placeholder-slate-400" placeholder="Tulis catatan pesanan di sini..."></textarea>
                 </div>
                 
                 <div class="pt-3 mt-2 border-t border-slate-100">

@@ -3,7 +3,7 @@ document.addEventListener('alpine:init', () => {
         orders: [], customers: [],
         currentPage: 1, totalPages: 1,
         isLoading: false, isSilentLoading: false, autoRefreshInterval: null,
-        editModalOpen: false, editForm: { id: '', customer_id: '', channel: '', pickup_date: '', pickup_time: '' },
+        editModalOpen: false, editForm: { id: '', customer_id: '', channel: '', pickup_date: '', pickup_time: '', notes: '' },
 
         async init() {
             this.isLoading = true;
@@ -65,7 +65,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         openEditModal(order) {
-            this.editForm = { id: order.id, customer_id: order.customer_id || '', channel: order.channel || 'toko', pickup_date: order.pickup_date || '', pickup_time: order.pickup_time || '' };
+            this.editForm = { id: order.id, customer_id: order.customer_id || '', channel: order.channel || 'toko', pickup_date: order.pickup_date || '', pickup_time: order.pickup_time || '', notes: order.notes || '' };
             this.editModalOpen = true;
         },
 
