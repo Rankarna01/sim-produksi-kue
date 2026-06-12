@@ -17,7 +17,7 @@ try {
         $limit = 8; 
         $offset = ($page - 1) * $limit;
 
-        $stmtCount = $pdo->query("SELECT COUNT(DISTINCT s.id) FROM sales_pos s INNER JOIN sale_details_pos sd ON s.id = sd.sale_id WHERE sd.is_custom = 1 AND s.production_status != 'selesai'");
+        $stmtCount = $pdo->query("SELECT COUNT(DISTINCT s.id) FROM sales_pos s WHERE s.is_po = 1 AND s.production_status != 'selesai'");
         $total_rows = $stmtCount->fetchColumn();
         $total_pages = ceil($total_rows / $limit);
         if($total_pages < 1) $total_pages = 1;
@@ -27,7 +27,7 @@ try {
             SELECT s.id, s.invoice_no, s.created_at, s.production_status, s.notes, s.order_type, s.channel, s.pickup_date, s.pickup_time, s.customer_id, c.name as customer_name
             FROM sales_pos s
             LEFT JOIN customers_pos c ON s.customer_id = c.id
-            WHERE s.id IN (SELECT sale_id FROM sale_details_pos WHERE is_custom = 1)
+            WHERE s.is_po = 1
             AND s.production_status != 'selesai'
             ORDER BY s.pickup_date ASC, s.pickup_time ASC, s.created_at ASC
             LIMIT :limit OFFSET :offset
@@ -37,11 +37,27 @@ try {
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        $hari_array = array(
+            'Sunday' => 'minggu', 'Monday' => 'senin', 'Tuesday' => 'selasa', 
+            'Wednesday' => 'rabu', 'Thursday' => 'kamis', 'Friday' => 'jumat', 'Saturday' => 'sabtu'
+        );
+
         $data = [];
         foreach ($orders as $order) {
-            $stmtDetail = $pdo->prepare("SELECT custom_name, qty, price FROM sale_details_pos WHERE sale_id = ? AND is_custom = 1");
+            $stmtDetail = $pdo->prepare("SELECT COALESCE(p.name, sd.custom_name) as custom_name, sd.qty, sd.price, sd.is_custom FROM sale_details_pos sd LEFT JOIN products p ON sd.product_id = p.id WHERE sd.sale_id = ?");
             $stmtDetail->execute([$order['id']]);
             $order['custom_items'] = $stmtDetail->fetchAll(PDO::FETCH_ASSOC);
+
+            if (!empty($order['pickup_date'])) {
+                $day_en = date('l', strtotime($order['pickup_date']));
+                $hari_id = $hari_array[$day_en];
+                $tgl = date('d -m -Y', strtotime($order['pickup_date']));
+                $jam = date('H.i', strtotime($order['pickup_time']));
+                $order['pickup_formatted'] = "ambil " . $hari_id . " tgl " . $tgl . " jam " . $jam;
+            } else {
+                $order['pickup_formatted'] = "";
+            }
+
             $data[] = $order;
         }
 

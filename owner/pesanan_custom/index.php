@@ -68,7 +68,7 @@ $page_title = "Pesanan Dapur - Produksi";
                         <!-- Info Pelanggan & Pengambilan -->
                         <div class="text-[11px] font-bold text-slate-600 mb-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100 space-y-1.5">
                             <div class="flex items-center gap-2"><i class="fa-solid fa-user text-slate-400 w-3"></i> <span x-text="order.customer_name || 'Pelanggan Umum'"></span></div>
-                            <div class="flex items-center gap-2 text-orange-600" x-show="order.pickup_date"><i class="fa-solid fa-calendar text-orange-400 w-3"></i> <span>Ambil: <span x-text="order.pickup_date"></span> (<span x-text="order.pickup_time"></span>)</span></div>
+                            <div class="flex items-center gap-2 text-orange-600" x-show="order.pickup_formatted"><i class="fa-solid fa-calendar text-orange-400 w-3"></i> <span class="capitalize" x-text="order.pickup_formatted"></span></div>
                             <div x-show="order.notes" class="flex items-start gap-2 pt-1 border-t border-slate-200 mt-1">
                                 <i class="fa-solid fa-note-sticky text-slate-400 w-3 mt-0.5"></i>
                                 <span class="italic text-slate-500 leading-tight" x-text="order.notes"></span>
@@ -82,11 +82,16 @@ $page_title = "Pesanan Dapur - Produksi";
                                 <template x-for="item in order.custom_items">
                                     <div class="flex justify-between items-start border-b border-slate-50 pb-2 last:border-0 last:pb-0">
                                         <div class="font-bold text-slate-800 text-xs flex-1 pr-2">
-                                            <span class="text-orange-500 mr-1">🛠️</span> <span x-text="item.custom_name"></span>
+                                            <template x-if="item.is_custom == 1">
+                                                <span class="text-orange-500 mr-1">🛠️</span>
+                                            </template>
+                                            <span x-text="item.custom_name"></span>
                                             <!-- TOMBOL SIMPAN KE KATALOG -->
-                                            <button @click="saveToCatalog(item)" class="block mt-1 text-[9px] bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded hover:bg-emerald-500 hover:text-white transition-colors">
-                                                <i class="fa-solid fa-bookmark mr-1"></i>Simpan ke Produk
-                                            </button>
+                                            <template x-if="item.is_custom == 1">
+                                                <button @click="saveToCatalog(item)" class="block mt-1 text-[9px] bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded hover:bg-emerald-500 hover:text-white transition-colors">
+                                                    <i class="fa-solid fa-bookmark mr-1"></i>Simpan ke Produk
+                                                </button>
+                                            </template>
                                         </div>
                                         <div class="font-black text-orange-700 bg-orange-100 px-2 py-0.5 rounded text-xs" x-text="item.qty + 'x'"></div>
                                     </div>
