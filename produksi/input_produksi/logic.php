@@ -96,6 +96,19 @@ try {
         if (empty($emp['kitchen_id'])) { echo json_encode(['status' => 'error', 'message' => 'Karyawan ini belum diatur lokasi dapurnya oleh Owner.']); exit; }
 
         $kitchen_id = $emp['kitchen_id']; 
+        $target_wh_id = !empty($warehouse_id) ? intval($warehouse_id) : (!empty($kitchen_id) ? intval($kitchen_id) : 1);
+
+        // Pastikan tabel product_warehouse_stocks ada
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS product_warehouse_stocks (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                product_id INT NOT NULL,
+                warehouse_id INT NOT NULL,
+                stock INT NOT NULL DEFAULT 0,
+                UNIQUE KEY unique_prod_wh (product_id, warehouse_id)
+            )");
+            $pdo->exec("INSERT IGNORE INTO product_warehouse_stocks (product_id, warehouse_id, stock) SELECT id, stock, 1 FROM products");
+        } catch(Exception $e){}
 
         $pdo->beginTransaction();
 
@@ -139,12 +152,12 @@ try {
                 if (!$masterMat) { $pdo->rollBack(); echo json_encode(['status' => 'error', 'message' => 'Bahan Master tidak ditemukan.']); exit; }
 
                 $stokDapur_stmt = $pdo->prepare("SELECT id, unit FROM materials WHERE code = ? AND warehouse_id = ? FOR UPDATE");
-                $stokDapur_stmt->execute([$masterMat['sku_code'], $kitchen_id]);
+                $stokDapur_stmt->execute([$masterMat['sku_code'], $target_wh_id]);
                 $dapurMat = $stokDapur_stmt->fetch(PDO::FETCH_ASSOC);
 
                 if (!$dapurMat) {
                     $insDapur = $pdo->prepare("INSERT INTO materials (code, name, unit, stock, min_stock, warehouse_id) VALUES (?, ?, ?, 0, 10, ?)");
-                    $insDapur->execute([$masterMat['sku_code'], $masterMat['material_name'], $masterMat['unit'], $kitchen_id]);
+                    $insDapur->execute([$masterMat['sku_code'], $masterMat['material_name'], $masterMat['unit'], $target_wh_id]);
                     $dapurMatId = $pdo->lastInsertId();
                     $mat_u = strtolower(trim($masterMat['unit']));
                 } else {
@@ -171,7 +184,14 @@ try {
                 $update_stok->execute([$total_deducted, $dapurMatId]);
             }
 
-            // 2. TAMBAH STOK BARANG JADI (FINISHED GOODS) KE ETALASE POS
+            // 2. TAMBAH STOK BARANG JADI (FINISHED GOODS) KE STORE TUJUAN & ETALASE POS
+            $stmt_upsert_prod = $pdo->prepare("
+                INSERT INTO product_warehouse_stocks (product_id, warehouse_id, stock) 
+                VALUES (?, ?, ?) 
+                ON DUPLICATE KEY UPDATE stock = stock + ?
+            ");
+            $stmt_upsert_prod->execute([$product_id, $target_wh_id, $quantity, $quantity]);
+
             $add_finished_goods = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
             $add_finished_goods->execute([$quantity, $product_id]);
 

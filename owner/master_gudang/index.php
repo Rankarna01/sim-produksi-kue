@@ -17,13 +17,13 @@ checkPermission('master_gudang');
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-background p-6 lg:p-8">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Data Gudang</h2>
-                    <p class="text-sm text-secondary mt-1">Kelola lokasi penyimpanan bahan baku dan produk jadi.</p>
+                    <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Manajemen Store & Gudang</h2>
+                    <p class="text-sm text-secondary mt-1">Kelola daftar cabang outlet toko (Store) dan gudang penyimpanan produk jadi.</p>
                 </div>
                 
                 <?php if(hasPermission('edit_master_gudang')): ?>
                 <button onclick="openModal('modal-gudang'); resetForm();" class="bg-primary hover:opacity-90 text-surface px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center gap-2">
-                    <i class="fa-solid fa-plus"></i> Tambah Gudang
+                    <i class="fa-solid fa-store"></i> Tambah Store / Gudang
                 </button>
                 <?php endif; ?>
             </div>
@@ -34,8 +34,8 @@ checkPermission('master_gudang');
                         <thead>
                             <tr class="bg-background border-b border-slate-200 text-sm text-secondary uppercase tracking-wider">
                                 <th class="p-4 font-semibold text-center w-16">No</th>
-                                <th class="p-4 font-semibold w-32">Kode</th>
-                                <th class="p-4 font-semibold">Nama Gudang</th>
+                                <th class="p-4 font-semibold w-32">Kode Store</th>
+                                <th class="p-4 font-semibold">Nama Store / Gudang</th>
                                 <th class="p-4 font-semibold text-center w-28">Aksi</th>
                             </tr>
                         </thead>
@@ -52,7 +52,7 @@ checkPermission('master_gudang');
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal('modal-gudang')"></div>
         <div class="bg-surface w-full max-w-sm rounded-2xl shadow-xl z-10 transform transition-all flex flex-col">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h3 id="modal-title" class="text-lg font-bold text-slate-800">Tambah Gudang</h3>
+                <h3 id="modal-title" class="text-lg font-bold text-slate-800">Tambah Store / Gudang</h3>
                 <button onclick="closeModal('modal-gudang')" class="text-secondary hover:text-danger transition-colors">
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </button>
@@ -63,12 +63,12 @@ checkPermission('master_gudang');
                     <input type="hidden" id="warehouse_id" name="id">
                     
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Kode Gudang <span class="text-danger">*</span></label>
-                        <input type="text" id="code" name="code" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface uppercase" placeholder="Contoh: GDG-01">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Kode Store <span class="text-danger">*</span></label>
+                        <input type="text" id="code" name="code" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface uppercase" placeholder="Contoh: STR-01">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Nama Gudang <span class="text-danger">*</span></label>
-                        <input type="text" id="name" name="name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface" placeholder="Contoh: Gudang Bahan Baku Utama">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nama Store / Gudang <span class="text-danger">*</span></label>
+                        <input type="text" id="name" name="name" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-slate-50 focus:bg-surface" placeholder="Contoh: Store Cabang Barat">
                     </div>
                     
                     <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">

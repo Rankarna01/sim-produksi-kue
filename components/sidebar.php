@@ -87,9 +87,9 @@ $total_pending_owner = 0;
         <?php endif; ?>
 
         <?php if (hasPermission('master_gudang')): ?>
-            <a href="<?= BASE_URL ?>owner/master_gudang/" title="Data Gudang" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_gudang/', $current_uri) ?>">
-                <i class="fa-solid fa-warehouse w-6 text-center text-lg shrink-0"></i>
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Data Gudang</span>
+            <a href="<?= BASE_URL ?>owner/master_gudang/" title="Manajemen Store & Gudang" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_gudang/', $current_uri) ?>">
+                <i class="fa-solid fa-store w-6 text-center text-lg shrink-0 text-primary"></i>
+                <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-primary">Store & Gudang</span>
             </a>
         <?php endif; ?>
 
@@ -156,6 +156,11 @@ $total_pending_owner = 0;
             <a href="<?= BASE_URL ?>owner/master_user/" title="Manajemen Akun User" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_user/', $current_uri) ?>">
                 <i class="fa-solid fa-users-gear w-6 text-center text-lg shrink-0"></i>
                 <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Manajemen User</span>
+            </a>
+
+            <a href="<?= BASE_URL ?>owner/karyawan_kasir/" title="Karyawan Kasir Outlet" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/karyawan_kasir/', $current_uri) ?>">
+                <i class="fa-solid fa-cash-register w-6 text-center text-lg shrink-0 text-emerald-600"></i>
+                <span class="text-sm font-bold sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-emerald-700">Kasir Tiap Outlet</span>
             </a>
             <?php if (hasPermission('otorisasi')): ?>
                 <a href="<?= BASE_URL ?>owner/otorisasi/" title="Otorisasi Akses PIN" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/otorisasi/', $current_uri) ?>">
