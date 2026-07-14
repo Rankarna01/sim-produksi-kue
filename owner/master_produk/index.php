@@ -15,12 +15,13 @@ checkPermission('master_produk');
         <?php include '../../components/header.php'; ?>
         
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-background p-6 lg:p-8">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <!-- Page Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Data Produk</h2>
-                    <p class="text-sm text-secondary mt-1">Kelola daftar kue dan roti yang diproduksi beserta harga dan gambar untuk POS.</p>
+                    <p class="text-sm text-secondary mt-1">Kelola daftar produk & item custom POS.</p>
                 </div>
-                <div class="flex gap-2 w-full sm:w-auto">
+                <div id="btn-group-produk" class="flex gap-2 w-full sm:w-auto">
                     <?php if(hasPermission('edit_master_produk')): ?>
                     <button onclick="openModal('modal-import')" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center justify-center gap-2">
                         <i class="fa-solid fa-file-csv"></i> Import CSV
@@ -32,26 +33,78 @@ checkPermission('master_produk');
                 </div>
             </div>
 
-            <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-background border-b border-slate-200 text-sm text-secondary uppercase tracking-wider">
-                                <th class="p-4 font-semibold text-center w-16">No</th>
-                                <th class="p-4 font-semibold text-center w-20">Gambar</th>
-                                <th class="p-4 font-semibold">Kode</th>
-                                <th class="p-4 font-semibold">Nama Produk</th>
-                                <th class="p-4 font-semibold">Kategori</th>
-                                <th class="p-4 font-semibold text-right">Harga Modal</th>
-                                <th class="p-4 font-semibold text-right">Harga Jual (OFF / ON)</th>
-                                <th class="p-4 font-semibold text-center">Stok Jadi</th>
-                                <th class="p-4 font-semibold text-center w-28">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body" class="text-sm divide-y divide-slate-100">
-                            <tr><td colspan="9" class="p-8 text-center text-secondary">Memuat data...</td></tr>
-                        </tbody>
-                    </table>
+            <!-- Tab Navigation -->
+            <div class="flex items-center gap-1 mb-5 bg-white border border-slate-200 p-1.5 rounded-2xl w-fit shadow-sm">
+                <button id="tab-btn-produk" onclick="switchTabProduk('produk')"
+                    class="tab-btn-produk flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all bg-primary text-white shadow-md shadow-blue-100">
+                    <i class="fa-solid fa-cake-candles"></i> Produk Jadi
+                </button>
+                <button id="tab-btn-custom-pos" onclick="switchTabProduk('custom-pos')"
+                    class="tab-btn-produk flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-slate-500 hover:bg-slate-100">
+                    <i class="fa-solid fa-star-half-stroke"></i> Item Custom POS
+                </button>
+            </div>
+
+            <!-- TAB: Produk Jadi -->
+            <div id="tab-produk" class="tab-content-produk">
+                <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-background border-b border-slate-200 text-sm text-secondary uppercase tracking-wider">
+                                    <th class="p-4 font-semibold text-center w-16">No</th>
+                                    <th class="p-4 font-semibold text-center w-20">Gambar</th>
+                                    <th class="p-4 font-semibold">Kode</th>
+                                    <th class="p-4 font-semibold">Nama Produk</th>
+                                    <th class="p-4 font-semibold">Kategori</th>
+                                    <th class="p-4 font-semibold text-right">Harga Modal</th>
+                                    <th class="p-4 font-semibold text-right">Harga Jual (OFF / ON)</th>
+                                    <th class="p-4 font-semibold text-center">Stok Jadi</th>
+                                    <th class="p-4 font-semibold text-center w-28">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body" class="text-sm divide-y divide-slate-100">
+                                <tr><td colspan="9" class="p-8 text-center text-secondary">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Item Custom POS -->
+            <div id="tab-custom-pos" class="tab-content-produk hidden">
+
+                <!-- Info Banner -->
+                <div class="mb-4 p-4 bg-violet-50 border border-violet-200 rounded-2xl flex items-start gap-3">
+                    <div class="w-9 h-9 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <i class="fa-solid fa-circle-info text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-violet-800 uppercase tracking-widest">Item Custom Kasir POS</p>
+                        <p class="text-xs text-violet-700 mt-1">
+                            Item di bawah bersumber dari tabel <code class="bg-violet-100 px-1 rounded">saved_custom_items_pos</code>.
+                            Item yang dihapus di sini <strong>akan ikut terhapus dari daftar pilihan kasir POS</strong> beserta resepnya.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-surface rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-background border-b border-slate-200 text-[10px] text-secondary uppercase tracking-widest font-black">
+                                    <th class="p-4 text-center w-16">No</th>
+                                    <th class="p-4">Nama Item Custom</th>
+                                    <th class="p-4 text-right">Harga POS</th>
+                                    <th class="p-4 text-center">Dibuat</th>
+                                    <th class="p-4 text-center w-28">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-custom-pos" class="text-sm divide-y divide-slate-100">
+                                <tr><td colspan="5" class="p-8 text-center text-secondary">Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </main>
@@ -176,8 +229,31 @@ checkPermission('master_produk');
     </style>
 
     <script>
-        const canEdit = <?= hasPermission('edit_master_produk') ? 'true' : 'false' ?>;
+        const canEdit   = <?= hasPermission('edit_master_produk') ? 'true' : 'false' ?>;
         const canDelete = <?= hasPermission('hapus_master_produk') ? 'true' : 'false' ?>;
+
+        function switchTabProduk(tab) {
+            document.querySelectorAll('.tab-content-produk').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn-produk').forEach(btn => {
+                btn.classList.remove('bg-primary', 'text-white', 'shadow-md', 'shadow-blue-100',
+                                     'bg-violet-600', 'shadow-violet-100');
+                btn.classList.add('text-slate-500', 'hover:bg-slate-100');
+            });
+
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tab}`);
+            activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-100');
+
+            const btnGroup = document.getElementById('btn-group-produk');
+            if (tab === 'produk') {
+                activeBtn.classList.add('bg-primary', 'text-white', 'shadow-md', 'shadow-blue-100');
+                btnGroup.style.display = '';
+            } else {
+                activeBtn.classList.add('bg-violet-600', 'text-white', 'shadow-md', 'shadow-violet-100');
+                btnGroup.style.display = 'none';
+                loadCustomPOS();
+            }
+        }
     </script>
 
     <?php include '../../components/footer.php'; ?>

@@ -83,16 +83,55 @@ async function loadCustomItems() {
                     <td class="p-4 text-xs font-bold text-slate-600">Rp ${harga}</td>
                     <td class="p-4 text-center">${badge}</td>
                     <td class="p-4 text-center">
-                        <button onclick="bukaModalResepCustom(${item.id}, '${item.name.replace(/'/g, "&apos;")}')" 
-                            class="bg-violet-600 text-white hover:bg-violet-700 px-4 py-2 rounded-xl text-xs font-black transition-all shadow-md shadow-violet-100 flex items-center justify-center mx-auto gap-2">
-                            <i class="fa-solid fa-gears"></i> Atur Resep
-                        </button>
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="bukaModalResepCustom(${item.id}, '${item.name.replace(/'/g, "&apos;")}')" 
+                                class="bg-violet-600 text-white hover:bg-violet-700 px-3 py-2 rounded-xl text-xs font-black transition-all shadow-md shadow-violet-100 flex items-center gap-1.5">
+                                <i class="fa-solid fa-gears"></i> Atur Resep
+                            </button>
+                            ${item.total_bahan > 0 ? `
+                            <button onclick="hapusResepCustomDariTabel(${item.id}, '${item.name.replace(/'/g, "&apos;")}')" 
+                                class="bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5">
+                                <i class="fa-solid fa-trash-can"></i> Hapus Resep
+                            </button>` : ''}
+                        </div>
                     </td>
                 </tr>`;
         });
         tbody.innerHTML = html;
     } else {
         tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-rose-500 font-bold text-xs">${response.message || 'Gagal memuat data.'}</td></tr>`;
+    }
+}
+
+// ==========================================
+// HAPUS RESEP CUSTOM LANGSUNG DARI TABEL
+// (tanpa harus buka modal)
+// ==========================================
+async function hapusResepCustomDariTabel(custom_item_id, item_name) {
+    const confirm = await Swal.fire({
+        title: 'Hapus Resep?',
+        html: `Semua bahan resep untuk item <strong>${item_name.toUpperCase()}</strong> akan dihapus permanen dari database.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonText: 'Batal',
+        confirmButtonText: '<i class="fa-solid fa-trash-can mr-1"></i> Ya, Hapus Resep!'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    Swal.fire({ title: 'Menghapus...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
+
+    const formData = new FormData();
+    formData.append('custom_item_id', custom_item_id);
+
+    const response = await fetchAjax('logic_custom.php?action=delete_bom_custom', 'POST', formData);
+
+    if (response.status === 'success') {
+        loadCustomItems(); // Refresh tabel
+        Swal.fire({ title: 'Terhapus!', text: response.message, icon: 'success', timer: 1800, showConfirmButton: false });
+    } else {
+        Swal.fire('Gagal!', response.message, 'error');
     }
 }
 

@@ -151,3 +151,87 @@ document.getElementById('formImport').addEventListener('submit', async function 
         btnSubmit.disabled = false;
     }
 });
+
+// ============================================================
+// TAB ITEM CUSTOM POS — Load & Delete
+// ============================================================
+async function loadCustomPOS() {
+    const tbody = document.getElementById('table-custom-pos');
+    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-secondary text-xs"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Memuat item custom...</td></tr>';
+
+    const response = await fetchAjax('logic.php?action=read_custom_pos', 'GET');
+
+    if (response.status === 'success') {
+        if (response.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400 italic text-xs">Belum ada item custom di sistem POS.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        response.data.forEach((item, index) => {
+            const harga = parseInt(item.price).toLocaleString('id-ID');
+            const tgl = item.created_at
+                ? new Date(item.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+                : '-';
+
+            const resepBadge = item.total_resep > 0
+                ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2 py-0.5 rounded-full">${item.total_resep} Bahan Resep</span>`
+                : `<span class="bg-slate-100 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full italic">Tanpa Resep</span>`;
+
+            html += `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 text-center text-secondary text-xs">${index + 1}</td>
+                    <td class="p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center text-xs flex-shrink-0">
+                                <i class="fa-solid fa-star-half-stroke"></i>
+                            </div>
+                            <div>
+                                <div class="font-black text-slate-800 uppercase text-sm">${item.name}</div>
+                                <div class="mt-0.5">${resepBadge}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-4 text-right font-bold text-slate-700">Rp ${harga}</td>
+                    <td class="p-4 text-center text-xs text-secondary">${tgl}</td>
+                    <td class="p-4 text-center">
+                        <button onclick="deleteCustomPOS(${item.id}, '${item.name.replace(/'/g, "&apos;")}')"
+                            class="p-2 bg-danger/10 text-danger rounded-lg hover:bg-danger hover:text-white transition-all" title="Hapus item custom ini">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </td>
+                </tr>`;
+        });
+        tbody.innerHTML = html;
+    } else {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-rose-500 font-bold text-xs">${response.message || 'Gagal memuat data.'}</td></tr>`;
+    }
+}
+
+async function deleteCustomPOS(id, name) {
+    const result = await Swal.fire({
+        title: 'Hapus Item Custom?',
+        html: `Item <strong>${name.toUpperCase()}</strong> akan dihapus dari daftar kasir POS beserta resepnya (jika ada).<br><br><span class="text-rose-500 text-xs font-bold">⚠ Tindakan ini tidak bisa dibatalkan!</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonText: 'Batal',
+        confirmButtonText: '<i class="fa-solid fa-trash mr-1"></i> Ya, Hapus!'
+    });
+
+    if (!result.isConfirmed) return;
+
+    Swal.fire({ title: 'Menghapus...', icon: 'info', allowOutsideClick: false, showConfirmButton: false });
+
+    const formData = new FormData();
+    formData.append('id', id);
+
+    const response = await fetchAjax('logic.php?action=delete_custom_pos', 'POST', formData);
+
+    if (response.status === 'success') {
+        loadCustomPOS();
+        Swal.fire({ title: 'Terhapus!', text: response.message, icon: 'success', timer: 1800, showConfirmButton: false });
+    } else {
+        Swal.fire('Gagal!', response.message, 'error');
+    }
+}

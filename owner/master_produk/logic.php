@@ -137,6 +137,42 @@ try {
 
             echo json_encode(['status' => 'success', 'message' => 'Produk beserta semua data terkait berhasil dihapus!']);
             break;
+        case 'read_custom_pos':
+            header('Content-Type: application/json');
+            $stmt = $pdo->query("
+                SELECT sci.id, sci.name, sci.price, sci.created_at,
+                       COUNT(bc.id) as total_resep
+                FROM saved_custom_items_pos sci
+                LEFT JOIN bom_custom bc ON bc.custom_item_id = sci.id
+                GROUP BY sci.id, sci.name, sci.price, sci.created_at
+                ORDER BY sci.created_at DESC
+            ");
+            echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+            break;
+
+        case 'delete_custom_pos':
+            header('Content-Type: application/json');
+            $id = (int)($_POST['id'] ?? 0);
+            if (!$id) {
+                echo json_encode(['status' => 'error', 'message' => 'ID tidak valid!']); exit;
+            }
+
+            // Cek item ada
+            $cek = $pdo->prepare("SELECT id FROM saved_custom_items_pos WHERE id = ?");
+            $cek->execute([$id]);
+            if (!$cek->fetch()) {
+                echo json_encode(['status' => 'error', 'message' => 'Item custom tidak ditemukan!']); exit;
+            }
+
+            $pdo->beginTransaction();
+            // 1. Hapus resep BOM custom (bom_custom)
+            $pdo->prepare("DELETE FROM bom_custom WHERE custom_item_id = ?")->execute([$id]);
+            // 2. Hapus item custom dari POS
+            $pdo->prepare("DELETE FROM saved_custom_items_pos WHERE id = ?")->execute([$id]);
+            $pdo->commit();
+
+            echo json_encode(['status' => 'success', 'message' => 'Item custom POS berhasil dihapus!']);
+            break;
     }
 } catch (Exception $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
