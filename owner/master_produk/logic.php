@@ -100,23 +100,42 @@ try {
         case 'delete':
             header('Content-Type: application/json');
             checkPermission('hapus_master_produk');
-            $id = $_POST['id'] ?? '';
-            
-            // Ambil nama gambar sebelum baris dihapus
+            $id = (int)($_POST['id'] ?? 0);
+            if (!$id) {
+                echo json_encode(['status' => 'error', 'message' => 'ID produk tidak valid!']); exit;
+            }
+
+            // Ambil nama gambar sebelum dihapus
             $stmt = $pdo->prepare("SELECT image FROM products WHERE id = ?");
             $stmt->execute([$id]);
             $img = $stmt->fetchColumn();
 
-            // Hapus baris data
-            $stmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
-            $stmt->execute([$id]);
-
-            // Hapus file fisik gambar dari folder assets/img
-            if(!empty($img) && $img !== 'no-image.png' && file_exists($uploadDir . $img)) { 
-                unlink($uploadDir . $img); 
+            if ($img === false) {
+                echo json_encode(['status' => 'error', 'message' => 'Produk tidak ditemukan!']); exit;
             }
 
-            echo json_encode(['status' => 'success', 'message' => 'Produk berhasil dihapus!']);
+            // ── Hapus semua data relasi yang tidak punya ON DELETE CASCADE ──
+            // (FK tanpa CASCADE harus dihapus manual sebelum hapus parent row)
+            $pdo->beginTransaction();
+
+            // 1. Hapus detail produksi yang merujuk ke produk ini
+            $pdo->prepare("DELETE FROM production_details WHERE product_id = ?")->execute([$id]);
+
+            // 2. Hapus stok per gudang (product_warehouse_stocks)
+            //    Tabel ini dibuat di database.php — jaga agar tidak orphan
+            $pdo->prepare("DELETE FROM product_warehouse_stocks WHERE product_id = ?")->execute([$id]);
+
+            // 3. Hapus produk (bom akan ikut terhapus karena ON DELETE CASCADE)
+            $pdo->prepare("DELETE FROM products WHERE id = ?")->execute([$id]);
+
+            $pdo->commit();
+
+            // Hapus file fisik gambar dari folder assets/img
+            if (!empty($img) && $img !== 'no-image.png' && file_exists($uploadDir . $img)) {
+                unlink($uploadDir . $img);
+            }
+
+            echo json_encode(['status' => 'success', 'message' => 'Produk beserta semua data terkait berhasil dihapus!']);
             break;
     }
 } catch (Exception $e) {
