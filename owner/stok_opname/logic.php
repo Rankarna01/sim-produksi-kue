@@ -33,8 +33,13 @@ try {
 
     // 2. AMBIL DATA BAHAN BAKU DAPUR UNTUK FORM OPNAME
     if ($action === 'get_materials') {
-        // Panggil dari tabel `materials` (bukan materials_stocks)
-        $stmt = $pdo->query("SELECT id, code, name, stock, unit FROM materials ORDER BY name ASC");
+        // Panggil dari tabel `materials` join `warehouses` untuk mendapatkan nama gudang
+        $stmt = $pdo->query("
+            SELECT m.id, m.code, m.name, m.stock, m.unit, m.warehouse_id, w.name as warehouse_name 
+            FROM materials m
+            LEFT JOIN warehouses w ON m.warehouse_id = w.id
+            ORDER BY m.name ASC
+        ");
         echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
     }
