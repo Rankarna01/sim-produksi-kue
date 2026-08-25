@@ -23,7 +23,23 @@ try {
         $pdo->exec("INSERT IGNORE INTO product_warehouse_stocks (product_id, warehouse_id, stock) SELECT id, stock, 1 FROM products");
     } catch (Exception $e) {}
 } catch (PDOException $e) {
-    // Hentikan eksekusi dan tampilkan error jika koneksi gagal
-    die("Koneksi database gagal: " . $e->getMessage());
+    // Tangani error koneksi agar tidak memicu HTTP 500 Internal Server Error di server produksi
+    $msg = "Koneksi database gagal: " . $e->getMessage();
+    
+    // Deteksi jika dipanggil oleh request API/JSON (seperti login_logic.php)
+    if (
+        (isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) ||
+        (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
+        (headers_sent() === false && !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
+    ) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => $msg]);
+    } else {
+        echo "<div style='padding:20px; background:#fef2f2; border:1px solid #fca5a5; color:#991b1b; font-family:sans-serif; border-radius:8px; margin:20px;'>
+                <strong style='display:block; margin-bottom:8px;'>⚠️ Gangguan Sistem</strong>
+                $msg
+              </div>";
+    }
+    exit;
 }
 ?>
