@@ -2,9 +2,9 @@
 // config/database.php
 
 $host = 'localhost';
-$dbname = 'sim-kue';
-$user = 'root'; // Sesuaikan dengan user MySQL kamu (biasanya 'root' di XAMPP/Laragon)
-$pass = '';     // Sesuaikan dengan password MySQL kamu (biasanya kosong)
+$dbname = 'u672726995_lovecakes22';
+$user = 'u672726995_lovecakes22'; // Sesuaikan dengan user MySQL kamu (biasanya 'root' di XAMPP/Laragon)
+$pass = 'Randy2005_';   // Sesuaikan dengan password MySQL kamu (biasanya kosong)
 
 try {
     // Membuat koneksi PDO
