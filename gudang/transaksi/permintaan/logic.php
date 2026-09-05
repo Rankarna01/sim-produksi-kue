@@ -29,8 +29,12 @@ try {
         $params = [];
 
         if ($tab !== 'semua') {
-            $whereClause .= " AND pr.status = ?";
-            $params[] = $tab;
+            if ($tab === 'processing') {
+                $whereClause .= " AND pr.status IN ('processing', 'processed', 'approved')";
+            } else {
+                $whereClause .= " AND pr.status = ?";
+                $params[] = $tab;
+            }
         }
         if (!empty($start_date) && !empty($end_date)) {
             $whereClause .= " AND DATE(pr.created_at) BETWEEN ? AND ?";

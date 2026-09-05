@@ -100,6 +100,13 @@ $total_pending_owner = 0;
             </a>
         <?php endif; ?>
 
+           <?php if (hasPermission('master_kategori')): ?>
+            <a href="<?= BASE_URL ?>owner/master_kategori/" title="Kategori Produk" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_kategori/', $current_uri) ?>">
+                <i class="fa-solid fa-tags w-6 text-center text-lg shrink-0"></i>
+                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Kategori Produk</span>
+            </a>
+        <?php endif; ?>
+
      <?php if (hasPermission('master_titipan')): ?>
             <a href="<?= BASE_URL ?>owner/barang_titipan/" title="Barang Titipan" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/barang_titipan/', $current_uri) ?>">
                 <i class="fa-solid fa-store w-6 text-center text-lg shrink-0"></i>
@@ -116,13 +123,6 @@ $total_pending_owner = 0;
                     </span>
                 </div>
                 <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 font-bold">Pesanan Dapur</span>
-            </a>
-        <?php endif; ?>
-
-        <?php if (hasPermission('master_kategori')): ?>
-            <a href="<?= BASE_URL ?>owner/master_kategori/" title="Kategori Produk" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/master_kategori/', $current_uri) ?>">
-                <i class="fa-solid fa-tags w-6 text-center text-lg shrink-0"></i>
-                <span class="text-sm sidebar-text whitespace-nowrap transition-all duration-300 opacity-100">Kategori Produk</span>
             </a>
         <?php endif; ?>
 

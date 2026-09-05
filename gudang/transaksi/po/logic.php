@@ -9,11 +9,18 @@ $action = $_POST['action'] ?? $_GET['action'] ?? '';
 try {
     // 1. INIT FORM (Tarik PR Pending & Data Master)
     if ($action === 'init_form') {
+        $stmtSetting = $pdo->query("SELECT req_approval_pr FROM store_profile WHERE id = 1");
+        $req_approval = $stmtSetting->fetchColumn() ?? 1;
+
+        $prStatusWhere = ($req_approval == 1) 
+            ? "pr.status IN ('processed', 'approved')" 
+            : "pr.status IN ('pending', 'processed', 'approved')";
+
         $sqlPR = "SELECT pr.*, ms.material_name, ms.unit, u.name as requested_by_name 
                   FROM purchase_requests pr 
                   JOIN materials_stocks ms ON pr.material_id = ms.id 
                   JOIN users u ON pr.user_id = u.id 
-                  WHERE pr.status = 'pending' ORDER BY pr.created_at ASC";
+                  WHERE $prStatusWhere ORDER BY pr.created_at ASC";
         $prPending = $pdo->query($sqlPR)->fetchAll(PDO::FETCH_ASSOC);
 
         $suppliers = $pdo->query("SELECT id, name FROM suppliers ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);

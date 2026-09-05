@@ -209,6 +209,8 @@ async function loadData(page = 1) {
                 let statusBadge = '';
                 if(item.status === 'pending') {
                     statusBadge = '<span class="text-amber-500 font-bold text-xs"><i class="fa-regular fa-clock"></i> Menunggu</span>';
+                } else if(item.status === 'processed' || item.status === 'approved') {
+                    statusBadge = '<span class="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1 w-max mx-auto"><i class="fa-solid fa-check"></i> Disetujui</span>';
                 } else if(item.status === 'processing') {
                     statusBadge = '<span class="bg-blue-50 text-blue-500 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1 w-max mx-auto"><i class="fa-solid fa-cart-shopping"></i> Diproses PO</span>';
                 } else if(item.status === 'rejected') {

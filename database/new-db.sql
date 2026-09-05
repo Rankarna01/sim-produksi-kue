@@ -1780,7 +1780,7 @@ CREATE TABLE `purchase_requests` (
   `material_id` int(11) NOT NULL,
   `qty` decimal(10,2) NOT NULL,
   `notes` text DEFAULT NULL,
-  `status` enum('pending','processing','completed','rejected') DEFAULT 'pending',
+  `status` varchar(50) NOT NULL DEFAULT 'pending',
   `po_id` int(11) DEFAULT NULL,
   `user_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
