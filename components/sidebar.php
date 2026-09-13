@@ -264,6 +264,18 @@ $total_pending_owner = 0;
             </a>
         <?php endif; ?>
 
+        <?php if (($_SESSION['role'] ?? '') === 'owner'): ?>
+            <div class="px-2 py-2 mt-4 border-t border-slate-100">
+                <p class="text-[10px] font-bold text-rose-500 uppercase tracking-widest mt-2 pl-2 sidebar-text transition-all duration-300 opacity-100 whitespace-nowrap overflow-hidden">Pemeliharaan Sistem</p>
+                <div class="hidden divider-dot w-full h-[2px] bg-rose-100 rounded-full mt-2"></div>
+            </div>
+
+            <a href="<?= BASE_URL ?>owner/reset_data/" title="Reset Data (Go-Live)" onclick="closeSidebarMobile()" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-colors <?= getNavClass('/owner/reset_data/', $current_uri) ?>">
+                <i class="fa-solid fa-broom-ball w-6 text-center text-lg shrink-0 text-rose-600"></i>
+                <span class="text-sm font-black sidebar-text whitespace-nowrap transition-all duration-300 opacity-100 text-rose-600">Reset Data (Go-Live)</span>
+            </a>
+        <?php endif; ?>
+
     </nav>
 </aside>
 
