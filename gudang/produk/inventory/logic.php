@@ -156,7 +156,6 @@ try {
         $category_id = !empty($_POST['category_id']) ? $_POST['category_id'] : null;
         $unit = trim($_POST['unit'] ?? '');
         $rack_id = !empty($_POST['rack_id']) ? $_POST['rack_id'] : null;
-        $stock = (float)($_POST['stock'] ?? 0);
         $min_stock = (float)($_POST['min_stock'] ?? 0);
         $expiry_date = !empty($_POST['expiry_date']) ? $_POST['expiry_date'] : null;
         $status = $_POST['status'] ?? 'active';
@@ -166,6 +165,7 @@ try {
         }
 
         if (empty($id)) {
+            $stock = (float)($_POST['stock'] ?? 0);
             $cek = $pdo->prepare("SELECT id FROM materials_stocks WHERE sku_code = ?");
             $cek->execute([$sku_code]);
             if ($cek->rowCount() > 0) {
@@ -182,8 +182,10 @@ try {
                 echo json_encode(['status' => 'error', 'message' => 'SKU / Barcode sudah dipakai barang lain!']); exit;
             }
 
-            $stmt = $pdo->prepare("UPDATE materials_stocks SET sku_code=?, material_name=?, category_id=?, unit=?, rack_id=?, stock=?, min_stock=?, expiry_date=?, status=? WHERE id=?");
-            $stmt->execute([$sku_code, $material_name, $category_id, $unit, $rack_id, $stock, $min_stock, $expiry_date, $status, $id]);
+            // Stok hanya boleh ditentukan saat barang dibuat. Perubahan stok setelahnya
+            // harus melalui transaksi barang masuk/keluar atau stok opname.
+            $stmt = $pdo->prepare("UPDATE materials_stocks SET sku_code=?, material_name=?, category_id=?, unit=?, rack_id=?, min_stock=?, expiry_date=?, status=? WHERE id=?");
+            $stmt->execute([$sku_code, $material_name, $category_id, $unit, $rack_id, $min_stock, $expiry_date, $status, $id]);
             echo json_encode(['status' => 'success', 'message' => 'Data Barang berhasil diperbarui!']);
         }
         exit;

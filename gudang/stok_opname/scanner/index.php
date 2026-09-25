@@ -77,9 +77,9 @@ checkPermission('scanner_opname');
                                 <div class="absolute inset-y-0 left-0 pl-4 top-6 flex items-center pointer-events-none">
                                     <i class="fa-solid fa-search text-slate-400"></i>
                                 </div>
-                                <select id="material_id" class="w-full pl-11 pr-4 py-3.5 border border-slate-300 rounded-xl focus:border-indigo-600 outline-none transition-all font-bold text-slate-700 bg-slate-50">
-                                    <option value="">Ketik nama barang atau SKU...</option>
-                                </select>
+                                <input type="text" id="search_material" placeholder="Ketik nama barang atau SKU..." autocomplete="off" class="w-full pl-11 pr-4 py-3.5 border border-slate-300 rounded-xl focus:border-indigo-600 outline-none transition-all font-bold text-slate-700 bg-slate-50" oninput="filterMaterialList()">
+                                <input type="hidden" id="material_id">
+                                <div id="material_list" class="absolute z-30 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-64 overflow-y-auto hidden custom-scrollbar"></div>
                             </div>
                             <div class="col-span-1">
                                 <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Jumlah Fisik <span class="text-rose-500">*</span></label>

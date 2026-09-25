@@ -154,8 +154,9 @@ checkPermission('master_inventory');
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 border-t border-slate-100 pt-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Stok Awal Fisik <span class="text-danger">*</span></label>
+                            <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider"><span id="stock-label">Stok Awal Fisik</span> <span id="stock-required" class="text-danger">*</span></label>
                             <input type="number" step="0.01" id="stock" name="stock" value="0" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:border-primary outline-none transition-all text-sm bg-slate-50 focus:bg-surface font-black text-primary">
+                            <p id="stock-edit-help" class="hidden mt-1.5 text-[11px] font-medium text-slate-500">Stok tidak dapat diubah dari master barang. Gunakan transaksi barang masuk/keluar atau stok opname.</p>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Batas Stok Menipis <span class="text-danger">*</span></label>

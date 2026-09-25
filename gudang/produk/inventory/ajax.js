@@ -51,6 +51,18 @@ function resetForm() {
     document.getElementById('id').value = '';
     document.getElementById('status').value = 'active';
     document.getElementById('modal-title').innerText = 'Tambah Master Barang';
+    setStockEditMode(false);
+}
+
+function setStockEditMode(isEdit) {
+    const stockInput = document.getElementById('stock');
+    stockInput.disabled = isEdit;
+    stockInput.required = !isEdit;
+    stockInput.classList.toggle('cursor-not-allowed', isEdit);
+    stockInput.classList.toggle('opacity-60', isEdit);
+    document.getElementById('stock-label').innerText = isEdit ? 'Stok Saat Ini' : 'Stok Awal Fisik';
+    document.getElementById('stock-required').classList.toggle('hidden', isEdit);
+    document.getElementById('stock-edit-help').classList.toggle('hidden', !isEdit);
 }
 
 async function loadData(page = 1) {
@@ -191,6 +203,7 @@ function editData(item) {
     document.getElementById('min_stock').value = item.min_stock;
     document.getElementById('expiry_date').value = item.expiry_date || '';
     document.getElementById('status').value = item.status;
+    setStockEditMode(true);
     
     document.getElementById('modal-title').innerText = 'Edit Master Barang';
     openModal('modal-inventory');

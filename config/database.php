@@ -1,7 +1,6 @@
 <?php
 // config/database.php
 
-$host = 'localhost';
 $dbname = 'u672726995_cakes_real';
 $user = 'u672726995_cakes_real'; // Sesuaikan dengan user MySQL kamu (biasanya 'root' di XAMPP/Laragon)
 $pass = 'Randy2005_';     // Sesuaikan dengan password MySQL kamu (biasanya kosong)

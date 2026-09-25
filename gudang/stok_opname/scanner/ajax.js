@@ -1,7 +1,9 @@
 let materialsData = [];
 let drafts = [];
+let materialSearchResults = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
+    setupMaterialSearch();
     await initData();
 });
 
@@ -38,19 +40,6 @@ async function initData() {
     const res = await fetchAjax('logic.php?action=init_data', 'GET');
     if (res.status === 'success') {
         materialsData = res.materials;
-        
-        // Render Dropdown Pencarian Barang
-        const selectMat = document.getElementById('material_id');
-        let optionsMat = '<option value="">Ketik nama barang atau SKU...</option>';
-        res.materials.forEach(m => {
-            optionsMat += `<option value="${m.id}" data-unit="${m.unit}" data-stock="${m.stock}">[${m.sku_code}] ${m.material_name}</option>`;
-        });
-        selectMat.innerHTML = optionsMat;
-
-        selectMat.addEventListener('change', function() {
-            const selected = this.options[this.selectedIndex];
-            document.getElementById('unit_label').innerText = selected.dataset.unit || '-';
-        });
 
         // Render Dropdown Lokasi Rak
         const selectRak = document.getElementById('filter_rak');
@@ -60,6 +49,103 @@ async function initData() {
         });
         selectRak.innerHTML = optionsRak;
     }
+}
+
+// ==========================================
+// PENCARIAN BARANG (TIDAK MEMBUKA SEMUA DATA)
+// ==========================================
+function setupMaterialSearch() {
+    const searchInput = document.getElementById('search_material');
+    const listContainer = document.getElementById('material_list');
+
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            listContainer.classList.add('hidden');
+            return;
+        }
+
+        if (e.key !== 'Enter') return;
+
+        e.preventDefault();
+        if (materialSearchResults.length === 0) return;
+
+        const keyword = this.value.trim().toLowerCase();
+        const exactSku = materialSearchResults.find(m => m.sku_code.toLowerCase() === keyword);
+        pilihMaterial(exactSku || materialSearchResults[0]);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target !== searchInput && !listContainer.contains(e.target)) {
+            listContainer.classList.add('hidden');
+        }
+    });
+}
+
+function filterMaterialList() {
+    const searchInput = document.getElementById('search_material');
+    const materialId = document.getElementById('material_id');
+    const listContainer = document.getElementById('material_list');
+    const keyword = searchInput.value.trim().toLowerCase();
+
+    materialId.value = '';
+    document.getElementById('unit_label').innerText = '-';
+    listContainer.innerHTML = '';
+    materialSearchResults = [];
+
+    if (keyword.length < 1) {
+        listContainer.classList.add('hidden');
+        return;
+    }
+
+    const allMatches = materialsData.filter(m =>
+        m.material_name.toLowerCase().includes(keyword) ||
+        m.sku_code.toLowerCase().includes(keyword)
+    );
+    materialSearchResults = allMatches.slice(0, 20);
+
+    if (materialSearchResults.length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'p-3 text-xs text-slate-400 italic font-bold';
+        emptyMessage.textContent = 'Barang tidak ditemukan di inventory.';
+        listContainer.appendChild(emptyMessage);
+        listContainer.classList.remove('hidden');
+        return;
+    }
+
+    materialSearchResults.forEach(material => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'block w-full p-3 border-b border-slate-100 hover:bg-indigo-50 cursor-pointer transition-colors text-left';
+
+        const name = document.createElement('div');
+        name.className = 'font-black text-slate-800 text-xs';
+        name.textContent = material.material_name;
+
+        const detail = document.createElement('div');
+        detail.className = 'text-[10px] text-slate-500 font-mono font-bold mt-0.5';
+        detail.textContent = `[${material.sku_code}] • Stok sistem: ${parseFloat(material.stock)} ${material.unit}`;
+
+        option.append(name, detail);
+        option.addEventListener('click', () => pilihMaterial(material));
+        listContainer.appendChild(option);
+    });
+
+    if (allMatches.length > materialSearchResults.length) {
+        const moreMessage = document.createElement('div');
+        moreMessage.className = 'p-2.5 text-center text-[10px] font-bold text-slate-400 bg-slate-50';
+        moreMessage.textContent = `${allMatches.length - materialSearchResults.length} hasil lain — ketik lebih spesifik.`;
+        listContainer.appendChild(moreMessage);
+    }
+
+    listContainer.classList.remove('hidden');
+}
+
+function pilihMaterial(material) {
+    document.getElementById('material_id').value = material.id;
+    document.getElementById('search_material').value = `[${material.sku_code}] ${material.material_name}`;
+    document.getElementById('unit_label').innerText = material.unit || '-';
+    document.getElementById('material_list').classList.add('hidden');
+    document.getElementById('phys_qty').focus();
 }
 
 // ==========================================
@@ -111,20 +197,19 @@ async function prosesImport(input) {
 // 4. MANUAL INPUT KE DAFTAR DRAFT
 // ==========================================
 function tambahKeDaftar() {
-    const select = document.getElementById('material_id');
-    const mat_id = select.value;
+    const mat_id = document.getElementById('material_id').value;
     const phys_qty = document.getElementById('phys_qty').value;
     const notes = document.getElementById('notes').value;
+    const selectedMaterial = materialsData.find(m => String(m.id) === String(mat_id));
 
-    if (!mat_id || phys_qty === '') {
-        Swal.fire('Ups!', 'Pilih barang dan isi jumlah fisiknya!', 'warning'); return;
+    if (!selectedMaterial || phys_qty === '') {
+        Swal.fire('Ups!', 'Pilih barang dari hasil pencarian dan isi jumlah fisiknya!', 'warning'); return;
     }
 
-    const selectedOption = select.options[select.selectedIndex];
-    const mat_name = selectedOption.text;
-    const sys_qty = parseFloat(selectedOption.dataset.stock);
+    const mat_name = `[${selectedMaterial.sku_code}] ${selectedMaterial.material_name}`;
+    const sys_qty = parseFloat(selectedMaterial.stock);
     const p_qty = parseFloat(phys_qty);
-    const unit = selectedOption.dataset.unit;
+    const unit = selectedMaterial.unit;
     const diff = p_qty - sys_qty;
 
     const existIdx = drafts.findIndex(d => d.material_id == mat_id);
@@ -134,7 +219,10 @@ function tambahKeDaftar() {
         drafts.push({ material_id: mat_id, material_name: mat_name, system_stock: sys_qty, physical_stock: p_qty, difference: diff, unit: unit, notes: notes });
     }
 
-    select.value = '';
+    document.getElementById('material_id').value = '';
+    document.getElementById('search_material').value = '';
+    document.getElementById('material_list').classList.add('hidden');
+    materialSearchResults = [];
     document.getElementById('phys_qty').value = '';
     document.getElementById('notes').value = '';
     document.getElementById('unit_label').innerText = '-';
