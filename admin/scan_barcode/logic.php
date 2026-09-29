@@ -93,11 +93,63 @@ try {
 
     // 2. EKSEKUSI TOMBOL DARI MODAL (VALID / TOLAK)
     if ($action === 'execute_validasi') {
-        $prod_id = $_POST['prod_id'];
-        $status_baru = $_POST['status'];
+        $prod_id = $_POST['prod_id'] ?? '';
+        $status_baru = $_POST['status'] ?? '';
+
+        if (empty($prod_id) || empty($status_baru)) {
+            echo json_encode(['status' => 'error', 'message' => 'Parameter validasi tidak lengkap!']);
+            exit;
+        }
+
+        $pdo->beginTransaction();
+
+        $stmtCek = $pdo->prepare("SELECT status, warehouse_id FROM productions WHERE id = ? FOR UPDATE");
+        $stmtCek->execute([$prod_id]);
+        $prodData = $stmtCek->fetch(PDO::FETCH_ASSOC);
+
+        if (!$prodData) {
+            $pdo->rollBack();
+            echo json_encode(['status' => 'error', 'message' => 'Data produksi tidak ditemukan!']);
+            exit;
+        }
+
+        if ($prodData['status'] === 'masuk_gudang') {
+            $pdo->rollBack();
+            echo json_encode(['status' => 'warning', 'message' => 'Invoice ini SUDAH PERNAH divalidasi sebelumnya!']);
+            exit;
+        }
 
         $update = $pdo->prepare("UPDATE productions SET status = ? WHERE id = ?");
         $update->execute([$status_baru, $prod_id]);
+
+        // JIKA DISETUJUI & VALID MASUK GUDANG (STORE)
+        if ($status_baru === 'masuk_gudang') {
+            $target_wh_id = !empty($prodData['warehouse_id']) ? intval($prodData['warehouse_id']) : 1;
+
+            $stmtDet = $pdo->prepare("SELECT product_id, quantity FROM production_details WHERE production_id = ?");
+            $stmtDet->execute([$prod_id]);
+            $details = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($details as $d) {
+                $pid = $d['product_id'];
+                $qty = (int)$d['quantity'];
+                if ($qty <= 0) continue;
+
+                // Tambah stok ke product_warehouse_stocks (Store Tujuan)
+                $stmt_upsert_prod = $pdo->prepare("
+                    INSERT INTO product_warehouse_stocks (product_id, warehouse_id, stock) 
+                    VALUES (?, ?, ?) 
+                    ON DUPLICATE KEY UPDATE stock = stock + ?
+                ");
+                $stmt_upsert_prod->execute([$pid, $target_wh_id, $qty, $qty]);
+
+                // Tambah stok ke products (Master Produk / POS)
+                $add_finished_goods = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
+                $add_finished_goods->execute([$qty, $pid]);
+            }
+        }
+
+        $pdo->commit();
 
         $pesan = ($status_baru === 'masuk_gudang') ? "Barang Sesuai & Valid masuk Gudang!" : "Barang Ditolak! Dikembalikan ke Dapur untuk direvisi.";
         

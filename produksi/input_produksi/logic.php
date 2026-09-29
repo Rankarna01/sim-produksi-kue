@@ -184,18 +184,7 @@ try {
                 $update_stok->execute([$total_deducted, $dapurMatId]);
             }
 
-            // 2. TAMBAH STOK BARANG JADI (FINISHED GOODS) KE STORE TUJUAN & ETALASE POS
-            $stmt_upsert_prod = $pdo->prepare("
-                INSERT INTO product_warehouse_stocks (product_id, warehouse_id, stock) 
-                VALUES (?, ?, ?) 
-                ON DUPLICATE KEY UPDATE stock = stock + ?
-            ");
-            $stmt_upsert_prod->execute([$product_id, $target_wh_id, $quantity, $quantity]);
-
-            $add_finished_goods = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
-            $add_finished_goods->execute([$quantity, $product_id]);
-
-            // 3. CATAT DETAIL PRODUKSI
+            // 2. CATAT DETAIL PRODUKSI (Stok barang jadi baru bertambah saat divalidasi oleh Store)
             $barcode = $invoice_no . "-" . ($i + 1);
             $detail_stmt = $pdo->prepare("INSERT INTO production_details (production_id, product_id, quantity, barcode) VALUES (?, ?, ?, ?)");
             $detail_stmt->execute([$production_id, $product_id, $quantity, $barcode]);
@@ -205,7 +194,7 @@ try {
 
         echo json_encode([
             'status' => 'success', 
-            'message' => 'Produksi dicatat! Bahan baku terpotong dan stok etalase Kasir bertambah.',
+            'message' => 'Produksi berhasil dicatat! Bahan baku dapur terpotong, menunggu validasi fisik oleh Store.',
             'production_id' => $production_id
         ]);
         exit;
@@ -232,10 +221,6 @@ try {
         $old_items = $old_details->fetchAll();
 
         foreach ($old_items as $old) {
-            // Refund Barang Jadi (Kurangi kembali dari etalase POS)
-            $refund_finished = $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ?");
-            $refund_finished->execute([$old['quantity'], $old['product_id']]);
-
             // Refund Bahan Mentah
             $bom_stmt = $pdo->prepare("SELECT material_id, quantity_needed, unit_used FROM bom WHERE product_id = ?");
             $bom_stmt->execute([$old['product_id']]);
@@ -315,10 +300,7 @@ try {
                 $update_stok->execute([$total_deducted, $dapurMatId]);
             }
 
-            // Tambah Barang Jadi (Finished Goods) ke Etalase POS
-            $add_finished_goods = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
-            $add_finished_goods->execute([$quantity, $product_id]);
-
+            // Detail Produksi Baru
             $barcode = $invoice_no . "-" . ($i + 1);
             $detail_stmt = $pdo->prepare("INSERT INTO production_details (production_id, product_id, quantity, barcode) VALUES (?, ?, ?, ?)");
             $detail_stmt->execute([$production_id, $product_id, $quantity, $barcode]);
@@ -329,7 +311,7 @@ try {
 
         $pdo->commit();
 
-        echo json_encode(['status' => 'success', 'message' => 'Revisi berhasil. Stok Bahan Mentah dan Barang Jadi telah disesuaikan ulang.']);
+        echo json_encode(['status' => 'success', 'message' => 'Revisi berhasil. Stok bahan baku dapur telah disesuaikan ulang.']);
         exit;
     }
 
